@@ -1,0 +1,87 @@
+/* ============================================================================
+   CORRECTION · LE GRAND CHIFFRE DE LA VITRINE
+   ----------------------------------------------------------------------------
+   Relevé du défaut, famille par famille et largeur par largeur :
+
+       largeur   chiffre   recouvert par le média
+        1920     260 px           70 px
+        1600     217 px           87 px
+        1440     195 px          137 px
+        1366     186 px      →   161 px, soit 87 % du chiffre
+
+   Rien ne sortait de la fenêtre, aucun `overflow` ne le découpait : il était
+   AVALÉ PAR LE MÉDIA, et de plus en plus à mesure que l'écran rétrécissait.
+
+   LA CAUSE, ET ELLE EST À LA RACINE. Sa taille suivait `17vw` — la largeur de
+   la fenêtre. La place dont il dispose, elle, est la gouttière entre le bord
+   du conteneur et le cadre : elle RÉTRÉCIT quand la fenêtre rétrécit, parce
+   que le cadre garde ses 1180 px le plus longtemps possible. Deux quantités
+   qui n'ont aucune raison de se suivre — et qui divergeaient.
+
+   LA CORRECTION renverse le rapport : c'est désormais la PLACE RÉSERVÉE au
+   chiffre qui commande, et le cadre s'ajuste à ce qui reste. Le média cède
+   quelques pour cent de largeur ; en échange le chiffre est entier partout, ce
+   qui était tout l'intérêt de l'avoir.
+   ========================================================================== */
+
+@media (min-width: 1000px) {
+  .dom {
+    /* LA ZONE DÉDIÉE AU CHIFFRE, et l'écart qui la sépare du média.
+       Ces deux valeurs sont RÉSERVÉES avant que le cadre ne prenne sa
+       largeur : c'est ce qui rend le recouvrement impossible par
+       construction, et non par réglage. */
+    --dom-chiffre-place: clamp(6rem, 9vw, 11rem);
+    /* la séparation passe de 28-35 px à 45-64 px : à 28 px l'œil lit encore
+       les deux objets comme voisins, ce qui était le reproche. */
+    --dom-chiffre-air: clamp(2.8rem, 3.4vw, 4rem);
+  }
+
+  /* Le cadre n'impose plus sa largeur : il prend ce qui reste une fois les
+     deux gouttières réservées. Il reste centré, donc la gouttière de droite
+     équilibre celle de gauche — la composition ne bascule pas. */
+  .dom__frame {
+    width: min(
+      100%,
+      1180px,
+      calc(100% - 2 * (var(--dom-chiffre-place) + var(--dom-chiffre-air)))
+    );
+  }
+
+  /* 0,617 est le rapport MESURÉ entre la largeur du chiffre le plus large
+     (« 08 ») et son corps, dans cette police, à cet interlettrage. On divise
+     par 0,64 plutôt que par 0,617 : trois pour cent de marge, pour qu'aucune
+     famille ne vienne effleurer le média. */
+  .dom__ghost {
+    font-size: calc(var(--dom-chiffre-place) / 0.64);
+    max-width: var(--dom-chiffre-place);
+    /* il ne déborde plus : rien à découper, donc rien à cacher */
+    overflow: visible;
+  }
+}
+
+/* En dessous de 1000 px la gouttière ne peut plus porter un chiffre qui mérite
+   ce nom — il deviendrait une petite étiquette, ce qui n'est pas l'effet
+   recherché. On le retire, et le média reprend toute sa largeur. Le seuil
+   passe donc de 860 à 1000 px : entre les deux, l'ancien réglage laissait un
+   cadre étroit ET un chiffre minuscule, c'est-à-dire les deux inconvénients. */
+@media (max-width: 999px) {
+  .dom__ghost { display: none; }
+  .dom__frame { width: 100%; }
+}
+
+/* ── le décalage vers la marge de page ─────────────────────────────────
+   La valeur est posée par domaines-chiffre.js, qui MESURE la distance entre
+   le bord de la fenêtre et le bord du conteneur — une quantité qu'aucune
+   formule en `vw` ne donne juste à toutes les largeurs, le conteneur étant
+   le résultat de trois contraintes imbriquées.
+
+   Le décalage ne va que vers la gauche : il ne peut donc qu'agrandir l'espace
+   entre le chiffre et le média. La garantie de non-recouvrement reste portée
+   par la réservation CSS au-dessus ; ceci ne fait que l'améliorer. */
+.dom__ghost {
+  transform: translate(var(--dom-ghost-x, 0px), -50%);
+  transition: transform .5s cubic-bezier(.22, .61, .36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dom__ghost { transition: none; }
+}

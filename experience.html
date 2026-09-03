@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Compagnie de l'Or · Du bijou au lingot</title>
+<meta name="description" content="La Compagnie de l'Or rachète vos bijoux, pièces, montres, lingots et métaux précieux lors de journées d'expertise organisées dans les hôtels de France. Expertise gratuite, pesée devant vous, paiement immédiat par chèque ou virement.">
+<meta name="theme-color" content="#0b0a08">
+<script>try{document.documentElement.dataset.ambiance=localStorage.getItem("compagnie-or-ambiance")==="jour"?"jour":"nuit"}catch(e){document.documentElement.dataset.ambiance="nuit"}</script>
+<meta property="og:type" content="website">
+<meta property="og:title" content="La Compagnie de l'Or · Du bijou au lingot">
+<meta property="og:description" content="Vos bijoux, pièces et métaux précieux, expertisés, pesés et payés devant vous. Suivez le parcours d'un bijou jusqu'au lingot.">
+<!-- DEPLOY STEP: patch og:url and og:image with the live absolute URL -->
+<meta property="og:url" content="https://lacompagniedelor.fr/">
+<meta property="og:image" content="https://lacompagniedelor.fr/assets/img/og.jpg">
+<meta property="og:locale" content="fr_FR">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0a08'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%23c99a3f' stroke-width='2.5'/%3E%3Ccircle cx='32' cy='32' r='15' fill='%23c99a3f'/%3E%3C/svg%3E">
+<link rel="preload" href="assets/fonts/cormorant-garamond-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/jost-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/css/poincon.css">
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="assets/css/da-cta.css">
+<link rel="stylesheet" href="assets/css/film.css">
+<link rel="stylesheet" href="assets/css/cinema-v4.css">
+<script type="importmap">{"imports":{"three":"./assets/vendor/three.module.min.js","three/addons/":"./assets/vendor/addons/"}}</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"LocalBusiness","name":"La Compagnie de l'Or","legalName":"Société Or Expert SAS","description":"Rachat d'or, bijoux, pièces, montres, lingots et métaux précieux lors de journées d'expertise organisées dans les hôtels de France. Expertise à domicile et kit d'envoi postal sécurisé.","telephone":"+33981222566","email":"contact@orexpert.fr","address":{"@type":"PostalAddress","streetAddress":"8 rue Etienne Richerand","postalCode":"69003","addressLocality":"Lyon","addressCountry":"FR"},"areaServed":"France","url":"https://lacompagniedelor.fr/"}
+</script>
+</head>
+<body>
+<a class="skip" href="index.html#etapes">Aller au guide pratique</a>
+
+<div class="env" aria-hidden="true"><div class="env__glow"></div><div class="env__grain"></div></div>
+
+<!-- ===== Nav ===== -->
+<header class="nav" id="nav">
+  <!-- Retour a l'accueil : la page d'experience n'avait AUCUN lien vers index.html,
+       pas meme via le logo (qui pointait sur #nuit). Deux sorties desormais :
+       ce bouton, visible a tous les formats, et le logo lui-meme. -->
+  <a class="nav__retour" href="index.html">
+    <span class="nav__retour-fleche" aria-hidden="true"></span>
+    <span class="nav__retour-txt"><span class="nav__retour-long">Retour à l'</span>accueil</span>
+  </a>
+  <!-- A - LE POINCON, meme composant que le header de l'accueil. -->
+  <a class="nav__logo" href="index.html" aria-label="La Compagnie de l'Or, retour à l'accueil">
+    <span class="nav__poincon" data-poincon data-base="assets/logo/"></span>
+  </a>
+  <nav class="nav__links" aria-label="Navigation principale">
+    <a href="#nuit">Le parcours</a>
+    <a href="index.html#domaines">Ce que nous rachetons</a>
+    <a href="index.html#etapes">L'expertise</a>
+    <a href="index.html#journees">Prochaines journées</a>
+    <a href="index.html#faq">Questions</a>
+  </nav>
+  <a class="btn btn--nav" href="index.html#rendezvous">Être informé</a>
+  <button class="nav__guide" type="button" aria-expanded="false" aria-controls="menu" aria-label="Ouvrir le guide pratique"><span class="nav__guide-label">Guide</span><span class="nav__burger" aria-hidden="true"><span></span><span></span></span></button>
+</header>
+
+<!-- ===== Full-screen index (the practical navigation) ===== -->
+<div class="menu" id="menu" hidden>
+  <div class="menu__inner">
+    <div class="menu__col">
+      <p class="kicker">Le parcours</p>
+      <nav class="menu__list menu__list--journey" aria-label="Chapitres du parcours">
+        <a href="#ch1"><span class="menu__n">01</span>L'arrivée</a>
+        <a href="#ch2"><span class="menu__n">02</span>L'expertise</a>
+        <a href="#ch3"><span class="menu__n">03</span>Une solution à distance</a>
+        <a href="#ch4"><span class="menu__n">04</span>Le kit sécurisé</a>
+        <a href="#ch5"><span class="menu__n">05</span>Vous gardez le choix</a>
+        <a href="#ch6"><span class="menu__n">06</span>Une nouvelle vie pour l'or</a>
+        <a href="#ch7"><span class="menu__n">07</span>Deux parcours</a>
+        <a href="#ch8"><span class="menu__n">08</span>Conclusion</a>
+      </nav>
+    </div>
+    <div class="menu__col">
+      <p class="kicker">Le guide pratique</p>
+      <nav class="menu__list" aria-label="Guide pratique">
+        <a href="index.html#domaines">Ce que nous rachetons</a>
+        <a href="index.html#etapes">Comment fonctionne l'expertise</a>
+        <a href="index.html#journees">Nos prochaines journées</a>
+        <a href="index.html#faq">Questions</a>
+        <a href="index.html#rendezvous">Contact, demande de rappel</a>
+        <a href="#societe">Informations société</a>
+      </nav>
+      <p class="menu__contact"><a href="tel:+33981222566">09 81 22 25 66</a><br><a href="mailto:contact@orexpert.fr">contact@orexpert.fr</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Sound control ===== -->
+<!-- Le son est ACTIVÉ par défaut : le bouton part donc à l'état pressé, sinon
+     il s'afficherait coupé le temps que le script s'exécute. L'intitulé ne dit
+     plus « Activer » — il vaut dans les deux sens, c'est aria-pressed qui porte
+     l'état. -->
+<button class="sound is-on" id="sound" type="button" aria-pressed="true" aria-label="Ambiance sonore"><span class="sound__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sound__label">Son</span></button>
+
+<!-- Ambiance Jour / Nuit (choix individuel du visiteur, localStorage) -->
+<div class="ab-toggle" id="ab-toggle" aria-label="Comparaison jour nuit">
+  <button type="button" data-ab="jour">Jour</button>
+  <button type="button" data-ab="nuit" class="is-active">Nuit</button>
+</div>
+
+<main id="main" tabindex="-1">
+
+<!-- ============ LE CINEMA V4 · " LA COMPAGNIE DE L'OR, LE FILM " ============
+     Un seul film continu dans une scene fixe : le spectateur ne voit jamais
+     la page. Deux couches video fondues, incrustations DOM, voile-vignette
+     aux fins de chapitres. Moteur : assets/js/cinema-v4.js. -->
+<div id="cinema" role="region" aria-label="Le film La Compagnie de l'Or">
+  <video id="filmA" muted playsinline preload="auto" tabindex="-1"></video>
+  <video id="filmB" muted playsinline preload="auto" tabindex="-1"></video>
+  <canvas id="v4-france" aria-hidden="true"></canvas>
+  <div id="v4-code" class="v4-code" aria-live="polite"></div>
+  <div class="v3-readout" id="ro-pesee" aria-hidden="true"><span class="v3-readout__k">Balance tarée</span><b><span id="ro-pesee-n">0,00</span>&nbsp;g</b><i id="ro-pesee-s">tare</i></div>
+  <div id="ro-balance" aria-hidden="true"><b id="ro-balance-n">0,00</b><i>g</i><svg id="ro-balance-lcd" viewBox="0 0 300 104" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+  <div id="ro-tablette" aria-hidden="true"></div>
+  <div id="ro-tv" aria-hidden="true"><video id="ro-tv-v" muted playsinline preload="auto"></video><i class="ro-tv__verre"></i></div>
+  <div id="ro-page" aria-hidden="true"><h2>Récapitulatif de vente</h2><i class="ro-page__filet"></i><p>Après validation de notre proposition,<br>vous recevez un récapitulatif écrit<br>et détaillé de votre vente.</p><p>Votre règlement est ensuite effectué<br>par virement bancaire.</p></div>
+  <div class="v3-readout v3-readout--lingot" id="ro-lingot" aria-hidden="true"><span class="v3-readout__k">Or fin 999,9</span><b>30,00&nbsp;g</b><i>théorique 30,00&nbsp;g — la part du feu est pour nous</i></div>
+  <!-- LE PANNEAU DE CHAPITRE, à gauche. C'était un voile plein cadre avec le
+       texte en très grand au centre ; le centre appartient au film, le texte
+       vit maintenant dans une colonne à gauche posée sur un dégradé qui
+       s'éteint vers l'image. L'élément GARDE son id #v4-voile et la classe
+       .v4-voile__textes : tout le minutage — montrerVoile, cacherVoile,
+       armerVoile, la carte du temps — reste inchangé. Seule la présentation
+       change, et les durées du film avec elle ne bougent pas. -->
+  <aside id="v4-voile" class="v4-chapitre" aria-live="polite">
+    <div class="v4-chapitre__bloc">
+      <p class="v4-chapitre__num"></p>
+      <p class="v4-chapitre__titre"></p>
+      <i class="v4-chapitre__filet" aria-hidden="true"></i>
+      <div class="v4-voile__textes v4-chapitre__textes"></div>
+    </div>
+  </aside>
+  <div id="v4-accueil" class="v4-accueil">
+    <p class="v4-accueil__sur">La Compagnie de l'Or présente</p>
+    <h1>Le film de votre expertise</h1>
+    <p>Molette, flèches ou Lecture — un geste lance un chapitre. Huit chapitres, un seul voyage.</p>
+    <p class="v4-accueil__duree">Durée totale : <b id="v4-duree-totale">—</b></p>
+  </div>
+</div>
+
+<div class="cine-bar" id="cine-bar" role="group" aria-label="Commandes du film">
+  <button class="cine-bar__btn" id="cine-prec" type="button" aria-label="Chapitre précédent">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="cine-bar__btn cine-bar__btn--lect" id="cine-lect" type="button" aria-label="Lecture" aria-pressed="false">
+    <svg class="cine-ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+    <svg class="cine-ico-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13M16 5.5v13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+  </button>
+  <button class="cine-bar__btn" id="cine-suiv" type="button" aria-label="Chapitre suivant">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <span class="cine-bar__sep" aria-hidden="true"></span>
+  <div class="cine-bar__vitesses" id="cine-vitesses" role="group" aria-label="Vitesse de lecture">
+    <!-- ×4 est actif dès le HTML : la vitesse par défaut de l'expérience est ×4,
+         et sans cela ×1 s'afficherait actif le temps que le script s'exécute. -->
+    <button type="button" data-v="1" aria-pressed="false">×1</button>
+    <button type="button" data-v="2" aria-pressed="false">×2</button>
+    <button type="button" data-v="4" class="is-active" aria-pressed="true">×4</button>
+    <button type="button" data-v="8" aria-pressed="false">×8</button>
+  </div>
+  <span class="cine-bar__sep" aria-hidden="true"></span>
+  <span class="cine-bar__prog"><b id="cine-prog-n">01</b><span>/</span><i id="cine-prog-t">08</i><em>Chapitres</em></span>
+  <span class="cine-bar__sep" aria-hidden="true"></span>
+  <span class="cine-bar__temps"><b id="cine-t-cur">00:00</b><span>/</span><i id="cine-t-tot">--:--</i></span>
+</div>
+
+<div class="cine-timeline" id="cine-timeline" role="slider" aria-label="Position dans le film" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+  <i id="cine-timeline-fill"></i>
+</div>
+
+<!-- LA NAVIGATION DES CHAPITRES, à droite, toujours visible. Les entrées en
+     trop sont retirées et les titres repris du montage au chargement : la
+     barre ne peut donc pas annoncer un chapitre qui n'existe pas. -->
+<div class="v4-nav" id="v4-nav">
+  <button class="v4-nav__pli" id="v4-nav-pli" type="button" aria-expanded="true" aria-controls="rail" aria-label="Réduire la navigation des chapitres">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <nav class="rail" id="rail" aria-label="Chapitres du film">
+    <a href="#ch1" class="is-active">01</a>
+    <a href="#ch2">02</a>
+    <a href="#ch3">03</a>
+    <a href="#ch4">04</a>
+    <a href="#ch5">05</a>
+    <a href="#ch6">06</a>
+    <a href="#ch7">07</a>
+    <a href="#ch8">08</a>
+  </nav>
+</div>
+
+</main>
+
+<footer class="footer" id="societe">
+  <div class="wrap footer__wrap">
+    <a class="footer__logo" href="index.html" aria-label="La Compagnie de l'Or, accueil"><span class="footer__poincon" data-poincon data-base="assets/logo/"></span></a>
+    <p class="footer__about">La Compagnie de l'Or est une marque de la Société Or Expert SAS, à Lyon. Expert spécialiste en métaux précieux.</p>
+    <p class="footer__legal">Société Or Expert SAS au capital de 10 000 € · 8 rue Etienne Richerand, 69003 Lyon · SIRET 893 848 846 00018 · Garantie des douanes n° 21/066</p>
+    <p class="footer__contact"><a href="tel:+33981222566">09 81 22 25 66</a> · <a href="mailto:contact@orexpert.fr">contact@orexpert.fr</a> · <a href="#mentions">Mentions légales</a></p>
+    <details class="mentions" id="mentions"><summary>Mentions légales</summary><div><p>Éditeur : Société Or Expert SAS, au capital social de 10 000 €, 8 rue Etienne Richerand, 69003 Lyon. SIRET 893 848 846 00018. Garantie des douanes n° 21/066. Directeur de la publication : la présidence de la société. Contact : contact@orexpert.fr, 09 81 22 25 66.</p><p>Hébergement : indiqué lors de la mise en ligne. Données personnelles : les informations transmises via les formulaires servent uniquement à vous informer d'une prochaine journée d'expertise ou à vous rappeler ; vous pouvez demander leur suppression à contact@orexpert.fr. Une pièce d'identité valide est exigée pour toute transaction, conformément à la réglementation sur le commerce des métaux précieux.</p></div></details>
+    <p class="footer__ai">Les visuels de ce site sont des créations générées, dans l'univers de la marque.</p>
+    <p class="footer__copy">© 2026 La Compagnie de l'Or</p>
+  </div>
+</footer>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="poincon-aigle" viewBox="0 0 120 120">
+      <path d="M32 8h56l24 24v56l-24 24H32L8 88V32z" fill="none" stroke="currentColor" stroke-width="3.5"/>
+      <path d="M40 76c0-18 10-34 30-38 6-1 12 0 17 3l-9 4c3 2 5 5 6 9l-8-1c-5 7-11 10-18 11-5 1-9 4-11 9h-7z" fill="currentColor"/>
+      <circle cx="77" cy="46" r="2.2" fill="#0b0a08"/>
+      <path d="M38 84h44" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ico-cheque" viewBox="0 0 48 48"><rect x="5" y="12" width="38" height="24" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 21h14M11 27h20M31 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="ico-virement" viewBox="0 0 48 48"><path d="M8 18h26l-6-6M40 30H14l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- Le numero de version force le navigateur a reprendre le fichier au lieu de
+     reutiliser celui garde en memoire. Sans lui, une correction du moteur peut
+     rester invisible dans un onglet deja ouvert, et on cherche un defaut qui
+     est deja repare. A incrementer a chaque correction du moteur. -->
+<script type="module" src="assets/js/cinema-v4.js?v=20260904a"></script>
+<!-- A - LE POINCON : meme composant que l accueil. Il gere seul le repli sans
+     WebGL, prefers-reduced-motion, la pause hors ecran et la bascule Jour/Nuit. -->
+<script src="assets/js/poincon.js" defer></script>
+<script>
+(function () {
+  function poser() {
+    if (!window.Poincon) return;
+    var l = document.querySelectorAll("[data-poincon]");
+    for (var i = 0; i < l.length; i++) window.Poincon.monter(l[i], { frappe: i === 0 });
+  }
+  if (document.readyState === "complete") poser();
+  else window.addEventListener("load", poser, { once: true });
+})();
+</script>
+</body>
+</html>

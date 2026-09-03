@@ -1,0 +1,19 @@
+/* scenes/expertise.css · Carte 3 « Expertise & proposition » (namespace .sce-*)
+   Le rendu est WebGL (canvas alpha) : cette feuille ne fait que poser le canvas, un halo de sol tres leger,
+   une retombee de key light sur le fond (tiers superieur) et un voile de pied pour ancrer la composition.
+   Aucune animation CSS (tout est dans la boucle rAF). */
+.sce-root{position:absolute;inset:0;overflow:hidden;transform:translateZ(0)}
+.sce-root::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(60% 44% at 50% 82%,rgba(201,154,63,.13),rgba(201,154,63,0) 68%),
+    radial-gradient(70% 56% at 30% -12%,rgba(232,205,147,.08),rgba(232,205,147,0) 68%),
+    radial-gradient(128% 108% at 50% 46%,transparent 62%,rgba(11,10,8,.14) 100%)}
+.sce-root::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(180deg,rgba(11,10,8,0) 70%,rgba(11,10,8,.18) 100%)}
+.sce-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
+:root[data-ambiance="jour"] .sce-root::before{background:
+    radial-gradient(60% 44% at 50% 82%,rgba(138,104,32,.11),rgba(138,104,32,0) 68%),
+    radial-gradient(70% 56% at 30% -12%,rgba(138,104,32,.06),rgba(138,104,32,0) 68%),
+    radial-gradient(128% 108% at 50% 46%,transparent 64%,rgba(36,28,16,.07) 100%)}
+:root[data-ambiance="jour"] .sce-root::after{background:linear-gradient(180deg,rgba(36,28,16,0) 70%,rgba(36,28,16,.07) 100%)}
+.sce-root.is-paused{/* aucune animation CSS a geler : classe posee par stop() pour coherence d API */}

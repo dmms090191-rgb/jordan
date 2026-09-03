@@ -1,0 +1,153 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · LE RYTHME DE LA PAGE
+   ----------------------------------------------------------------------------
+   Ce fichier ne dessine rien. Il règle des ESPACES, des ÉCHELLES et des
+   ALIGNEMENTS — c'est-à-dire ce qui fait qu'une page se lit comme une œuvre
+   composée plutôt que comme une pile de blocs.
+
+   Le relevé de la page d'origine tenait en trois chiffres :
+
+       six sections sur neuf au padding identique, 95 px en haut comme en bas ;
+       cinq sections au titre identique, 54 px ;
+       zéro pixel de blanc entre deux sections, partout.
+
+   Aucune de ces valeurs n'est fausse prise isolément. Ensemble, elles disent
+   au lecteur que chaque section est un tiroir de la même commode : rien
+   n'appelle plus fort que son voisin, rien ne respire différemment. C'est
+   exactement ce qu'on reconnaît d'un gabarit, et cela ne tient ni aux couleurs
+   ni aux polices.
+
+   On introduit donc trois choses :
+
+     1. UNE RESPIRATION PROPRE À CHAQUE SECTION. Une salle d'exposition ne
+        donne pas la même hauteur sous plafond à une vitrine et à un couloir.
+     2. TROIS ÉCHELLES DE TITRE au lieu d'une. Un titre qui ne varie jamais ne
+        hiérarchise rien : il ponctue.
+     3. DES EN-TÊTES QUI NE PARTENT PAS TOUS DU MÊME POINT. Trois sections
+        commençaient exactement au même x, à 440 px, sur 720 px de large.
+
+   La section « Chaque étape se déroule devant vous » (#expertise) n'est pas
+   touchée : elle sert de référence de niveau, on n'y met pas la main.
+   ========================================================================== */
+
+/* ── 1 · la respiration ────────────────────────────────────────────────
+   Chaque section déclare son propre air, en haut et en bas. Les valeurs ne
+   sont pas décoratives : elles disent l'importance. Une vitrine reçoit le
+   double d'une bande de service. */
+.sec {
+  padding-block: var(--air-haut, clamp(4.5rem, 10vh, 8rem))
+                 var(--air-bas,  clamp(4.5rem, 10vh, 8rem));
+}
+
+/* la bande des engagements : un couloir, pas une salle */
+#piliers   { --air-haut: clamp(2.4rem, 5vh, 3.8rem);  --air-bas: clamp(2.4rem, 5vh, 3.8rem); }
+/* le parcours : on entre dans le récit, il faut du seuil */
+#etapes    { --air-haut: clamp(6rem, 13vh, 10rem);    --air-bas: clamp(4.5rem, 10vh, 7.5rem); }
+/* la vitrine : la plus grande hauteur sous plafond de la page */
+#domaines  { --air-haut: clamp(7rem, 15vh, 12rem);    --air-bas: clamp(6rem, 13vh, 10rem); }
+/* la France : un objet exposé a besoin de vide autour de lui */
+#journees  { --air-haut: clamp(6.5rem, 14vh, 11rem);  --air-bas: clamp(6.5rem, 14vh, 11rem); }
+/* la donnée : calme et resserré, on ne monumentalise pas un cours */
+#cours     { --air-haut: clamp(3.6rem, 8vh, 6rem);    --air-bas: clamp(3.6rem, 8vh, 6rem); }
+/* les questions : de la place pour lire, sans emphase */
+#faq       { --air-haut: clamp(5.5rem, 12vh, 9rem);   --air-bas: clamp(5rem, 11vh, 8rem); }
+
+/* ── 2 · les trois échelles de titre ───────────────────────────────────
+   Majeur pour les deux pièces maîtresses ; courant pour le récit et la
+   donnée ; mineur pour ce qui se lit assis. */
+#domaines .sec__title {
+  font-size: clamp(2.6rem, 1.5rem + 3.4vw, 4.6rem);
+  line-height: .98;
+  letter-spacing: -.012em;
+}
+#faq .sec__title {
+  font-size: clamp(1.7rem, 1.2rem + 1.5vw, 2.4rem);
+  line-height: 1.12;
+}
+
+/* ── 3 · les en-têtes ne partent plus du même point ────────────────────
+   Trois sections ouvraient exactement au même x. On leur donne chacune une
+   assise différente : la vitrine s'aligne au bord du cadre, la France se
+   décale, les questions se resserrent. */
+.sec__head { max-width: var(--tete-larg, 720px); }
+
+/* la vitrine : le titre prend le bord gauche du plan, et le chapô passe à
+   DROITE du titre plutôt que dessous — c'est cette asymétrie qui casse la
+   silhouette « kicker / titre / chapô » répétée sept fois. */
+@media (min-width: 1100px) {
+  #domaines .sec__head {
+    --tete-larg: min(1180px, 94vw);
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, .82fr);
+    align-items: end;
+    column-gap: clamp(2rem, 5vw, 5rem);
+  }
+  #domaines .kicker      { grid-column: 1; }
+  #domaines .sec__title  { grid-column: 1; margin-bottom: 0; }
+  #domaines .sec__lede   { grid-column: 2; grid-row: 1 / span 2; align-self: end; padding-bottom: .5rem; }
+}
+
+/* La France n'a PAS de .sec__head : son en-tête est construit par carte3d-ui.js et
+   s'appelle .c3d__head. La règle qui vivait ici ne visait donc rien — elle est traitée
+   dans da-carte.css, où l'en-tête s'aligne sur le bord gauche de la carte. */
+
+/* les questions : plus étroit, aligné à gauche — on ne centre pas un texte
+   qu'on vient lire ligne à ligne */
+#faq .sec__head--center,
+#faq .sec__head {
+  --tete-larg: 560px;
+  text-align: left;
+  margin-inline: 0;
+}
+#faq .sec__head--center .sec__lede { margin-inline: 0; }
+
+/* ── 4 · les jointures ─────────────────────────────────────────────────
+   Zéro pixel séparait les sections : elles se touchaient toutes, et le
+   changement de fond était le seul signal. On pose un filet là où deux
+   sections partagent le même fond, sinon la page se lit d'un seul tenant. */
+#etapes,
+#cours,
+#rendezvous {
+  border-top: 1px solid color-mix(in oklab, var(--line-soft, rgba(201,154,63,.16)) 70%, transparent);
+}
+
+/* ── 5 · l'entrée en scène ─────────────────────────────────────────────
+   Le kicker se révèle par un filet qui se dessine, au lieu d'apparaître en
+   fondu comme tout le reste. Un détail, mais c'est le premier signe de la
+   section : il doit avoir sa propre manière. */
+.sec__head .kicker {
+  position: relative;
+  padding-left: 2.6rem;
+}
+.sec__head .kicker::before {
+  content: "";
+  position: absolute; left: 0; top: 50%;
+  width: 1.9rem; height: 1px;
+  background: currentColor; opacity: .5;
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 1.1s cubic-bezier(.22,.61,.36,1) .15s;
+}
+[data-reveal].is-in .sec__head .kicker::before,
+.rv.is-in .kicker::before { transform: scaleX(1); }
+/* sans script de révélation, le filet doit exister quand même */
+@media (prefers-reduced-motion: reduce) {
+  .sec__head .kicker::before { transform: scaleX(1); transition: none; }
+}
+
+/* ── format étroit ─────────────────────────────────────────────────────
+   Sur téléphone la respiration doit se resserrer, sinon la page devient un
+   couloir interminable — mais les écarts RELATIFS entre sections restent,
+   c'est eux qui portent la hiérarchie. */
+@media (max-width: 760px) {
+  #piliers  { --air-haut: 2rem;   --air-bas: 2rem; }
+  #etapes   { --air-haut: 3.6rem; --air-bas: 3rem; }
+  #domaines { --air-haut: 4.2rem; --air-bas: 3.6rem; }
+  #journees { --air-haut: 3.8rem; --air-bas: 3.8rem; }
+  #cours    { --air-haut: 2.6rem; --air-bas: 2.6rem; }
+  #faq      { --air-haut: 3.4rem; --air-bas: 3rem; }
+  #journees .sec__head { margin-left: 0; }
+  .sec__head .kicker { padding-left: 2.1rem; }
+  .sec__head .kicker::before { width: 1.5rem; }
+}

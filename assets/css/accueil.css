@@ -1,0 +1,306 @@
+/* La Compagnie de l'Or · Accueil classique premium
+   Page independante de l'experience immersive (main.css n'est pas charge ici).
+   Ambiance pilotee par html[data-ambiance="nuit"|"jour"] — meme preference localStorage que l'experience. */
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--body);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;transition:background .5s,color .5s}
+img{max-width:100%}
+a{color:inherit;text-decoration:none}
+
+:root{
+  --display:'Cormorant Garamond',Georgia,serif;
+  --body:'Jost',system-ui,sans-serif;
+  --gold:#c99a3f;--gold-bright:#e8cd93;
+  /* NUIT (defaut) */
+  --bg:#0b0a08;--bg-2:#12100c;--surface:#161310;
+  --text:#f3ecdc;--text-2:rgba(243,236,220,.74);--text-3:rgba(243,236,220,.52);
+  --line:rgba(201,154,63,.28);--line-soft:rgba(243,236,220,.12);
+  --gold-ink:#c99a3f;
+  --btn-primary-bg:linear-gradient(180deg,#e2bd6b,#c99a3f);--btn-primary-text:#171207;
+  --hd-bg:rgba(11,10,8,.82);
+  --card:rgba(22,19,16,.85);
+}
+:root[data-ambiance="jour"]{
+  --bg:#f4efe6;--bg-2:#efe8db;--surface:#fbf8f1;
+  --text:#241c10;--text-2:rgba(36,28,16,.76);--text-3:rgba(36,28,16,.54);
+  --line:rgba(138,104,32,.34);--line-soft:rgba(36,28,16,.12);
+  --gold-ink:#8a6820;
+  --btn-primary-bg:linear-gradient(180deg,#caa04a,#a97f2b);--btn-primary-text:#fff8ea;
+  --hd-bg:rgba(244,239,230,.86);
+  --card:rgba(251,248,241,.92);
+}
+
+.kicker{font-family:var(--body);font-weight:400;font-size:.74rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-ink);margin:0 0 1.1rem}
+
+/* ================= Header ================= */
+/* Degrade ton sur ton, propre a la barre du header uniquement (ne touche pas --hd-bg,
+   partage par .btn-exp--hero et .ab-toggle). Meme alpha que --hd-bg de part et d'autre :
+   seule la teinte varie de +/-1 nuance, le voile translucide + le flou restent identiques. */
+/* Header en DEUX ETAGES (composition de maison de luxe) :
+   - etage haut : le logo, centre, en pleine presence ; actions calees a droite ;
+   - filet tres discret ;
+   - etage bas : la navigation, centree.
+   --hd-h pilote aussi le decalage du hero, du menu mobile et des ancres :
+   une seule valeur a changer pour toute la mise en page. */
+:root{--hd-h:276px;--hd-nav-h:86px;--hd-logo-h:138px;--hd-pad:clamp(1rem,2.6vw,2.4rem)}
+.hd{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0;height:var(--hd-h);background:var(--hd-bg);background-image:linear-gradient(120deg,rgba(11,10,8,.955) 0%,rgba(18,16,12,.955) 52%,rgba(10,9,8,.955) 100%);backdrop-filter:blur(12px);border-bottom:1px solid var(--line-soft);transition:background .5s}
+:root[data-ambiance="jour"] .hd{background-image:linear-gradient(120deg,rgba(244,239,230,.965) 0%,rgba(239,232,219,.965) 52%,rgba(244,239,230,.965) 100%)}
+.hd__haut{position:relative;flex:1 1 auto;display:flex;align-items:center;justify-content:center;padding:0 var(--hd-pad);min-width:0}
+.hd__bas{flex:0 0 var(--hd-nav-h);display:flex;align-items:center;justify-content:center;padding:0 var(--hd-pad);border-top:1px solid var(--line-soft)}
+.logo{display:flex;flex-direction:column;line-height:1;color:var(--text)}
+.logo__top{font-family:var(--body);font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold-ink)}
+.logo__bottom{display:flex;align-items:baseline;gap:.18rem;font-family:var(--display);font-size:1.5rem}
+.logo__de{font-style:italic;color:var(--text-2)}
+.logo__or{display:inline-flex;align-items:center;font-weight:500;letter-spacing:.02em}
+.logo__coin{width:22px;height:22px;border-radius:50%;transform:translateY(2px);margin:0 1px}
+.logo__tricolore{display:flex;gap:2px;margin-top:5px}
+.logo__tricolore i{display:block;width:14px;height:2px}
+.logo__tricolore i:nth-child(1){background:#20356b}.logo__tricolore i:nth-child(2){background:#fff}.logo__tricolore i:nth-child(3){background:#b3373e}
+
+/* Logo final (SVG bloc, sans slogan) : deux calques nuit/jour bascules par html[data-ambiance],
+   memes chemins que le master valide. Les anciennes regles .logo* ci-dessus restent en place :
+   experience.html garde son propre logo texte independant (sa propre feuille main.css). */
+.hd__logo{position:relative;display:flex;align-items:center;flex:0 0 auto}
+/* Le composant du poincon se dimensionne par sa LARGEUR — il porte son propre
+   aspect-ratio, et celui-ci change quand la signature se retire. Le header,
+   lui, raisonne en hauteur : on lui impose donc la hauteur et on laisse la
+   largeur suivre le ratio courant. */
+.hd__poincon{display:block;height:var(--hd-logo-h);width:auto}
+
+/* Navigation : centree dans l'etage bas, respiration horizontale plus large,
+   texte legerement plus grand. Le soulignement or reste le repere de page active. */
+.hd__nav{display:flex;align-items:center;gap:clamp(1.4rem,2.9vw,3.1rem);margin:0}
+.hd__nav a{font-size:.86rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-2);padding:.55rem 0;border-bottom:1px solid transparent;transition:color .3s,border-color .3s;white-space:nowrap}
+.hd__nav a:hover{color:var(--text)}
+.hd__nav a[aria-current="page"]{color:var(--text);border-bottom-color:var(--gold)}
+.hd__nav a.is-soon{color:var(--text-3);cursor:default}
+.hd__nav a.is-soon:hover{color:var(--text-3)}
+/* Actions : sorties du flux pour que le logo reste optiquement centre sur la barre. */
+.hd__actions{position:absolute;right:var(--hd-pad);top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:1rem;flex:0 0 auto}
+.hd__actions .btn--rdv{padding:1rem 1.7rem;font-size:.82rem}
+.hd__actions .btn-exp{--exp-pastille:2.5rem;padding:.46rem 1.5rem .46rem .46rem}
+.hd__actions .btn-exp__label{font-size:.8rem}
+.hd__burger{display:none}
+
+/* Boutons */
+.btn{display:inline-flex;align-items:center;justify-content:center;font-family:var(--body);font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;padding:.85rem 1.5rem;border-radius:2px;border:1px solid transparent;transition:transform .25s,box-shadow .3s,background .3s;cursor:pointer}
+.btn--rdv{border-color:var(--line);color:var(--text)}
+.btn--rdv:hover{border-color:var(--gold);color:var(--gold-ink)}
+.btn--primary{background:var(--btn-primary-bg);color:var(--btn-primary-text);font-weight:500;padding:1.05rem 2.1rem;box-shadow:0 10px 30px rgba(201,154,63,.22)}
+.btn--primary:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(201,154,63,.32)}
+
+/* ============ CTA signature « Vivre l'experience » ============
+   Redessine autour d'un MEDAILLON : une pastille d'or massif portant un triangle de
+   lecture, posee sur une capsule de verre fume. Le medaillon doit pouvoir exister
+   presque seul, comme une commande de lecture d'une interface de luxe — d'ou le
+   grand vide qui le separe du texte (il n'est jamais colle au mot).
+   Le relief vient de degrades et d'ombres internes, jamais d'un glow. */
+.btn-exp{
+  --exp-or:#e8c67a; --exp-or-clair:#faeecb; --exp-or-fonce:#9d7526;
+  --exp-pastille:2.7rem;
+  position:relative;display:inline-flex;align-items:center;
+  gap:clamp(.95rem,1.5vw,1.35rem);                    /* le grand vide demande */
+  padding:.5rem 1.7rem .5rem .5rem;                   /* la pastille apporte sa marge gauche */
+  border:1px solid rgba(201,154,63,.3);border-radius:999px;color:var(--text);
+  background:linear-gradient(180deg,rgba(38,32,24,.62),rgba(14,12,9,.82));
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:inset 0 1px 0 rgba(255,236,196,.07), 0 12px 28px -16px rgba(0,0,0,.95);
+  transition:border-color .4s var(--ease,ease),box-shadow .4s,transform .25s;
+  overflow:hidden}
+/* la pastille : degrade radial = galbe, double ombre interne = chanfrein clair en
+   haut et creux chaud en bas. Aucune lueur exterieure. */
+.btn-exp__jewel{position:relative;flex:0 0 auto;display:grid;place-items:center;
+  width:var(--exp-pastille);height:var(--exp-pastille);border-radius:50%;
+  background:radial-gradient(118% 118% at 34% 22%,var(--exp-or-clair) 0%,var(--exp-or) 44%,var(--exp-or-fonce) 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,244,214,.42), inset 0 -1px 2px rgba(108,76,16,.55),
+             0 3px 8px -5px rgba(90,66,20,.85)}      /* contact, pas halo */
+/* lustre : un reflet large qui traverse tres lentement le metal poli */
+.btn-exp__jewel::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:linear-gradient(102deg,transparent 32%,rgba(255,250,236,.5) 48%,transparent 64%);
+  background-size:300% 100%;background-position:130% 0;
+  animation:expLustre 7.5s linear infinite}
+@keyframes expLustre{to{background-position:-170% 0}}
+/* triangle de lecture : decale de 1,5 px vers la droite car un triangle n'est PAS
+   optiquement centre quand il est centre geometriquement. */
+.btn-exp__play{width:0;height:0;margin-left:1.5px;
+  border-left:.6rem solid #241c10;border-top:.37rem solid transparent;border-bottom:.37rem solid transparent;
+  transition:transform .38s var(--ease,ease)}
+.btn-exp__txt{display:flex;flex-direction:column;justify-content:center;gap:.2rem;line-height:1;min-width:0}
+.btn-exp__label{font-size:.78rem;letter-spacing:.19em;text-transform:uppercase;transition:color .35s}
+.btn-exp__hint{font-family:var(--display);font-style:italic;font-size:.9rem;letter-spacing:.01em;
+  text-transform:none;color:var(--text-3);transition:color .35s}
+.btn-exp:hover{border-color:rgba(232,198,122,.6);
+  box-shadow:inset 0 1px 0 rgba(255,236,196,.11), 0 16px 34px -16px rgba(0,0,0,.95)}
+.btn-exp:hover .btn-exp__play{transform:translateX(1.5px)}
+.btn-exp:hover .btn-exp__label{color:#fff8ea}
+.btn-exp:hover .btn-exp__hint{color:var(--text-2)}
+.btn-exp:active{transform:translateY(1px)}
+.btn-exp:focus-visible{outline:2px solid var(--gold-bright);outline-offset:3px}
+/* version grande : meme langage, une echelle au-dessus */
+.btn-exp--hero{--exp-pastille:3.35rem;padding:.62rem 2rem .62rem .62rem}
+.btn-exp--hero .btn-exp__label{font-size:.84rem}
+.btn-exp--hero .btn-exp__play{border-left-width:.74rem;border-top-width:.46rem;border-bottom-width:.46rem}
+@media (prefers-reduced-motion:reduce){.btn-exp__jewel::after{animation:none}}
+
+/* ================= Hero ================= */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:calc(var(--hd-h) + 30px) clamp(1.2rem,5vw,5rem) 0;overflow:hidden;background:var(--bg)}
+.hero__bg{position:absolute;inset:0;z-index:0}
+.hero__plate{position:absolute;inset:-2.5%;transition:transform 1.2s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.hero__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:72% 50%}
+.hero__img--jour{display:none}
+:root[data-ambiance="jour"] .hero__img--jour{display:block}
+:root[data-ambiance="jour"] .hero__img--nuit{display:none}
+.hero__fade{position:absolute;inset:0;background:linear-gradient(90deg,var(--bg) 0%,var(--bg) 22%,transparent 62%),linear-gradient(180deg,var(--bg) 0%,transparent 22%,transparent 72%,var(--bg) 100%);transition:background .5s}
+.hero__sheen{position:absolute;inset:0;background:radial-gradient(60% 50% at 74% 42%,rgba(232,205,147,.10),transparent 70%);mix-blend-mode:screen;animation:sheen-drift 16s ease-in-out infinite alternate;pointer-events:none}
+:root[data-ambiance="jour"] .hero__sheen{background:radial-gradient(60% 50% at 74% 42%,rgba(255,250,235,.14),transparent 70%);mix-blend-mode:soft-light}
+:root[data-ambiance="jour"] .hero__fade{background:linear-gradient(90deg,var(--bg) 0%,var(--bg) 9%,rgba(244,239,230,.55) 26%,rgba(244,239,230,0) 46%),linear-gradient(180deg,rgba(244,239,230,.5) 0%,transparent 14%,transparent 84%,var(--bg) 100%)}
+@keyframes sheen-drift{from{opacity:.55;transform:translate3d(-1.5%,0,0)}to{opacity:1;transform:translate3d(1.5%,1%,0)}}
+.hero__inner{position:relative;z-index:2;max-width:640px}
+.hero__title{font-family:var(--display);font-weight:400;font-size:clamp(2.7rem,1.5rem + 4.6vw,5.4rem);line-height:1.02;letter-spacing:-.005em;margin:.2rem 0 1.4rem;text-wrap:balance}
+.hero__lede{font-size:clamp(1rem,.95rem + .3vw,1.18rem);line-height:1.65;color:var(--text-2);max-width:46ch;margin:0 0 2.2rem}
+.hero__ctas{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap}
+
+/* Ligne de confiance */
+.trust{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:.5rem 1.3rem;list-style:none;margin:0;padding:1.2rem 0 1.8rem;margin-top:clamp(2rem,5vh,3.6rem);border-top:1px solid var(--line-soft);max-width:640px}
+.trust li{display:flex;align-items:center;gap:.5rem;font-size:.78rem;letter-spacing:.05em;color:var(--text-2);line-height:1.35}
+.trust svg{width:14px;height:14px;flex:0 0 auto;fill:none;stroke:var(--gold-ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ================= Rendez-vous ================= */
+.rdv{padding:clamp(4rem,9vh,7rem) clamp(1.2rem,5vw,5rem);background:var(--bg-2);border-top:1px solid var(--line-soft);transition:background .5s}
+.rdv__inner{max-width:880px;margin:0 auto;text-align:center}
+.rdv__title{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,1.3rem + 2vw,3rem);margin:.2rem 0 .9rem}
+.rdv__lede{color:var(--text-2);line-height:1.65;max-width:56ch;margin:0 auto 2.8rem}
+
+.rdv__open{--rdv-copper:rgba(196,146,93,.65);display:flex;flex-direction:column;align-items:center;max-width:640px;margin:0 auto}
+:root[data-ambiance="jour"] .rdv__open{--rdv-copper:rgba(140,96,54,.6)}
+.rdv__mono{display:block;width:28px;height:28px;margin:0 auto 1.7rem;opacity:.7}
+
+.rdv__contacts{display:flex;align-items:stretch;justify-content:center;gap:clamp(2.2rem,6vw,4.4rem);width:100%}
+.rdv__contact{display:flex;flex-direction:column;gap:.6rem;position:relative}
+.rdv__contact--tel{align-items:flex-end;text-align:right}
+.rdv__contact--mail{align-items:flex-start;text-align:left}
+.rdv__how{font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-ink)}
+.rdv__big{font-family:var(--display);font-weight:400;font-size:clamp(1.5rem,1.05rem + 1.4vw,2rem);color:var(--text);position:relative;transition:color .3s}
+.rdv__big::after{content:'';position:absolute;left:0;right:0;bottom:-.34em;height:1px;background:var(--rdv-copper);transform:scaleX(0);transition:transform .4s cubic-bezier(.22,.61,.36,1)}
+.rdv__contact--tel .rdv__big::after{transform-origin:right}
+.rdv__contact--mail .rdv__big::after{transform-origin:left}
+.rdv__contact:hover .rdv__big::after,.rdv__contact:focus-visible .rdv__big::after{transform:scaleX(1)}
+.rdv__contact:hover .rdv__big,.rdv__contact:focus-visible .rdv__big{color:var(--gold-bright)}
+:root[data-ambiance="jour"] .rdv__contact:hover .rdv__big,:root[data-ambiance="jour"] .rdv__contact:focus-visible .rdv__big{color:#6b4f14}
+.rdv__contact:focus-visible{outline:1px solid var(--gold);outline-offset:8px;border-radius:2px}
+.rdv__big--mail{font-size:clamp(1.1rem,.85rem + 1vw,1.45rem);word-break:break-all}
+.rdv__note{font-size:.78rem;color:var(--text-3)}
+.rdv__sep{width:1px;align-self:stretch;background:linear-gradient(180deg,transparent,var(--line) 22%,var(--line) 78%,transparent)}
+
+.rdv__signature{display:block;width:140px;height:1px;margin:2.5rem auto 0;background:linear-gradient(90deg,transparent,var(--rdv-copper),transparent)}
+.rdv__tri{margin:1.15rem auto 0;transform:scale(.7);opacity:.62}
+
+/* ================= Footer ================= */
+.ft{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1.6rem clamp(1.2rem,5vw,5rem);border-top:1px solid var(--line-soft);background:var(--bg)}
+.ft__legal{font-size:.74rem;color:var(--text-3);margin:0;letter-spacing:.04em}
+.ft__exp{font-size:.78rem;letter-spacing:.12em;color:var(--gold-ink)}
+.ft__exp:hover{color:var(--gold-bright)}
+:root[data-ambiance="jour"] .ft__exp:hover{color:#6b4f14}
+
+/* ================= Toggle ambiance ================= */
+.ab-toggle{position:fixed;right:24px;bottom:24px;z-index:60;display:flex;gap:2px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--hd-bg);backdrop-filter:blur(8px)}
+.ab-toggle button{font-family:var(--body);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);background:none;border:0;border-radius:999px;padding:.45rem .9rem;cursor:pointer;transition:color .3s,background .3s}
+.ab-toggle button.is-active{color:#0b0a08;background:var(--gold)}
+.ab-toggle button:not(.is-active):hover{color:var(--gold-ink)}
+
+/* ================= Menu mobile ================= */
+.mmenu{position:fixed;inset:0;z-index:49;background:var(--bg);padding:calc(var(--hd-h) + 24px) clamp(1.4rem,6vw,3rem) 2rem;overflow:auto}
+.mmenu nav{display:flex;flex-direction:column;gap:.2rem}
+.mmenu nav a{font-family:var(--display);font-size:1.7rem;padding:.55rem 0;border-bottom:1px solid var(--line-soft);color:var(--text)}
+.mmenu nav a.is-soon{color:var(--text-3)}
+.mmenu nav a small{font-family:var(--body);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink);margin-left:.6rem}
+.mmenu__ctas{display:flex;flex-direction:column;gap:1rem;margin-top:2rem}
+.mmenu__ctas .btn,.mmenu__ctas .btn-exp{justify-content:center}
+
+/* ================= Responsive ================= */
+/* Portable : l'etage haut se resserre, le logo reste grand mais le bouton
+   « Prendre rendez-vous » cede la place (il reste dans le menu mobile). */
+@media (max-width:1460px){
+  :root{--hd-h:248px;--hd-nav-h:80px;--hd-logo-h:120px}
+  .hd__actions .btn--rdv{display:none}
+  .hd__nav{gap:clamp(1.1rem,2.2vw,2.2rem)}
+  .hd__nav a{font-size:.8rem;letter-spacing:.16em}
+}
+/* Sous 1180 px la barre repasse en UN seul etage : logo a gauche, burger a droite,
+   la navigation part dans le menu mobile — comportement d'origine conserve. */
+@media (max-width:1180px){
+  :root{--hd-h:112px;--hd-logo-h:66px}
+  .hd{flex-direction:row;align-items:center;gap:.8rem;padding:0 var(--hd-pad)}
+  .hd__haut{display:contents}
+  .hd__bas{display:none}
+  .hd__logo{margin-right:auto}
+  /* Un header d'un seul etage donne de la hauteur, pas de la largeur : empile
+     dans 66 ou 48 px, le nom tombe a 5 px de capitale et n'est plus qu'une
+     trace grise. On demande donc au poincon sa disposition en RANG — le
+     symbole garde toute la hauteur, le nom passe a cote et redevient lisible. */
+  .hd__poincon{--pcn-mode:rang}
+  .hd__nav{display:none}
+  .hd__actions{position:static;transform:none;right:auto}
+  .hd__actions .btn--rdv{display:none}
+  .hd__burger{display:flex;flex-direction:column;justify-content:center;gap:6px;margin-left:.4rem;width:44px;height:44px;background:none;border:1px solid var(--line);border-radius:50%;cursor:pointer;align-items:center}
+  .hd__burger span{display:block;width:16px;height:1.5px;background:var(--text);transition:transform .3s,opacity .3s}
+  .hd__burger[aria-expanded="true"] span:nth-child(1){transform:translateY(3.75px) rotate(45deg)}
+  .hd__burger[aria-expanded="true"] span:nth-child(2){transform:translateY(-3.75px) rotate(-45deg)}
+}
+@media (max-width:760px){
+  :root{--hd-h:88px;--hd-logo-h:48px}
+  /* Sur telephone la barre doit encore loger le bouton et le menu : un verrou
+     complet y prend 222 px et pousse le burger hors de l'ecran. On garde donc
+     la MARQUE seule, 48 px, et le nom de la maison reste ecrit juste dessous
+     dans le hero. La barre respire meme mieux qu'avant la bascule. */
+  .hd__poincon{--pcn-mode:marque}
+  .hd__actions .btn-exp{--exp-pastille:2rem;padding:.34rem 1rem .34rem .34rem}
+  .hd__actions .btn-exp__label{font-size:.64rem;letter-spacing:.13em}
+  .hero{min-height:100svh}
+  .hero__img{object-position:68% 88%}
+  .hero__fade,:root[data-ambiance="jour"] .hero__fade{background:linear-gradient(180deg,var(--bg) 0%,var(--bg) 54%,transparent 76%,transparent 90%,var(--bg) 99%)}
+  .hero__inner{max-width:none}
+  .hero__ctas{gap:.9rem}
+  .btn--primary{width:100%;justify-content:center}
+  .btn-exp--hero{--exp-pastille:2.8rem;width:100%;justify-content:center;padding:.55rem 1.4rem .55rem .55rem}
+  .btn-exp__hint{text-align:center;margin-left:0}
+  .trust{display:grid;grid-template-columns:1fr 1fr;gap:.7rem 1rem;padding-bottom:1.4rem;max-width:none}
+  .trust li{font-size:.74rem;align-items:flex-start}
+  .trust li:last-child{grid-column:1 / -1}
+  .trust svg{margin-top:.15rem}
+  .rdv__open{max-width:360px}
+  .rdv__mono{width:24px;height:24px;margin-bottom:1.4rem}
+  .rdv__contacts{flex-direction:column;align-items:center;gap:1.9rem}
+  .rdv__contact--tel,.rdv__contact--mail{align-items:center;text-align:center}
+  .rdv__contact--tel .rdv__big::after,.rdv__contact--mail .rdv__big::after{transform-origin:center}
+  .rdv__sep{width:88px;height:1px;align-self:center;background:linear-gradient(90deg,transparent,var(--line) 22%,var(--line) 78%,transparent)}
+  .rdv__big{font-size:1.5rem}
+  .rdv__signature{margin-top:2.1rem}
+  .ab-toggle{bottom:18px;right:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero__sheen{animation:none}
+  .hero__plate{transition:none}
+}
+
+/* ---------- Montre vivante : aiguilles pilotees par l heure Europe/Paris ---------- */
+.watch{position:absolute;pointer-events:none;visibility:hidden;z-index:1}
+.watch svg{display:block;width:100%;height:100%;overflow:visible}
+.watch--jour{display:none}
+:root[data-ambiance="jour"] .watch--jour{display:block}
+:root[data-ambiance="jour"] .watch--nuit{display:none}
+.w-h path,.w-m path{fill:#8a6a2f}
+.w-s path,.w-s circle{fill:#7a5a24}
+.w-cap{fill:#c9a34f;stroke:#8a6a2f;stroke-width:.8}
+.w-cap2{fill:#5d451c}
+.watch svg{filter:drop-shadow(0.6px 1.4px 0.9px rgba(30,18,4,.38))}
+:root[data-ambiance="jour"] .w-h path,:root[data-ambiance="jour"] .w-m path{fill:#93743a}
+:root[data-ambiance="jour"] .watch svg{filter:drop-shadow(0.8px 1.8px 1.1px rgba(60,40,10,.40))}
+.w-dbg{display:none}
+.watch.is-debug .w-dbg{display:block}
+.w-dbg ellipse,.w-dbg line{stroke:#ff3355;stroke-width:1}
+
+/* Ancres : le header etant fixe et haut, on decale la cible de defilement
+   pour qu aucun titre de section ne se retrouve masque derriere la barre. */
+#etapes,#domaines,#cours,#journees,#faq,#rendezvous{scroll-margin-top:calc(var(--hd-h) + 18px)}

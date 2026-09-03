@@ -1,0 +1,263 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · LES QUESTIONS   (#faq)   —  REFONTE
+   ----------------------------------------------------------------------------
+   RELEVÉ DE L'ÉTAT PRÉCÉDENT, mesuré avant d'y toucher :
+
+       conteneur   340 → 1580   (1240 px)
+       tête        340 →  692   ( 352 px, colonne de gauche, titre collant)
+       liste       861 → 1580   ( 719 px)
+       → 521 px de VIDE entre le bord du conteneur et la première question,
+         et une liste qui n'occupait que 58 % de la largeur disponible.
+
+       titre 38 px · question 23 px · réponse 15 px
+
+   Deux fautes, et elles sont de nature différente.
+
+   LA COMPOSITION. Une colonne de titre à gauche et des questions à droite,
+   c'est la mise en page d'un article. Mais une FAQ ne se lit pas comme un
+   article : on y cherche une ligne, on l'ouvre, on la referme. Le titre n'a
+   donc rien à accompagner — il annonce, puis il s'efface. Il remonte en tête,
+   centré, et les questions prennent le milieu de la page.
+
+   L'ÉCHELLE. Un titre à 38 px, c'est 3 px de moins que celui de la vitrine.
+   La section la plus modeste de la page parlait aussi fort que ses pièces
+   maîtresses. Toute l'échelle redescend d'un cran.
+
+   LE REGISTRE VISÉ : celui d'une notice imprimée. Une page de carnet où une
+   maison répond, avec précision, sans élever la voix. Le luxe vient de
+   l'espace et de la justesse — aucun ornement n'y est ajouté.
+
+   LA SIGNATURE : un filet d'or qui S'ÉCRIT VERS LE BAS le long de la réponse
+   pendant qu'elle s'ouvre. C'est le geste que la page tient déjà partout —
+   les intertitres, les numéros du parcours, les index des régions et des
+   familles se dessinent au lieu d'apparaître.
+
+   Aucune question, aucune réponse, aucun ordre n'est modifié.
+   ========================================================================== */
+
+.faq {
+  /* le retrait unique : filet, question et réponse s'y alignent tous les trois */
+  --faq-retrait: clamp(1.6rem, 2.4vw, 2.6rem);
+  --faq-souple: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ── 1 · la tête remonte, centrée ──────────────────────────────────────
+   Elle n'accompagne plus la lecture : elle l'ouvre. Un bloc serré, centré,
+   fermé par un filet court qui se dessine — la même écriture que le reste
+   de la page. */
+#faq .sec__head {
+  position: static;
+  max-width: 38rem;
+  margin: 0 auto clamp(3rem, 6.5vh, 4.6rem);
+  text-align: center;
+}
+#faq .kicker {
+  font-size: .64rem;
+  letter-spacing: .28em;
+  /* le filet du kicker se dessine depuis la gauche ailleurs sur la page ;
+     ici la tête est centrée, il n'a pas lieu d'être. */
+  padding-left: 0;
+}
+#faq .kicker::before { display: none; }
+
+#faq .sec__title {
+  font-size: clamp(1.55rem, 1.1rem + 1.05vw, 2.1rem);
+  line-height: 1.14;
+  letter-spacing: .004em;
+  margin-inline: auto;
+  max-width: 22ch;
+  text-wrap: balance;
+}
+
+/* le filet de tête : court, centré, il pose la section sans la souligner */
+#faq .sec__head::after {
+  content: "";
+  display: block;
+  width: 3.4rem;
+  height: 1px;
+  margin: clamp(1.5rem, 3vh, 2.1rem) auto 0;
+  background: linear-gradient(90deg, transparent, var(--gold-ink), transparent);
+  opacity: .55;
+  transform: scaleX(0);
+  transition: transform 1.1s var(--faq-souple) .2s;
+}
+#faq[data-reveal].in .sec__head::after,
+#faq.in .sec__head::after { transform: scaleX(1); }
+
+.faq__aide {
+  margin: clamp(1rem, 2.2vh, 1.5rem) auto 0;
+  max-width: 30rem;
+  font-family: var(--body);
+  font-size: .78rem;
+  line-height: 1.7;
+  color: var(--text-3);
+}
+.faq__aide a {
+  color: var(--gold-ink);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 30%, transparent);
+  padding-bottom: 1px;
+  transition: color .35s ease, border-color .35s ease;
+}
+.faq__aide a:hover {
+  color: var(--gold-bright, #e8cd93);
+  border-bottom-color: var(--gold-bright, #e8cd93);
+}
+
+/* ── 2 · les questions prennent le milieu ──────────────────────────────
+   860 px : la mesure d'un texte qu'on parcourt en diagonale. Plus large, on
+   perd la ligne du regard ; plus étroit, la section redevient une colonne. */
+#faq .faq {
+  max-width: min(860px, 100%);
+  margin-inline: auto;
+  border-top: 1px solid color-mix(in srgb, var(--line-soft) 70%, transparent);
+}
+.faq__item {
+  position: relative;
+  border-bottom: 1px solid color-mix(in srgb, var(--line-soft) 70%, transparent);
+}
+
+/* ── 3 · le filet d'or, qui s'écrit ────────────────────────────────────
+   Il ne saute pas en place : il descend le long du bloc pendant que la
+   réponse s'ouvre, à la même vitesse. Origine en haut, comme une plume. */
+.faq__item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  /* En retrait des séparateurs horizontaux, en haut comme en bas. Un filet qui
+     les touche se lit comme une jonction de bordures — un coin de tableau ;
+     détaché, il redevient ce qu'il est : une marque posée en marge. */
+  top: clamp(.7rem, 1.4vh, 1.05rem);
+  bottom: clamp(.7rem, 1.4vh, 1.05rem);
+  width: 1px;
+  background: linear-gradient(180deg,
+              var(--gold-ink) 0%,
+              color-mix(in srgb, var(--gold-ink) 45%, transparent) 78%,
+              transparent 100%);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+  transition: transform .58s var(--faq-souple);
+}
+.faq__item.is-open::before { transform: scaleY(1); }
+
+/* ── 4 · la ligne de question ──────────────────────────────────────────
+   Deux colonnes : le texte, et le signe. Rien d'autre — pas de fond, pas de
+   cadre, pas de survol coloré. Ce sont l'espace et la lettre qui travaillent. */
+.faq__q {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1.4rem;
+  align-items: baseline;
+  gap: clamp(1rem, 2vw, 1.8rem);
+  width: 100%;
+  padding: clamp(1.15rem, 2.3vh, 1.55rem) 0 clamp(1.15rem, 2.3vh, 1.55rem) var(--faq-retrait);
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.02rem, .92rem + .32vw, 1.22rem);
+  line-height: 1.42;
+  letter-spacing: .004em;
+  color: var(--text);
+  transition: color .4s ease;
+}
+.faq__q:hover { color: var(--gold-bright, #e8cd93); }
+.faq__q:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
+.faq__item.is-open .faq__q { color: var(--gold-ink); }
+
+/* ── 5 · le signe ──────────────────────────────────────────────────────
+   Deux filets croisés, sans cercle. Le trait vertical bascule et se confond
+   avec l'horizontal : le plus devient moins sans qu'aucune forme n'apparaisse
+   ni ne disparaisse. */
+.faq__q i {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  justify-self: end;
+  align-self: center;
+  border: 0;
+  border-radius: 0;
+  opacity: .6;
+  transition: transform .55s var(--faq-souple), opacity .4s ease;
+}
+.faq__q i::before,
+.faq__q i::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 13px; height: 1px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+.faq__q i::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  transition: transform .45s var(--faq-souple);
+}
+.faq__q:hover i { opacity: 1; }
+.faq__item.is-open .faq__q i { opacity: 1; transform: rotate(180deg); }
+.faq__item.is-open .faq__q i::after { transform: translate(-50%, -50%) rotate(0deg); }
+
+/* ── 6 · la réponse ────────────────────────────────────────────────────
+   Nettement plus petite que la question, plus calme de ton, et sur une mesure
+   courte. Elle se lit assis ; la question se parcourt debout. */
+.faq__a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .58s var(--faq-souple);
+}
+.faq__item.is-open .faq__a { grid-template-rows: 1fr; }
+.faq__a > div {
+  overflow: hidden;
+  padding-left: var(--faq-retrait);
+}
+.faq__a p {
+  margin: 0;
+  padding: 0 0 clamp(1.5rem, 3.2vh, 2.2rem);
+  max-width: 58ch;
+  font-family: var(--body);
+  font-size: clamp(.82rem, .78rem + .12vw, .9rem);
+  line-height: 1.78;
+  letter-spacing: .008em;
+  color: color-mix(in srgb, var(--text-2) 78%, transparent);
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity .42s ease, transform .5s var(--faq-souple);
+}
+.faq__item.is-open .faq__a p {
+  opacity: 1;
+  transform: none;
+  transition-delay: .14s;
+}
+
+/* ── 7 · formats étroits ───────────────────────────────────────────────
+   La hiérarchie ne change pas : elle se resserre. Le retrait diminue pour ne
+   pas manger la largeur, jamais jusqu'à coller le texte au filet. */
+@media (max-width: 900px) {
+  /* 1,5 rem et non 1,15 : à 834 px la liste dispose encore de 751 px, il y a
+     largement la place. Un retrait rabaissé trop tôt fait retomber le texte
+     contre le filet alors que rien ne l'y oblige. */
+  .faq { --faq-retrait: 1.5rem; }
+  #faq .sec__head { max-width: none; margin-bottom: clamp(2.2rem, 5vh, 3.2rem); }
+  #faq .sec__title { max-width: 18ch; }
+  .faq__aide { max-width: none; font-size: .74rem; }
+  .faq__q { gap: .9rem; grid-template-columns: minmax(0, 1fr) 1.2rem; }
+  .faq__a p { max-width: none; }
+}
+@media (max-width: 420px) {
+  .faq { --faq-retrait: .9rem; }
+  .faq__q { font-size: 1rem; line-height: 1.38; }
+  .faq__a p { font-size: .82rem; line-height: 1.72; }
+}
+
+/* ── 8 · mouvement réduit ──────────────────────────────────────────────
+   Tout arrive d'un coup, rien ne disparaît : le filet, le signe et la réponse
+   portent une information d'état, ils cessent seulement de se déplacer. */
+@media (prefers-reduced-motion: reduce) {
+  .faq__item::before,
+  .faq__q, .faq__q i, .faq__q i::after,
+  .faq__a, .faq__a p,
+  #faq .sec__head::after { transition: none !important; }
+  #faq .sec__head::after { transform: scaleX(1); }
+}

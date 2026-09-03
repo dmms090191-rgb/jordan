@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab · logo-intro (plume)</title>
+<link rel="stylesheet" href="../assets/css/logo-intro.css">
+<script type="importmap">{"imports":{"three":"../assets/vendor/three.module.min.js","three/addons/":"../assets/vendor/addons/"}}</script>
+<script>(function(){var q=new URLSearchParams(location.search);var a=q.get('ambiance');if(a==='jour'||a==='nuit')document.documentElement.dataset.ambiance=a;})();</script>
+<style>
+  :root{ --bg:#0b0a08; --txt:#f3ecdc; --line:rgba(201,154,63,.26); }
+  html[data-ambiance="jour"]{ --bg:#efe8db; --txt:#241c10; --line:rgba(138,104,32,.3); }
+  html,body{margin:0;background:var(--bg);color:var(--txt);font:400 13px/1.5 ui-sans-serif,system-ui,sans-serif}
+  body{display:flex;flex-direction:column;align-items:center;gap:18px;padding:26px 16px 40px}
+  #hote{width:min(980px,94vw)}
+  .barre{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+    border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:rgba(128,110,70,.07)}
+  button{font:inherit;color:inherit;background:transparent;border:1px solid var(--line);
+    border-radius:6px;padding:5px 11px;cursor:pointer}
+  button:hover{background:rgba(201,154,63,.14)}
+  input[type=range]{width:250px}
+  code{opacity:.72;font-size:12px;letter-spacing:.02em}
+  .tailles{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:flex-start;width:100%}
+  .tailles figure{margin:0;display:flex;flex-direction:column;gap:6px;align-items:center}
+  .tailles figcaption{opacity:.6;font-size:11px}
+  .mini{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+</style>
+</head>
+<body>
+
+<div id="hote"></div>
+
+<div class="barre">
+  <button id="rejouer">rejouer</button>
+  <button id="fin">état final</button>
+  <input id="curseur" type="range" min="0" max="1000" value="0">
+  <code id="lect">t = 0.000 s</code>
+  <button id="amb">jour / nuit</button>
+  <button id="cadre">cadrage serré</button>
+</div>
+<code id="mesures"></code>
+
+<!-- tenue en petit format : le logo final doit rester lisible partout -->
+<div class="tailles" id="tailles"></div>
+
+<script type="module">
+import { createLogoIntro } from '../assets/js/logo-intro.js';
+
+const q = new URLSearchParams(location.search);
+const reduced = q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const hote = document.getElementById('hote');
+
+const intro = await createLogoIntro(hote, {
+  src: '../assets/logo/logo-anime.svg',
+  duree: Number(q.get('duree') || 2.55),
+  plume: q.get('plume') !== '0',
+  threeSrc: 'three',
+  session: null,                 // dans le lab on rejoue à volonté
+  autoplay: q.get('auto') !== '0',
+  reduced,
+  cadrage: q.get('cadrage') || 'auto',
+});
+window.__intro = intro;
+
+const curseur = document.getElementById('curseur');
+const lect = document.getElementById('lect');
+const mesures = document.getElementById('mesures');
+const majLect = t => { lect.textContent = 't = ' + t.toFixed(3) + ' s  /  ' + intro.duree + ' s'; };
+
+document.getElementById('rejouer').onclick = () => { intro.seek(0); intro.play(); };
+document.getElementById('fin').onclick = () => intro.fin();
+document.getElementById('amb').onclick = () => {
+  const m = document.documentElement.dataset.ambiance === 'jour' ? 'nuit' : 'jour';
+  document.documentElement.dataset.ambiance = m;
+};
+let serre = false;
+document.getElementById('cadre').onclick = (e) => {
+  serre = !serre;
+  hote.style.width = serre ? 'min(380px,94vw)' : 'min(980px,94vw)';
+  intro.redimensionne();
+  e.target.textContent = serre ? 'cadrage large' : 'cadrage serré';
+};
+curseur.oninput = () => { const t = intro.duree * curseur.value / 1000; intro.seek(t); majLect(t); };
+
+setInterval(() => {
+  const e = intro.etat();
+  mesures.textContent = `plume ${e.plume} · images ${e.images} · fps ${e.fpsMoyen} · image médiane ${e.imageMedianeMs} ms · pire ${e.imagePireMs} ms · éclats ${e.eclats.script}+${e.eclats.co}+${e.eclats.fil}`;
+  if (e.enCours) { curseur.value = Math.round(1000 * e.t / e.duree); majLect(e.t); }
+}, 250);
+
+// petits formats : trois copies statiques du logo final
+const svgFinal = await (await fetch('../assets/logo/logo-anime.svg')).text();
+const tailles = document.getElementById('tailles');
+for (const w of [420, 260, 150]) {
+  const f = document.createElement('figure');
+  const d = document.createElement('div');
+  d.className = 'mini lc-intro'; d.style.width = w + 'px';
+  d.innerHTML = svgFinal.replace(/<script[\s\S]*?<\/script>/, '');
+  d.querySelector('svg').style.cssText = 'display:block;width:100%;height:auto';
+  f.append(d);
+  const c = document.createElement('figcaption'); c.textContent = w + ' px';
+  f.append(c); tailles.append(f);
+}
+
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

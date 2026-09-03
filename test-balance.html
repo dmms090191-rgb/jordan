@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8">
+<title>Test — chiffres composés dans l'écran de la balance</title>
+<style>
+  :root { --gold: #c99a3f; --gold-bright: #e8cd93; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #08070a; color: #cdc4b2; font-family: system-ui, sans-serif; overflow: hidden; }
+  #scene { position: fixed; inset: 0; overflow: hidden; }
+  #film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  /* l'ecran compose : projete sur les 4 coins traques de la dalle */
+  #lcd {
+    position: absolute; left: 0; top: 0;
+    transform-origin: 0 0;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: .1em;
+    padding: 0 .16em 0 0;
+    /* MASQUE d'ecran ETEINT (actif par defaut) : recouvre les chiffres
+       fantomes de la video. Teintes mesurees sur la dalle reelle :
+       median ~[80,63,58], ombre ~[73,55,52], haut de dalle plus clair. */
+    background:
+      linear-gradient(176deg, rgba(126,104,96,.85) 0%, rgba(96,76,71,.55) 12%, rgba(70,55,52,0) 34%),
+      linear-gradient(92deg, rgba(74,58,55,1) 0%, rgba(84,66,62,1) 46%, rgba(70,55,52,1) 100%);
+    /* bords fondus : le masque se dissout dans la dalle, aucun rectangle visible */
+    -webkit-mask-image:
+      linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 11%, #000 89%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 11%, #000 89%, transparent 100%);
+    mask-composite: intersect;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .5s ease;
+  }
+  #lcd.is-on { opacity: 1; }
+  /* comparaison : masque desactive (les chiffres de la video reapparaissent) */
+  #lcd.sans-masque { background: none; }
+  #lcd.sans-masque::after { display: none; }
+  /* variante ambre (ecran allume), disponible via .masque-ambre */
+  #lcd.masque-ambre {
+    background:
+      linear-gradient(178deg, rgba(196,140,58,.55) 0%, rgba(150,88,34,0) 18%),
+      linear-gradient(96deg, rgba(168,104,42,1) 0%, rgba(140,80,34,1) 48%, rgba(122,68,28,1) 100%);
+  }
+  #lcd::after {
+    content: '';
+    position: absolute; inset: 0;
+    /* le verre de la dalle : reflet froid, comme un ecran eteint */
+    background:
+      linear-gradient(104deg, rgba(226,226,236,.16) 0%, rgba(226,226,236,.05) 24%, transparent 44%),
+      radial-gradient(ellipse 90% 140% at 86% 8%, rgba(220,220,232,.10), transparent 62%);
+    pointer-events: none;
+  }
+  #lcd b {
+    font-family: 'DSEG7', 'Consolas', 'Menlo', monospace;
+    font-weight: 700;
+    font-size: .62em; line-height: 1;
+    letter-spacing: .04em;
+    color: #2a1a06;
+    font-variant-numeric: tabular-nums;
+    /* encre du LCD : sombre sur la dalle ambre, avec le halo du retroeclairage */
+    text-shadow: 0 0 .04em rgba(255, 214, 140, .5), 0 .012em 0 rgba(255, 226, 168, .35);
+    mix-blend-mode: multiply;
+  }
+  #lcd i { font-style: normal; font-size: .3em; color: #2a1a06; align-self: flex-end; margin-bottom: .5em; mix-blend-mode: multiply; }
+
+  .bar { position: fixed; left: 50%; bottom: 1.2rem; translate: -50% 0; display: flex; gap: .7rem; align-items: center;
+    background: rgba(11,10,8,.72); border: 1px solid rgba(201,154,63,.3); border-radius: 24px; padding: .5rem 1rem; z-index: 5; }
+  .bar button { background: transparent; border: 1px solid rgba(201,154,63,.4); color: var(--gold-bright); border-radius: 14px; padding: .4em .9em; cursor: pointer; font: inherit; font-size: .8rem; }
+  .bar button.on { background: var(--gold); color: #0b0a08; }
+  .bar span { font-size: .8rem; font-variant-numeric: tabular-nums; color: var(--gold-bright); }
+  .note { position: fixed; left: 1.2rem; top: 1.2rem; font-size: .74rem; line-height: 1.5; color: rgba(205,196,178,.75); z-index: 5;
+    background: rgba(11,10,8,.6); padding: .6rem .9rem; border-radius: 10px; border: 1px solid rgba(201,154,63,.2); }
+  .note b { color: var(--gold-bright); }
+</style>
+</head>
+<body>
+<div id="scene">
+  <video id="film" src="assets/video/v4-m1-balance-eteint-nuit.mp4" muted playsinline preload="auto"></video>
+  <div id="lcd" aria-hidden="true"><b id="lcd-n"></b><i id="lcd-u"></i></div>
+</div>
+
+<p class="note">
+  <b>Test de compositing</b><br>
+  vidéo = balance, caméra, lumière, reflets<br>
+  code = chiffres, calés sur les 4 coins traqués de la dalle<br>
+  <span id="etat"></span>
+</p>
+
+<div class="bar">
+  <button id="lect" class="on">Lecture / Pause</button>
+  <button id="mode-eteint" class="on">Écran éteint</button>
+  <button id="mode-vide">Balance vide 0,00</button>
+  <button id="mode-pesee">Simuler la pesée → 40,00</button>
+  <button id="masque" class="on">Masque de dalle : on</button>
+  <span id="temps">0.00 s</span>
+</div>
+
+<script type="module">
+const V = document.getElementById('film');
+const LCD = document.getElementById('lcd');
+const N = document.getElementById('lcd-n');
+const ETAT = document.getElementById('etat');
+const TEMPS = document.getElementById('temps');
+const fmt = (v, d) => v.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+/* homographie : envoie le rectangle (0,0,w,h) sur les 4 coins vises */
+function m3dQuad(w, h, q) {
+  const adj = m => [
+    m[4]*m[8]-m[5]*m[7], m[2]*m[7]-m[1]*m[8], m[1]*m[5]-m[2]*m[4],
+    m[5]*m[6]-m[3]*m[8], m[0]*m[8]-m[2]*m[6], m[2]*m[3]-m[0]*m[5],
+    m[3]*m[7]-m[4]*m[6], m[1]*m[6]-m[0]*m[7], m[0]*m[4]-m[1]*m[3]];
+  const mul = (a, b) => { const r = []; for (let i=0;i<3;i++) for (let j=0;j<3;j++)
+    r[i*3+j] = a[i*3]*b[j] + a[i*3+1]*b[3+j] + a[i*3+2]*b[6+j]; return r; };
+  const mulV = (m, v) => [m[0]*v[0]+m[1]*v[1]+m[2]*v[2], m[3]*v[0]+m[4]*v[1]+m[5]*v[2], m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+  const base = (x1,y1,x2,y2,x3,y3,x4,y4) => { const m=[x1,x2,x3,y1,y2,y3,1,1,1];
+    const v=mulV(adj(m),[x4,y4,1]); return mul(m,[v[0],0,0,0,v[1],0,0,0,v[2]]); };
+  const s = base(0,0,w,0,0,h,w,h);
+  const d = base(q[0].x,q[0].y,q[1].x,q[1].y,q[3].x,q[3].y,q[2].x,q[2].y);
+  const t = mul(d, adj(s));
+  for (let i=0;i<9;i++) t[i] /= t[8];
+  return 'matrix3d(' + [t[0],t[3],0,t[6], t[1],t[4],0,t[7], 0,0,1,0, t[2],t[5],0,t[8]].map(x=>x.toFixed(7)).join(',') + ')';
+}
+
+const piste = await fetch('assets/js/track-m1-balance-nuit.json').then(r => r.json());
+ETAT.textContent = piste.piste.length + ' échantillons de suivi · ' + piste.duree + ' s';
+
+/* interpolation du quadrilatere a l'instant t */
+function quadA(t) {
+  const P = piste.piste;
+  if (t <= P[0].t) return P[0].q;
+  if (t >= P[P.length-1].t) return P[P.length-1].q;
+  let i = 0; while (i < P.length-1 && P[i+1].t < t) i++;
+  const a = P[i], b = P[i+1];
+  const f = (t - a.t) / Math.max(1e-6, b.t - a.t);
+  return a.q.map((p, k) => ({ x: p.x + (b.q[k].x - p.x) * f, y: p.y + (b.q[k].y - p.y) * f }));
+}
+
+const DW = 420, DH = 120; /* rectangle de composition, projete sur le quad */
+/* le masque deborde legerement pour couvrir tout le bord de la dalle */
+function dilate(q, k) {
+  const cx = (q[0].x + q[1].x + q[2].x + q[3].x) / 4;
+  const cy = (q[0].y + q[1].y + q[2].y + q[3].y) / 4;
+  /* dilatation plus forte vers le haut : le suivi coupe legerement le bord
+     superieur de la dalle, ou subsistaient les faux chiffres de la video */
+  return q.map((p, i) => ({
+    x: cx + (p.x - cx) * (k + 0.10),
+    y: cy + (p.y - cy) * (i === 0 || i === 1 ? k + 0.30 : k + 0.14),
+  }));
+}
+function poser() {
+  const st = document.getElementById('scene');
+  const sw = st.clientWidth, sh = st.clientHeight;
+  const s = Math.max(sw / 1728, sh / 964);
+  const W = 1728 * s, H = 964 * s, ox = (sw - W) / 2, oy = (sh - H) / 2;
+  const q = dilate(quadA(V.currentTime), 1.045).map(p => ({ x: ox + p.x * W, y: oy + p.y * H }));
+  LCD.style.width = DW + 'px'; LCD.style.height = DH + 'px';
+  LCD.style.fontSize = DH + 'px';
+  LCD.style.transform = m3dQuad(DW, DH, q);
+  LCD.classList.add('is-on');
+}
+
+/* valeur affichee : vide, ou pesee simulee (contact -> 40,00 exact) */
+let mode = 'eteint';
+function valeur(t) {
+  if (mode === 'eteint') return '';
+  if (mode === 'vide') return '0,00';
+  const contact = 3.4, stable = 5.6;
+  if (t < contact) return '0,00';
+  const x = Math.min(1, (t - contact) / (stable - contact));
+  const e = 1 - Math.pow(1 - x, 2.1);
+  return fmt(Math.min(40, 40 * e), 2);
+}
+
+function boucle() {
+  poser();
+  const v = valeur(V.currentTime);
+  N.textContent = v;
+  document.getElementById('lcd-u').textContent = v === '' ? '' : 'g'; /* ecran eteint : pas d'unite non plus */
+  /* le masque reste toujours en place (il efface les chiffres de la video) ;
+     seuls les chiffres composes apparaissent ou non */
+  LCD.classList.toggle('masque-ambre', v !== '');
+  TEMPS.textContent = V.currentTime.toFixed(2) + ' s';
+  requestAnimationFrame(boucle);
+}
+V.addEventListener('loadeddata', () => { V.play(); boucle(); });
+V.loop = true;
+addEventListener('resize', poser);
+
+document.getElementById('lect').addEventListener('click', e => {
+  if (V.paused) { V.play(); e.target.classList.add('on'); } else { V.pause(); e.target.classList.remove('on'); }
+});
+const boutonsMode = ['mode-eteint', 'mode-vide', 'mode-pesee'];
+const majMode = (m, id) => { mode = m; boutonsMode.forEach(b => document.getElementById(b).classList.toggle('on', b === id)); };
+document.getElementById('mode-eteint').addEventListener('click', () => majMode('eteint', 'mode-eteint'));
+document.getElementById('mode-vide').addEventListener('click', () => majMode('vide', 'mode-vide'));
+document.getElementById('mode-pesee').addEventListener('click', () => majMode('pesee', 'mode-pesee'));
+document.getElementById('masque').addEventListener('click', e => {
+  const off = LCD.classList.toggle('sans-masque');
+  e.target.classList.toggle('on', !off);
+  e.target.textContent = 'Masque de dalle : ' + (off ? 'off' : 'on');
+});
+</script>
+</body>
+</html>

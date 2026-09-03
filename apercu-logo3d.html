@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aperçu — logo B SCEAU en rendu PBR</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:#0b0a08;color:#cfc6b4;font-family:system-ui,sans-serif}
+  .bloc{padding:26px 30px;border-bottom:1px solid rgba(243,236,220,.1)}
+  h2{margin:0 0 16px;font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:#c99a3f;font-weight:500}
+  .scene{position:relative;display:block}
+  .scene img{display:block;width:100%;height:100%}
+  /* le SVG statique est le repli : il s'affiche immediatement, le canvas se pose dessus */
+  #plein{width:900px;max-width:100%}
+  #plein .scene{aspect-ratio:1193/482.5}
+  .macro{position:relative;overflow:hidden;background:#0e0d0b;border:1px solid rgba(243,236,220,.09)}
+  .macro .zoom{position:absolute;transform-origin:0 0}
+  .grille{display:flex;gap:16px;flex-wrap:wrap}
+  .lgd{margin-top:8px;font-size:12px;letter-spacing:.08em;color:#8d8577}
+</style>
+</head>
+<body>
+
+<div class="bloc">
+  <h2>B — SCEAU · rendu PBR temps réel (bougez la souris)</h2>
+  <div id="plein"><div class="scene" id="sc-plein">
+    <img src="assets/logo/logo-v2b-nuit.svg" alt="La Compagnie de l'Or">
+  </div></div>
+  <div class="lgd">Repli SVG immédiat, puis la couche métal se pose par-dessus.</div>
+</div>
+
+<div class="bloc">
+  <h2>Macros de matière</h2>
+  <div class="grille" id="macros"></div>
+</div>
+
+<script type="module">
+import { creerLogo3D } from './assets/js/logo3d.js';
+
+const VB = { x: 184, y: 259, w: 1193, h: 482.5 };
+await creerLogo3D(document.getElementById('sc-plein'), { base: 'assets/logo/' });
+
+// Macros : on reprend la MEME scene, mise a l'echelle et decalee, pour que ce qui est
+// montre soit exactement ce que le site rendra — pas une image separee.
+const ZONES = [
+  ['« OR » — or massif',        826, 486, 220, 112, 3.4],
+  ['Arête du « R »',            988, 508,  86,  84, 7.5],
+  ['Fil d’or — courbe',         300, 645, 240,  64, 5.2],
+  ['« Co » — cuivre champagne', 610, 596, 250, 130, 3.4],
+  ['« La Compagnie » — ivoire', 545, 285, 235, 150, 3.0],
+  ['Les 3 traits',              680, 712, 190,  36, 7.0],
+];
+// Le zoom se fait DANS le shader (fenetre UV) : le canvas reste a la taille affichee,
+// donc pleine resolution sans jamais approcher la limite de taille du navigateur.
+const hote = document.getElementById('macros');
+for (const [titre, x, y, w, h, k] of ZONES) {
+  const boite = document.createElement('div');
+  const larg = Math.round(w * k), haut = Math.round(h * k);
+  boite.innerHTML = `<div class="macro scene" style="width:${larg}px;height:${haut}px"></div>`
+    + `<div class="lgd">${titre} — ×${k}</div>`;
+  hote.appendChild(boite);
+  await creerLogo3D(boite.querySelector('.scene'), {
+    base: 'assets/logo/', figer: true,
+    viewBox: [VB.x, VB.y, VB.w, VB.h], zone: [x, y, w, h],
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+# =====================================================================
+# La Compagnie de l'Or — racine du site
+# Fermeture des fichiers qui ne doivent JAMAIS etre servis.
+#
+# ATTENTION : ce fichier n'est lu que par Apache avec AllowOverride.
+# Il ne remplace PAS une bonne implantation : la cle Gold-API doit vivre
+# dans la variable d'environnement GOLD_API_KEY, ou a defaut dans un .env
+# place HORS de la racine publique (~/.env, a cote de public_html).
+# metaux.php ne cherche d'ailleurs plus aucun .env a la racine du site.
+# =====================================================================
+
+# --- Secrets : .env, .env.local, .env.production, … ------------------
+<FilesMatch "^\.env">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# --- Fichiers de service et sauvegardes ------------------------------
+<FilesMatch "(^\.|\.(bak|log|lock|ini|sh|sql|tmp)$|~$)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# --- Dossiers a ne jamais exposer ------------------------------------
+#  storage/  : caches du proxy (peuvent contenir des reponses amont)
+#  _lab/     : banc d'essai, simulateur — outil de test, jamais en ligne
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^storage(/|$) - [F,L]
+  RewriteRule ^_lab(/|$) - [F,L]
+</IfModule>
+
+# --- Pas d'indexation de dossier -------------------------------------
+Options -Indexes

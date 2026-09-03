@@ -1,0 +1,111 @@
+/* LA COMPAGNIE DE L'OR — A · LE POINÇON
+   Construit par source/web.mjs — ne pas éditer à la main.
+
+   Le canvas est posé sur la MÊME boîte que le symbole vectoriel, en
+   pourcentages issus du verrou. Aucune transformation ne lui est appliquée :
+   c'est un canvas déplacé sous un SVG fixe qui produit un dédoublement. */
+
+.pcn {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--pcn-ratio, 2.34035);
+  line-height: 0;
+}
+
+.pcn__sym, .pcn__nom, .pcn__sig { position: absolute; display: block; }
+
+.pcn__sym { left: 38.5527%; top: 1.6074%; width: 22.8945%; height: 53.5813%; }
+.pcn__nom { left: 0.6868%; top: 73.1834%; width: 98.6263%; height: 9.1528%; }
+.pcn__sig { left: 46.8978%; top: 93.6962%; width: 6.2044%; height: 4.6963%; }
+
+/* ── verrou COURT : sous 220 px de large ──────────────────────────
+   Chaque micro-losange n'y ferait plus que deux pixels et le tricolore
+   deviendrait une salissure. Le composant retire donc la signature de
+   lui-même et resserre le bloc — les pourcentages sont recalculés sur la
+   nouvelle hauteur, sinon le symbole et le nom se déplaceraient. */
+.pcn--court { aspect-ratio: 2.7601; }
+.pcn--court .pcn__sym { top: 1.8957%; height: 63.1912%; }
+.pcn--court .pcn__nom { top: 86.309%; height: 10.7943%; }
+.pcn--court .pcn__sig { display: none; }
+
+/* ── verrou en RANG ───────────────────────────────────────────────────
+   À demander depuis le CSS de la page : `--pcn-mode: rang`.
+   Un header bas donne de la hauteur, pas de la largeur : empilé dans 48 px, le
+   nom tombe à 5 px de capitale — une trace grise, pas un mot. En rang, le
+   symbole garde ses 48 px et le nom remonte à 8 px. */
+.pcn--rang { aspect-ratio: 4.62228; }
+.pcn--rang .pcn__sym { left: 0.6123%; top: 2.8302%;
+                       width: 20.4098%; height: 94.3396%; }
+.pcn--rang .pcn__nom { left: 27.145%; top: 33.1458%;
+                       width: 72.2427%; height: 13.3259%; }
+.pcn--rang .pcn__sig { display: none; }
+
+/* ── la MARQUE seule ──────────────────────────────────────────────────
+   À demander depuis le CSS de la page : `--pcn-mode: marque`.
+   Sur un header de téléphone, la barre doit encore loger un bouton et le
+   menu : un verrou complet y prend toute la place et pousse le burger hors
+   de l'écran. Le symbole seul tient dans un carré, reste grand, et le nom
+   de la maison est de toute façon écrit juste dessous dans la page. */
+.pcn--marque { aspect-ratio: 1; }
+.pcn--marque .pcn__sym { left: 2.8302%; top: 2.8302%;
+                         width: 94.3396%; height: 94.3396%; }
+.pcn--marque .pcn__nom,
+.pcn--marque .pcn__sig { display: none; }
+
+.pcn__svg, .pcn__gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pcn__gl { opacity: 0; transition: opacity 240ms linear; }
+.pcn--gl .pcn__gl { opacity: 1; }
+.pcn--gl .pcn__svg { opacity: 0; }        /* jamais deux rendus superposés */
+
+/* Deux préoccupations, deux niveaux : la SÉQUENCE anime le conteneur du nom,
+   la bascule jour/nuit joue entre les deux images qu'il contient. Mélangées
+   sur un même élément, passer en mode jour après la frappe relançait le délai
+   de 1,5 s de l'animation et le nom disparaissait une seconde et demie. */
+.pcn__nom-img {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  object-fit: contain; object-position: center;
+  transition: opacity 260ms linear;
+}
+.pcn__nom-img--jour { opacity: 0; }
+.pcn--jour .pcn__nom-img--nuit { opacity: 0; }
+.pcn--jour .pcn__nom-img--jour { opacity: 1; }
+
+.pcn__sig svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* ── séquence : le nom et la signature restent du vecteur ───────────── */
+.pcn--anime .pcn__nom {
+  opacity: 0;
+  animation: pcnNom 780ms 1500ms cubic-bezier(.16, .84, .32, 1) forwards;
+}
+@keyframes pcnNom {
+  from { opacity: 0; transform: translateY(9%); letter-spacing: 0; }
+  to   { opacity: 1; transform: none; }
+}
+
+.pcn--anime .pcn__sig path {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pcnSig 460ms cubic-bezier(.18, .9, .3, 1) forwards;
+}
+.pcn--anime .pcn__sig .sig0 { animation-delay: 2100ms; }
+.pcn--anime .pcn__sig .sig1 { animation-delay: 2210ms; }
+.pcn--anime .pcn__sig .sig2 { animation-delay: 2320ms; }
+@keyframes pcnSig {
+  from { opacity: 0; transform: scale(.35); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcn--anime .pcn__nom,
+  .pcn--anime .pcn__sig path { animation: none; opacity: 1; transform: none; }
+  .pcn__gl { transition: none; }
+}
+
+/* ── petite taille : le vecteur reprend ───────────────────────────────
+   Pose par le composant (pcn--mini) sous 40 px de symbole : la matiere
+   n'a plus la place d'exister, le SVG pur y est plus net qu'elle. */
+.pcn__gl { max-width: none; max-height: none; }
+.pcn.pcn--mini .pcn__gl { display: none; }
+.pcn.pcn--mini .pcn__svg { opacity: 1; }

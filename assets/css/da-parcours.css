@@ -1,0 +1,321 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · LE PARCOURS   (#etapes)   —   REFONTE COMPLÈTE
+   ----------------------------------------------------------------------------
+   RELEVÉ DE L'ÉTAT PRÉCÉDENT, mesuré avant d'y toucher (1920 px) :
+
+       section 1892 px · quatre blocs en descente diagonale
+       01  601×527 px   SVG/CSS
+       02  494×461 px   SVG/CSS
+       03  707×594 px   WebGL
+       04  494×521 px   SVG/CSS
+
+   Le relevé dit la chose importante : la 3D n'existait QUE sur l'étape 03.
+   Les trois autres étaient des scènes SVG / CSS habiles, mais plates. Et
+   quelle que soit la finesse de la composition, quatre médias rectangulaires
+   suivis de leur texte restent quatre médias rectangulaires suivis de leur
+   texte : la mise en page changeait, le composant restait.
+
+   CE QUI REMPLACE — non pas quatre scènes, mais UNE SEULE.
+
+   Un canevas unique, collant, occupe toute la hauteur de la section. Les
+   quatre tableaux vivent dans un même espace 3D que la caméra DESCEND au
+   défilement. Il n'y a donc plus de cadre à retirer : il n'y a plus de cadre
+   du tout, parce qu'il n'y a plus d'image. Le noir de la page est le fond
+   de la scène, et les objets s'y détachent par la lumière.
+
+   LES TEXTES RESTENT DANS LE FLUX NORMAL, par-dessus. Trois raisons, et
+   aucune n'est décorative : ils restent nets à toute densité d'écran (une
+   typographie rendue en WebGL ne l'est jamais), ils restent sélectionnables
+   et lisibles par un lecteur d'écran, et ce sont EUX qui creusent les
+   espaces négatifs où les objets viennent se poser. La composition ne place
+   pas le texte autour de l'objet : elle place l'objet dans le vide laissé
+   par le texte. C'est la mesure réelle des blocs qui commande la caméra.
+
+   LA GRILLE, et l'endroit où les objets peuvent vivre :
+
+       colonnes    2 ────── 7            10 ───── 14
+       rangée 0    l'en-tête
+       rangée 1                           l'étape 01   → l'objet à gauche
+       rangée 2    l'étape 02                          → l'objet à droite
+       rangée 3                           l'étape 03   → l'objet à gauche
+       rangée 4    l'étape 04                          → l'objet à droite
+
+   L'EN-TÊTE A SA PROPRE BANDE, et c'est une correction de cause, pas de
+   réglage. Quand il partageait celle de l'étape 01, deux blocs de texte sur
+   la même rangée ne laissaient que trois colonnes au milieu — 160 px, soit
+   MOINS que la marge de page. Le moteur, qui cherche la plus grande bande
+   libre, allait donc très logiquement poser la France dans la marge. La
+   grille ne laissait littéralement pas la place de faire autrement.
+
+   Les colonnes libres alternent. Le regard descend en zigzag, ce qui est le
+   mouvement d'un parcours, pas celui d'un catalogue.
+
+   Aucun texte, aucun ordre, aucune information n'est modifié.
+   ========================================================================== */
+
+.parc {
+  /* LE PAS. Toute la section est cadencée par cette seule valeur : c'est la
+     hauteur qu'occupe une étape, donc la distance que la caméra parcourt
+     entre deux tableaux. Elle est exprimée en vh parce que c'est bien la
+     fenêtre qui commande ici — une étape doit tenir dans un écran. */
+  --parc-pas: clamp(23rem, 62vh, 37rem);
+  --parc-pas-mob: clamp(30rem, 78vh, 40rem);
+  /* la gouttière de l'index : une colonne RÉSERVÉE, jamais une marge
+     négative. C'est ce qui rend impossible qu'un numéro sorte de l'écran. */
+  --parc-rail: clamp(3.2rem, 4.4vw, 5rem);
+
+  --parc-or: color-mix(in srgb, var(--gold-ink) 40%, transparent);
+  --parc-or-actif: var(--gold-bright, #e8cd93);
+  --parc-souple: cubic-bezier(.22, .61, .36, 1);
+
+  position: relative;
+  /* la scène est à fond perdu : le remplissage horizontal appartient au
+     texte, pas au canevas. */
+  padding-inline: 0;
+  isolation: isolate;
+}
+:root[data-ambiance="jour"] .parc {
+  --parc-or: color-mix(in srgb, var(--gold-ink) 52%, transparent);
+  --parc-or-actif: #8a6820;
+}
+
+/* ── 1 · la scène ──────────────────────────────────────────────────────
+   Le canevas est COLLANT : il reste dans la fenêtre pendant que la section
+   défile, et c'est la caméra — pas le document — qui descend. Sans cela,
+   chaque tableau ne serait visible qu'un instant, et il n'y aurait aucune
+   continuité entre eux. */
+.parc__scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: clip;
+}
+.parc__toile {
+  position: sticky;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100vh;
+  /* aucun fond : le canevas est transparent, le noir de la page passe au
+     travers. C'est ce qui fait que les objets « sortent de la page » au lieu
+     d'être posés sur une vignette. */
+  background: none;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+.parc__toile[data-pret="1"] { opacity: 1; }
+
+/* ── 2 · le flux éditorial ─────────────────────────────────────────────
+   Treize colonnes : une gouttière réservée à l'index, puis douze. */
+.parc__flux {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: var(--parc-rail) repeat(12, minmax(0, 1fr));
+  column-gap: clamp(1rem, 2vw, 2rem);
+  max-width: min(1340px, 100%);
+  margin-inline: auto;
+  padding-inline: clamp(1.2rem, 5vw, 5rem);
+}
+
+.parc__head {
+  grid-column: 2 / 8;
+  grid-row: 1;
+  max-width: none;
+  margin: 0;
+  min-height: clamp(15rem, 32vh, 23rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+#etapes .sec__lede { max-width: 30ch; }
+
+/* ── 3 · les quatre étapes ─────────────────────────────────────────────
+   Chacune occupe UN pas entier et se centre dedans : c'est ce qui garantit
+   qu'un tableau est cadré exactement quand son texte l'est. */
+.parc__etape {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* --long : la longueur de piste propre a cette etape. Voir la note
+     ci-dessus : des pas egaux sont le signe d un gabarit. */
+  min-height: calc(var(--parc-pas) * var(--long, 1));
+}
+.parc__etape[data-etape="1"] { grid-column: 10 / 14; grid-row: 2; --long: 0.70; }
+.parc__etape[data-etape="2"] { grid-column: 2 / 6;   grid-row: 3; --long: 1.45; }
+.parc__etape[data-etape="3"] { grid-column: 10 / 14; grid-row: 4; --long: 1.22; }
+.parc__etape[data-etape="4"] { grid-column: 2 / 7;   grid-row: 5; --long: 0.75; }
+
+/* ── 4 · le numéro ─────────────────────────────────────────────────────
+   Grand, clair, en romain de titre — et surtout DANS la colonne de texte,
+   pas dans une marge. Un numéro posé dans la marge de page dépend d'une
+   distance que le CSS ne sait pas exprimer à toutes les largeurs ; posé dans
+   sa colonne, il ne peut pas en sortir. Le filet part de lui et court
+   jusqu'au bord de la colonne : il rattache le numéro à son étape sans
+   qu'aucune ligne ne le dise. */
+.parc__n {
+  display: flex;
+  align-items: center;
+  gap: clamp(.8rem, 1.4vw, 1.3rem);
+  margin: 0 0 clamp(1rem, 2.2vh, 1.6rem);
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: clamp(2.4rem, 1.5rem + 2.8vw, 4.4rem);
+  line-height: .86;
+  letter-spacing: .012em;
+  color: var(--parc-or);
+  transition: color 1s ease;
+}
+.parc__etape.is-actif .parc__n { color: var(--parc-or-actif); }
+.parc__n::after {
+  content: "";
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, currentColor, transparent);
+  opacity: .72;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1.25s var(--parc-souple) .1s;
+}
+.parc__etape.is-vu .parc__n::after { transform: scaleX(1); }
+
+.parc__etape h3 {
+  margin: 0 0 clamp(.75rem, 1.5vh, 1.1rem);
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: clamp(.76rem, .71rem + .17vw, .88rem);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  line-height: 1.55;
+  color: var(--text);
+}
+.parc__etape p {
+  margin: 0;
+  max-width: 34ch;
+  font-family: var(--body);
+  font-size: clamp(.85rem, .81rem + .13vw, .95rem);
+  line-height: 1.78;
+  color: var(--text-2);
+}
+
+/* le texte entre dans la composition — une seule fois, sans rejouer */
+.parc__etape > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .9s ease, transform 1s var(--parc-souple);
+}
+.parc__etape.is-vu > *          { opacity: 1; transform: none; }
+.parc__etape.is-vu .parc__n     { transition-delay: 0s; }
+.parc__etape.is-vu h3           { transition-delay: .1s; }
+.parc__etape.is-vu p            { transition-delay: .18s; }
+
+/* ── 5 · l'index, dans sa gouttière ────────────────────────────────────
+   Il ne double pas la navigation du site : il dit seulement où l'on en est
+   dans les quatre étapes, et permet d'y aller. Collant à mi-hauteur, il
+   accompagne la descente sans jamais la commenter. */
+.parc__index {
+  grid-column: 1;
+  grid-row: 2 / -1;
+  align-self: start;
+  position: sticky;
+  top: 50vh;
+  height: max-content;
+  transform: translateY(-50%);
+  display: grid;
+  gap: clamp(1.5rem, 3.2vh, 2.4rem);
+  padding-top: .2rem;
+}
+.parc__index a {
+  display: grid;
+  grid-template-columns: 9px auto;
+  align-items: center;
+  gap: .75rem;
+  text-decoration: none;
+  font-family: var(--body);
+  font-size: .62rem;
+  letter-spacing: .18em;
+  color: color-mix(in srgb, var(--text-3) 88%, transparent);
+  transition: color .6s ease;
+}
+.parc__index i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--gold-ink) 42%, transparent);
+  background: none;
+  transition: background .6s ease, border-color .6s ease, box-shadow .6s ease;
+}
+/* le filet qui relie les quatre points : il PART du premier et descend, il
+   n'est pas dessiné d'avance. */
+.parc__index a + a { position: relative; }
+.parc__index a + a::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  bottom: calc(100% + 3px);
+  height: calc(clamp(1.5rem, 3.2vh, 2.4rem) - 6px);
+  width: 1px;
+  background: color-mix(in srgb, var(--gold-ink) 26%, transparent);
+}
+.parc__index a:hover,
+.parc__index a:focus-visible { color: var(--text-2); outline: none; }
+.parc__index a:focus-visible i { box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent); }
+.parc__index a.is-actif { color: var(--text); }
+.parc__index a.is-actif i {
+  background: var(--parc-or-actif);
+  border-color: var(--parc-or-actif);
+}
+
+/* ── 6 · formats étroits ───────────────────────────────────────────────
+   Ce n'est pas le bureau rétréci : c'est une autre composition. L'objet
+   prend le haut du pas, le texte se cale en bas — la lecture redevient
+   verticale, et le regard n'a plus à zigzaguer sur 390 px de large. */
+@media (max-width: 999px) {
+  .parc {
+    --parc-rail: 0px;
+    --parc-pas: var(--parc-pas-mob);
+  }
+  .parc__index { display: none; }
+  .parc__flux {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: min(34rem, 100%);
+  }
+  .parc__head { grid-column: 1; grid-row: auto; padding-top: 0; margin-bottom: clamp(1.5rem, 4vh, 2.5rem); }
+  .parc__etape {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    justify-content: flex-end;
+    padding-bottom: clamp(.5rem, 2vh, 1.5rem);
+  }
+  .parc__etape p { max-width: none; }
+  #etapes .sec__lede { max-width: none; }
+}
+
+/* ── 7 · repli sans WebGL ──────────────────────────────────────────────
+   La scène ne peut pas se monter : plutôt que de laisser une moitié de page
+   vide, la section redevient ce qu'elle est au fond — une liste de quatre
+   étapes, lisible et tenue. Les pas s'effondrent, rien ne flotte. */
+.parc.is-repli .parc__scene { display: none; }
+.parc.is-repli .parc__etape { min-height: 0; padding-block: clamp(1.6rem, 4vh, 2.6rem); }
+@media (min-width: 1000px) {
+  .parc.is-repli .parc__flux { grid-template-columns: var(--parc-rail) repeat(12, minmax(0, 1fr)); }
+  .parc.is-repli .parc__head  { grid-column: 2 / 8; grid-row: 1; }
+  .parc.is-repli .parc__etape[data-etape="1"] { grid-column: 2 / 8; grid-row: 2; }
+  .parc.is-repli .parc__etape[data-etape="2"] { grid-column: 2 / 8; grid-row: 3; }
+  .parc.is-repli .parc__etape[data-etape="3"] { grid-column: 2 / 8; grid-row: 4; }
+  .parc.is-repli .parc__etape[data-etape="4"] { grid-column: 2 / 8; grid-row: 5; }
+}
+
+/* ── 8 · mouvement réduit ──────────────────────────────────────────────
+   Les états portent une information : ils restent, ils cessent de se
+   déplacer. La scène 3D se rend une fois et ne s'anime plus (le moteur lit
+   la même préférence). */
+@media (prefers-reduced-motion: reduce) {
+  .parc__etape > *,
+  .parc__n::after,
+  .parc__toile { transition: none !important; }
+  .parc__etape > * { opacity: 1; transform: none; }
+  .parc__n::after { transform: scaleX(1); }
+}

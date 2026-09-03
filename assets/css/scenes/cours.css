@@ -1,0 +1,396 @@
+/* =====================================================================
+   La Compagnie de l'Or — Section « Cours des metaux » : interface (lot coursui)
+   Namespace : .cx-*  ·  aucune regle hors de .cx
+   Jour / Nuit par tokens : les couleurs viennent de accueil.css, on ne fait
+   qu'en deriver des tons de marche (hausse vert sauge, baisse bordeaux chaud).
+   ===================================================================== */
+
+.cx{
+  /* --- tokens de la section (NUIT par defaut) --- */
+  --cx-line:var(--panel-line,rgba(201,154,63,.22));
+  --cx-hair:var(--line-soft,rgba(243,236,220,.12));
+  --cx-fond:var(--panel,rgba(22,19,15,.86));
+  --cx-fond-2:rgba(28,24,19,.55);
+  --cx-fond-3:rgba(243,236,220,.035);
+  --cx-grille:rgba(243,236,220,.055);
+  --cx-up:#8fae86;          /* vert sauge sourd */
+  --cx-down:#bf7f6f;        /* bordeaux chaud */
+  --cx-up-faible:rgba(143,174,134,.16);
+  --cx-down-faible:rgba(191,127,111,.16);
+  --cx-ease:cubic-bezier(.22,.61,.36,1);
+  --cx-r:3px;
+
+  position:relative;
+  font-family:var(--body);
+  color:var(--text);
+  font-variant-numeric:tabular-nums lining-nums;
+  font-feature-settings:"tnum" 1,"lnum" 1;
+  display:grid;
+  gap:clamp(1rem,1.9vw,1.55rem);
+  isolation:isolate;
+}
+html[data-ambiance="jour"] .cx,
+.cx[data-ambiance="jour"]{
+  --cx-fond-2:rgba(36,28,16,.035);
+  --cx-fond-3:rgba(36,28,16,.03);
+  --cx-grille:rgba(36,28,16,.07);
+  --cx-up:#4f6b45;
+  --cx-down:#8f4a3c;
+  --cx-up-faible:rgba(79,107,69,.14);
+  --cx-down-faible:rgba(143,74,60,.13);
+}
+.cx[data-ambiance="nuit"]{
+  --cx-fond-2:rgba(28,24,19,.55);
+  --cx-fond-3:rgba(243,236,220,.035);
+  --cx-grille:rgba(243,236,220,.055);
+  --cx-up:#8fae86;
+  --cx-down:#bf7f6f;
+  --cx-up-faible:rgba(143,174,134,.16);
+  --cx-down-faible:rgba(191,127,111,.16);
+}
+/* ---------------------------------------------------------------------
+   LISIBILITE (contraste)
+   --text-3 est le ton « murmure » de la charte. Mesure faite sur la
+   section : 5,0:1 en nuit, mais 3,56:1 en JOUR — sous le seuil AA pour du
+   petit texte. Or c'est ici que les chiffres doivent se lire, et c'est
+   ici que vit la mention legale du § 2.5. Tout ce qui porte du SENS
+   (etiquettes de statistiques, legende, fraicheur, note, mention legale,
+   libelles d'axes du graphique) passe donc a --text-2 (7,09:1 mesure en
+   jour, 8,9:1 en nuit) ; --text-3 reste reserve au decor et aux valeurs
+   ABSENTES, ou la faiblesse du ton fait justement partie du message.
+   --------------------------------------------------------------------- */
+.cx *{box-sizing:border-box}
+.cx :focus-visible{outline:1px solid var(--gold);outline-offset:3px;border-radius:2px}
+.cx-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ============================ indicateur de travail ================== */
+.cx-indic{position:absolute;top:0;left:0;right:0;height:2px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .35s var(--cx-ease);z-index:3}
+.cx-indic i{display:block;width:40%;height:100%;background:linear-gradient(90deg,transparent,var(--gold-bright,#e8cd93),transparent);transform:translateX(-100%)}
+.cx[data-occupe] .cx-indic{opacity:.9}
+.cx[data-occupe] .cx-indic i{animation:cx-run 1.5s var(--cx-ease) infinite}
+@keyframes cx-run{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}
+
+/* ============================ selecteur de metal ===================== */
+.cx-metaux__wrap{border:1px solid var(--cx-line);border-radius:var(--cx-r);background:linear-gradient(180deg,var(--cx-fond),transparent);overflow:hidden}
+.cx-metaux{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.cx-metal{
+  position:relative;display:grid;gap:.18rem;justify-items:start;align-content:start;
+  min-height:74px;padding:.8rem clamp(.7rem,1.4vw,1.15rem) .95rem;
+  font-family:var(--body);text-align:left;background:none;border:0;
+  border-right:1px solid var(--cx-hair);cursor:pointer;color:var(--text-3);
+  transition:color .4s var(--cx-ease),background .4s var(--cx-ease)
+}
+.cx-metal:last-child{border-right:0}
+.cx-metal__nom{font-family:var(--display);font-size:1.16rem;line-height:1.1;color:var(--text-2);transition:color .4s var(--cx-ease)}
+.cx-metal__sym{font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:var(--text-3)}
+.cx-metal__prix{margin-top:.18rem;font-size:.86rem;color:var(--text-2);transition:color .4s var(--cx-ease)}
+.cx-metal__prix[data-absent]{color:var(--text-3)}
+.cx-metal__trait{position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,var(--gold-ink),var(--gold-bright,#e8cd93));transform:scaleX(0);transform-origin:0 50%;transition:transform .5s var(--cx-ease);opacity:.95}
+.cx-metal:hover .cx-metal__nom{color:var(--text)}
+.cx-metal:hover .cx-metal__trait{transform:scaleX(.16)}
+.cx-metal[aria-selected="true"]{background:var(--cx-fond-3)}
+.cx-metal[aria-selected="true"] .cx-metal__nom{color:var(--text)}
+.cx-metal[aria-selected="true"] .cx-metal__sym{color:var(--gold-ink)}
+.cx-metal[aria-selected="true"] .cx-metal__prix{color:var(--text)}
+.cx-metal[aria-selected="true"] .cx-metal__trait{transform:scaleX(1)}
+
+/* ============================ bandeau de prix ======================== */
+.cx-tete{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);gap:clamp(1rem,2vw,1.8rem);align-items:stretch}
+.cx-prix{display:grid;gap:.3rem;align-content:center;min-width:0;transition:opacity .5s var(--cx-ease)}
+.cx-prix__id{display:flex;align-items:baseline;gap:.65rem;margin:0}
+.cx-prix__nom{font-family:var(--display);font-style:italic;font-size:1.32rem;color:var(--text)}
+.cx-prix__sym{font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold-ink)}
+.cx-prix__ligne{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap;margin:.1rem 0 0}
+.cx-prix__val{font-size:clamp(2.1rem,1.2rem + 2.8vw,3.3rem);font-weight:300;line-height:1;letter-spacing:-.012em;color:var(--text);transition:color .4s var(--cx-ease)}
+.cx-prix__val[data-absent]{color:var(--text-3);font-weight:400}
+.cx-prix__unite{font-size:.74rem;letter-spacing:.12em;color:var(--text-2);text-transform:lowercase}
+.cx-prix__var{font-size:.86rem;padding:.16rem .5rem;border:1px solid var(--cx-hair);border-radius:2px;color:var(--text-2)}
+.cx-prix__var[data-sens="hausse"]{color:var(--cx-up);border-color:var(--cx-up-faible);background:var(--cx-up-faible)}
+.cx-prix__var[data-sens="baisse"]{color:var(--cx-down);border-color:var(--cx-down-faible);background:var(--cx-down-faible)}
+.cx-prix__bas{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin:.35rem 0 0;font-size:.74rem;color:var(--text-2);letter-spacing:.03em}
+.cx-prix__raison{color:var(--cx-down)}
+.cx-pastille{width:6px;height:6px;border-radius:50%;background:var(--cx-up);opacity:.85;flex:0 0 auto}
+.cx[data-perime] .cx-pastille{background:var(--gold-ink)}
+.cx:not([data-prix]) .cx-pastille{background:var(--text-3);opacity:.5}
+.cx[data-perime] .cx-prix__maj{color:var(--gold-ink)}
+/* Avertissement de fraicheur : une pastille de 6 px ne suffit pas a porter
+   un avertissement. Le mot est ecrit, encadre, sans jamais crier. */
+.cx-prix__alerte{
+  font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;
+  padding:.14rem .45rem;border:1px solid var(--gold-ink);border-radius:2px;
+  color:var(--gold-ink);white-space:nowrap
+}
+.cx-prix__alerte[hidden]{display:none}
+/* peremption averee (age > seuil) : un cran plus appuye que « source
+   injoignable », qui n'affecte pas encore la valeur affichee */
+.cx[data-vieux] .cx-prix__alerte{background:var(--cx-down-faible);border-color:var(--cx-down);color:var(--cx-down)}
+
+/* ---- or 24 carats ---- */
+.cx-24k{
+  display:grid;gap:.14rem;align-content:center;min-width:0;
+  padding:.95rem clamp(.9rem,1.6vw,1.2rem);
+  border:1px solid var(--cx-line);border-radius:var(--cx-r);
+  background:linear-gradient(160deg,var(--cx-fond),transparent 70%);
+  position:relative
+}
+.cx-24k::before{content:"";position:absolute;left:0;top:.95rem;bottom:.95rem;width:2px;background:linear-gradient(180deg,var(--gold-ink),transparent);opacity:.8}
+.cx-24k__titre{margin:0;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-ink)}
+.cx-24k__ligne{display:flex;align-items:baseline;gap:.35rem;margin:.15rem 0 0}
+.cx-24k__val{font-size:clamp(1.4rem,1rem + 1.1vw,1.85rem);font-weight:300;line-height:1.05;color:var(--text)}
+.cx-24k__val[data-absent]{color:var(--text-3)}
+.cx-24k__unite{font-size:.78rem;color:var(--text-2);margin-left:.3em}
+.cx-24k__raison{margin:0;font-size:.68rem;color:var(--text-2)}
+.cx-24k__raison:empty{display:none}
+/* mention legale obligatoire (§2.5) : portee juridique, elle doit se lire
+   dans les deux ambiances */
+.cx-24k__mention{margin:.35rem 0 0;font-size:.66rem;line-height:1.45;color:var(--text-2);max-width:34ch}
+
+/* ============================ graphique ============================== */
+.cx-graph{display:grid;gap:.7rem;min-width:0}
+.cx-graph__tete{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;min-width:0}
+
+.cx-periodes{display:flex;gap:2px;padding:3px;border:1px solid var(--cx-line);border-radius:999px;background:var(--cx-fond);max-width:100%}
+.cx-periodes[hidden]{display:none}
+.cx-periode{
+  font-family:var(--body);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-2);background:none;border:0;border-radius:999px;padding:.5rem .9rem;cursor:pointer;
+  transition:color .35s var(--cx-ease),background .35s var(--cx-ease);white-space:nowrap
+}
+.cx-periode:hover{color:var(--gold-ink)}
+.cx-periode[aria-checked="true"]{color:var(--btn-primary-text,#171207);background:var(--gold)}
+html[data-ambiance="jour"] .cx-periode[aria-checked="true"],
+.cx[data-ambiance="jour"] .cx-periode[aria-checked="true"]{color:#fff8ea;background:var(--gold-ink)}
+
+.cx-legende{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0;font-size:.7rem;color:var(--text-2);letter-spacing:.04em;min-width:0}
+.cx-legende[hidden]{display:none}
+.cx-legende__amp{color:var(--text-2)}
+.cx-puce{padding:.2rem .5rem;border:1px solid var(--cx-line);border-radius:2px;color:var(--gold-ink);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.cx-puce--alerte{color:var(--cx-down);border-color:var(--cx-down-faible);background:var(--cx-down-faible)}
+/* information vraie mais pas certaine (devise deduite) : le trait se fait
+   discontinu, ce que l'oeil lit comme « sous reserve » */
+.cx-puce--doute{border-style:dashed}
+
+.cx-chart{
+  position:relative;height:clamp(268px,31vw,414px);
+  border:1px solid var(--cx-line);border-radius:var(--cx-r);
+  background:linear-gradient(180deg,var(--cx-fond),transparent 78%);
+  overflow:hidden;touch-action:pan-y
+}
+.cx-chart__grille{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    repeating-linear-gradient(180deg,var(--cx-grille) 0 1px,transparent 1px 58px),
+    repeating-linear-gradient(90deg,var(--cx-grille) 0 1px,transparent 1px 76px);
+  transition:opacity .5s var(--cx-ease)
+}
+.cx[data-grille="off"] .cx-chart__grille{opacity:0}
+.cx-chart__slot{position:absolute;inset:0;transition:opacity .5s var(--cx-ease)}
+
+/* bandeau de lecture (O/H/L/C de la bougie survolee) */
+.cx-lecture{
+  position:absolute;top:.6rem;left:.65rem;z-index:2;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
+  max-width:calc(100% - 1.3rem);
+  padding:.4rem .7rem;border:1px solid var(--cx-line);border-radius:2px;
+  background:var(--panel-2,var(--cx-fond));backdrop-filter:blur(7px);
+  font-size:.72rem;color:var(--text-2);letter-spacing:.02em
+}
+.cx-lecture[hidden]{display:none}
+.cx-lecture__t{color:var(--text);letter-spacing:.08em}
+.cx-lecture__v{display:inline-flex;align-items:baseline;gap:.28rem;white-space:nowrap}
+.cx-lecture__v i{font-style:normal;font-size:.6rem;letter-spacing:.16em;color:var(--text-2)}
+/* O/H/B/C est la convention des marches ; un client qui n'est pas trader
+   bute dessus. Des que la place le permet, le mot entier remplace
+   l'initiale. En dessous, l'initiale garde son intitule en title/aria. */
+.cx-lecture__m{display:none;text-decoration:none}
+@media (min-width:1000px){
+  .cx-lecture__c{display:none}
+  .cx-lecture__m{display:inline;letter-spacing:.1em}
+}
+.cx-lecture[data-sens="hausse"] .cx-lecture__v:last-child{color:var(--cx-up)}
+.cx-lecture[data-sens="baisse"] .cx-lecture__v:last-child{color:var(--cx-down)}
+
+/* voile d'etat : il se fond, il ne claque jamais */
+.cx-voile{
+  position:absolute;inset:0;z-index:2;display:grid;place-items:center;padding:1.2rem;
+  background:radial-gradient(120% 90% at 50% 40%,var(--cx-fond) 40%,transparent 100%);
+  opacity:0;pointer-events:none;transition:opacity .5s var(--cx-ease)
+}
+.cx-voile[data-on]{opacity:1;pointer-events:auto;backdrop-filter:blur(2px)}
+.cx-voile__boite{max-width:46ch;text-align:center;display:grid;gap:.45rem;justify-items:center}
+.cx-voile__titre{margin:0;font-family:var(--display);font-style:italic;font-size:1.18rem;color:var(--text)}
+.cx-voile__txt{margin:0;font-size:.78rem;line-height:1.55;color:var(--text-2)}
+.cx-voile__txt:empty{display:none}
+.cx-btn{
+  margin-top:.35rem;font-family:var(--body);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+  padding:.6rem 1.15rem;border:1px solid var(--cx-line);border-radius:2px;background:none;color:var(--text-2);cursor:pointer;
+  transition:color .35s var(--cx-ease),border-color .35s var(--cx-ease)
+}
+.cx-btn:hover{color:var(--gold-ink);border-color:var(--gold)}
+.cx-btn[hidden]{display:none}
+/* pendant le chargement, un souffle tres lent sur le titre du voile */
+.cx[data-vue="chargement"] .cx-voile__titre{animation:cx-souffle 3.4s ease-in-out infinite}
+@keyframes cx-souffle{0%,100%{opacity:.72}50%{opacity:1}}
+
+/* ============================ statistiques =========================== */
+.cx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:0;margin:0;border-bottom:1px solid var(--cx-hair);transition:opacity .5s var(--cx-ease)}
+.cx-stat{padding:.85rem clamp(.5rem,1vw,.9rem) .9rem;border-top:1px solid var(--cx-hair);border-right:1px solid var(--cx-hair);min-width:0;position:relative}
+.cx-stat:last-child{border-right:0}
+.cx-stat::before{content:"";position:absolute;left:0;top:-1px;width:26px;height:1px;background:var(--gold-ink);opacity:0;transition:opacity .5s var(--cx-ease)}
+.cx-stat[data-sens]::before{opacity:.55}
+.cx-stat__l{margin:0 0 .3rem;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-2);line-height:1.35;min-height:2.7em;display:flex;align-items:flex-start;hyphens:none}
+.cx-stat__d{margin:0;display:grid;gap:.15rem;min-width:0}
+.cx-stat__v{font-size:1.02rem;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cx-stat[data-absent] .cx-stat__v{color:var(--text-3)}
+.cx-stat[data-sens="hausse"] .cx-stat__v{color:var(--cx-up)}
+.cx-stat[data-sens="baisse"] .cx-stat__v{color:var(--cx-down)}
+.cx-stat__p{font-size:.62rem;line-height:1.35;color:var(--text-2)}
+.cx-stat__p:empty{display:none}
+
+/* ================= cle de lecture des devises ========================= */
+/* Deux reperes discrets sous le bandeau : ce qui est en euros, ce qui est
+   dans la devise du marche. Aucun aplat, aucun encadre : deux pastilles
+   fines, l or reserve a la premiere (les prix que le client paie ou recoit). */
+.cx-cle{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:.45rem 1.15rem;margin:.15rem 0 0;padding-top:.85rem;border-top:1px solid var(--cx-hair)}
+.cx-cle__item{display:inline-flex;align-items:center;gap:.5rem;font-size:.63rem;letter-spacing:.17em;text-transform:uppercase;color:var(--text-2);white-space:nowrap}
+.cx-cle__item::before{content:"";width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+.cx-cle__item--vif{color:var(--text)}
+.cx-cle__item--vif::before{background:var(--gold);box-shadow:0 0 8px rgba(201,154,63,.45)}
+.cx-cle__item--hist::before{background:none;border:1px solid var(--cx-line);border-radius:0;transform:rotate(45deg);width:5px;height:5px}
+
+/* =============== intitule de groupe des statistiques ================== */
+.cx-stats__titre{margin:1.5rem 0 .1rem;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink)}
+.cx-stats__titre[hidden]{display:none}
+/* Le « Cours actuel » est en euros, les quatre chiffres de periode dans la
+   devise du marche : un filet dore tres court sur les seconds suffit a
+   separer les deux familles sans ajouter un mot. */
+.cx-stats[data-mixte="1"] .cx-stat[data-groupe="periode"]::before{opacity:.4}
+.cx-stats[data-mixte="1"] .cx-stat[data-groupe="periode"] .cx-stat__l{color:var(--gold-ink)}
+
+/* ============================ note ==================================== */
+.cx-note{margin:0;font-size:.68rem;line-height:1.6;color:var(--text-2);max-width:88ch}
+
+/* ============================ transitions d'etat ====================== */
+/* on baisse legerement, on ne fait jamais disparaitre */
+.cx[data-occupe] .cx-tete,
+.cx[data-occupe] .cx-stats,
+.cx[data-occupe] .cx-metal__prix,
+.cx[data-occupe] .cx-chart__slot{opacity:.55}
+.cx[data-perime] .cx-tete,
+.cx[data-perime] .cx-stats{opacity:.82}
+/* sans cle, le graphique ne viendra pas : le cadre se fait discret au lieu de
+   laisser un grand vide */
+.cx[data-vue="sans-cle"] .cx-chart{height:clamp(168px,17vw,214px)}
+.cx[data-sans-cle] .cx-graph{gap:0}
+.cx[data-sans-cle] .cx-graph__tete:empty{display:none}
+
+/* ============================ mobile ================================== */
+@media (max-width:1080px) and (min-width:761px){
+  /* rangees pleines plutot qu une derniere ligne orpheline */
+  .cx-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .cx-stat:nth-child(4n){border-right:0}
+}
+@media (max-width:900px){
+  /* l or 24 carats devient une bande : titre, valeur et mention sur une ligne */
+  .cx-tete{grid-template-columns:minmax(0,1fr)}
+  .cx-24k{display:flex;flex-wrap:wrap;align-items:baseline;gap:.15rem .9rem;padding:.8rem 1rem}
+  .cx-24k::before{top:.7rem;bottom:.7rem}
+  .cx-24k__ligne{margin:0}
+  .cx-24k__val{font-size:1.5rem}
+  .cx-24k__mention{margin:.1rem 0 0;flex:1 0 100%;max-width:none}
+  .cx-24k__raison{flex:0 1 auto}
+}
+@media (max-width:760px){
+  .cx{gap:1.05rem}
+  .cx-metaux__wrap{border-radius:var(--cx-r)}
+  /* les quatre metaux tiennent a l ecran : pas de defilement cache */
+  .cx-metaux{grid-template-columns:repeat(4,minmax(0,1fr));overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none}
+  .cx-metaux::-webkit-scrollbar{display:none}
+  .cx-metal{min-height:80px;padding:.8rem .55rem .95rem;overflow:hidden}
+  .cx-metal__nom{font-size:clamp(.9rem,3.6vw,1.08rem);white-space:nowrap}
+  .cx-metal__sym{font-size:.52rem;letter-spacing:.18em}
+  .cx-metal__prix{font-size:clamp(.72rem,3.1vw,.86rem);white-space:nowrap}
+  .cx-prix__ligne{gap:.5rem}
+  .cx-prix__val{font-size:clamp(2rem,1.1rem + 6vw,2.7rem)}
+  .cx-graph__tete{gap:.6rem}
+  .cx-periodes{order:1;width:100%;overflow-x:auto;justify-content:flex-start;scrollbar-width:none;overscroll-behavior-x:contain}
+  .cx-periodes::-webkit-scrollbar{display:none}
+  .cx-periode{padding:.62rem .95rem;font-size:.68rem;min-height:40px}
+  .cx-legende{order:2;font-size:.66rem}
+  .cx-chart{height:clamp(232px,58vw,300px)}
+  .cx-lecture{font-size:.66rem;gap:.5rem;padding:.35rem .55rem}
+  .cx-stats{grid-template-columns:repeat(2,minmax(0,1fr));border-top:0;border-bottom:0}
+  .cx-stat{border-top:1px solid var(--cx-hair);border-right:1px solid var(--cx-hair)}
+  .cx-stat:nth-child(2n){border-right:0}
+  .cx-stat:last-child{border-right:0;border-bottom:1px solid var(--cx-hair)}
+  .cx-stat:last-child:nth-child(odd){grid-column:1 / -1}
+  .cx-stat__l{min-height:0}
+  .cx-voile__titre{font-size:1.05rem}
+  .cx-voile__txt{font-size:.74rem}
+}
+@media (max-width:340px){
+  .cx-metaux{grid-template-columns:repeat(4,minmax(6.8rem,1fr))}
+  .cx-stats{grid-template-columns:minmax(0,1fr)}
+  .cx-stat{border-right:0}
+}
+
+/* ============================ mouvement reduit ======================== */
+@media (prefers-reduced-motion:reduce){
+  .cx *,.cx *::before,.cx *::after{transition-duration:.001ms !important;animation:none !important}
+  .cx[data-occupe] .cx-indic i{transform:none;width:100%;opacity:.5}
+}
+.cx[data-reduced] *,.cx[data-reduced] *::before,.cx[data-reduced] *::after{transition-duration:.001ms !important;animation:none !important}
+.cx[data-reduced][data-occupe] .cx-indic i{transform:none;width:100%;opacity:.5}
+
+/* onglet cache tant que l'animation CSS globale est en pause (body.paused) */
+body.paused .cx-indic i{animation-play-state:paused}
+
+/* =====================================================================
+   MOTEUR GRAPHIQUE — Lightweight Charts (lot coursgraph)
+   Additif : rien n'est redefini du lot interface, on ne fait qu'accueillir
+   le canevas et remettre a plat ce que la bibliotheque injecte.
+   Le moteur pose lui-meme .cx[data-grille="off"] pour eteindre la grille
+   decorative en CSS (elle ferait doublon avec celle du graphique).
+   ===================================================================== */
+.cx .cxg{position:absolute;inset:0;overflow:hidden}
+/* La bibliotheque construit un tableau : on neutralise tout heritage de
+   la feuille de style du site (bordures, fonds, marges de <table>). */
+.cx .cxg table,.cx .cxg tr,.cx .cxg td,.cx .cxg th{
+  margin:0;padding:0;border:0;background:none;border-spacing:0;border-collapse:collapse;font:inherit;color:inherit
+}
+.cx .cxg canvas{display:block;max-width:none}
+/* Le canevas n'est pas selectionnable : un glisser doit deplacer la
+   periode, pas surligner du texte. */
+.cx .cxg{user-select:none;-webkit-user-select:none}
+/* Tactile : le doigt vertical fait defiler la page (le moteur est
+   configure avec vertTouchDrag:false), l'horizontal deplace le temps. */
+.cx-chart{touch-action:pan-y}
+
+/* Apparition du premier trace : le cadre ne doit jamais « claquer ». */
+.cx .cxg{opacity:1;transition:opacity .45s var(--cx-ease)}
+.cx[data-vue="chargement"] .cxg,
+.cx[data-vue="indisponible"] .cxg,
+.cx[data-vue="sans-cle"] .cxg{opacity:0}
+.cx[data-reduced] .cxg{transition-duration:.001ms}
+
+/* Neuf periodes constructibles (5 min … Max) : on resserre la pilule
+   pour qu'elle tienne sur une ligne sans jamais defiler au bureau. */
+.cx-periodes:has(.cx-periode:nth-child(7)){gap:1px}
+.cx-periodes:has(.cx-periode:nth-child(7)) .cx-periode{padding:.5rem .66rem;letter-spacing:.13em}
+
+/* Ordre de lecture des periodes : de la bougie la plus fine a la plus
+   large. Il vient desormais de TF_ORDRE dans cours.js, donc du DOM
+   lui-meme : le parcours au clavier (Home / End compris) et l'annonce
+   des lecteurs d'ecran suivent le meme ordre que l'oeil. Le correctif
+   CSS `order:-6/-5/-4` qui remettait ici les periodes intrajournalieres
+   en tete n'a plus lieu d'etre et a ete retire. */
+
+@media (max-width:760px){
+  /* sur mobile la pilule defile deja : on garde des cibles confortables */
+  .cx-periodes:has(.cx-periode:nth-child(7)) .cx-periode{padding:.62rem .8rem;letter-spacing:.14em}
+  /* et l'on dit qu'elle defile : le bord droit s'efface au lieu de
+     couper un bouton net, ce qui laisserait croire a un debordement. */
+  .cx-periodes:has(.cx-periode:nth-child(7)){
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);
+            mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)
+  }
+}

@@ -1,0 +1,170 @@
+/* La Compagnie de l'Or · Scene carte 4 « Vous restez libre de decider » (CSS/SVG 3D, sans WebGL)
+   Namespace .scd-*. Une table (plan tres profond, lueur + lumiere rasante qui derive) comble le vide autour du document et
+   pose la perspective ; couches a translateZ differents dans un groupe camera ; choregraphie pilotee par classes d etat
+   (is-in, is-writing, is-signed, is-sealed, is-swept, is-pay, is-done) posees par assets/js/scenes/decide.js.
+   Regles : transform / opacity / stroke-dashoffset uniquement (1 filter blur 2px de 0,6 s sur le sceau ; l ombre au sol est
+   un rect SVG flouté une fois au raster, feGaussianBlur statique, decale bas-droite sans lisiere visible ; l ombre de contact
+   est le box-shadow du papier, dans son plan) ; pause via .is-paused ; reduced motion = etat final
+   statique via .is-reduced. Ambiance : tokens sur .scd, surcharge .is-jour. Tailles : --u = 1 % de la largeur du host (px),
+   --un = la meme valeur sans unite (pour les em), posees par le module (ResizeObserver). */
+
+.scd{
+  position:absolute;inset:0;perspective:960px;perspective-origin:50% 32%;
+  container:scd / inline-size;
+  --u:6px;--un:6;--px:0;--py:0;
+  --scd-paper:linear-gradient(172deg,#f4ecd9 0%,#eee3cc 58%,#e6d8bc 100%);
+  --scd-edge:rgba(120,90,40,.18);
+  --scd-hi:rgba(255,255,255,.5);
+  --scd-halo:0 0 0 1px rgba(10,6,2,.28),0 calc(var(--u) * .25) calc(var(--u) * .9) rgba(10,6,2,.3),0 calc(var(--u) * .9) calc(var(--u) * 2.4) rgba(10,6,2,.22);
+  --scd-sh:rgba(8,5,2,.76);
+  --scd-ink:#4e3719;
+  --scd-line:rgba(64,50,30,.2);
+  --scd-cart:#8a6820;
+  --scd-sheen:.12;
+  --scd-sweep:.5;
+  --scd-table-a:rgba(37,28,17,.94);--scd-table-b:rgba(15,11,6,.96);--scd-table-c:rgba(3,2,1,.98);
+  --scd-table-hi:rgba(201,154,63,.24);--scd-rake:rgba(232,205,147,.22);
+}
+.scd.is-jour{
+  --scd-paper:linear-gradient(172deg,#faf3e3 0%,#f5edda 58%,#ecdfc6 100%);
+  --scd-edge:rgba(120,90,40,.26);
+  --scd-hi:rgba(255,255,255,.75);
+  --scd-halo:0 0 0 1px rgba(120,90,40,.26),0 calc(var(--u) * .25) calc(var(--u) * .9) rgba(60,40,10,.13),0 calc(var(--u) * .9) calc(var(--u) * 2.4) rgba(60,40,10,.08);
+  --scd-sh:rgba(60,40,10,.32);
+  --scd-ink:#46301a;
+  --scd-line:rgba(64,50,30,.18);
+  --scd-sheen:.1;
+  --scd-sweep:.58;
+  --scd-table-a:rgba(255,252,244,.96);--scd-table-b:rgba(240,231,211,.92);--scd-table-c:rgba(216,202,174,.88);
+  --scd-table-hi:rgba(255,246,222,.6);--scd-rake:rgba(255,250,236,.55);
+}
+
+/* ---------- groupe camera / vie ---------- */
+.scd__cam{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(calc(var(--px) * 7deg)) rotateX(calc(var(--py) * -4.5deg));transition:transform 1.1s cubic-bezier(.22,.61,.36,1)}
+.scd__breath{position:absolute;inset:0;transform-style:preserve-3d}
+.scd.is-in .scd__breath{animation:scd-breathe 9s ease-in-out 1.8s infinite alternate}
+@keyframes scd-breathe{0%{transform:translate3d(0,0,0) rotateX(0)}50%{transform:translate3d(0,-3px,0) rotateX(-.5deg)}100%{transform:translate3d(0,3px,0) rotateX(.4deg)}}
+.scd__press{position:absolute;inset:0;transform-style:preserve-3d}
+.scd.is-sealed .scd__press{animation:scd-press .6s cubic-bezier(.3,.7,.3,1) .28s}
+@keyframes scd-press{0%{transform:none}42%{transform:translate3d(0,calc(var(--u) * .22),-3px) rotateX(.9deg)}100%{transform:none}}
+
+/* table : le plan s'etend bien au-dela du cadre, tres en profondeur (comble le vide autour du document sans nouvel objet 3D) ;
+   une lueur discrete en haut a gauche (meme convention que les 3 autres scenes) et une bande de lumiere rasante qui derive
+   tres lentement — c'est elle qui donne la matiere et la perspective au vide, jamais un halo */
+.scd__table{position:absolute;left:-45%;top:-45%;width:190%;height:190%;overflow:hidden;transform:translateZ(-92px);opacity:0;
+  transition:opacity 1.7s ease .15s;
+  background:radial-gradient(58% 52% at 32% 24%,var(--scd-table-hi),transparent 62%),
+             linear-gradient(155deg,var(--scd-table-a) 0%,var(--scd-table-b) 60%,var(--scd-table-c) 100%)}
+.scd.is-in .scd__table{opacity:1}
+.scd__rake{position:absolute;inset:-20% -35%;background:linear-gradient(118deg,transparent 43%,var(--scd-rake) 50%,transparent 57%);transform:translateX(-32%)}
+.scd.is-in .scd__rake{animation:scd-rake 18s ease-in-out -6s infinite alternate}
+@keyframes scd-rake{from{transform:translateX(-32%)}to{transform:translateX(32%)}}
+
+/* ---------- le document (groupe 3D) ---------- */
+/* largeur : 35 % du host sur desktop, un peu plus genereuse sur les petits hosts (jusqu a 41 % a 330 px) */
+.scd__doc{position:absolute;left:50%;top:44%;width:clamp(35%,132px,41%);aspect-ratio:1/1.3;translate:-50% -50%;transform-style:preserve-3d;transform:translate3d(0,calc(var(--u) * 7),-120px) rotateX(29deg) rotateZ(-7deg)}
+.scd.is-in .scd__doc{animation:scd-land 1.5s cubic-bezier(.22,.61,.36,1) both}
+@keyframes scd-land{
+  0%{transform:translate3d(0,calc(var(--u) * 7),-120px) rotateX(29deg) rotateZ(-7deg)}
+  76%{transform:translate3d(0,calc(var(--u) * -.4),3px) rotateX(17.2deg) rotateZ(-3.7deg)}
+  100%{transform:translate3d(0,0,0) rotateX(18deg) rotateZ(-4deg)}
+}
+.scd__l{position:absolute;inset:0;transform-style:preserve-3d;translate:calc(var(--px) * var(--lx,0px)) calc(var(--py) * var(--ly,0px));transition:translate 1.1s cubic-bezier(.22,.61,.36,1)}
+.scd__l--shadow{--lx:-5px;--ly:-4px;transform:translateZ(-34px)}
+.scd__l--sheet{--lx:0px;--ly:0px;transform:translateZ(0)}
+.scd__l--ink{--lx:1.5px;--ly:1px;transform:translateZ(3px)}
+.scd__l--seal{--lx:4px;--ly:3px;transform:translateZ(14px)}
+.scd__l--pen{--lx:7px;--ly:5px;transform:translateZ(26px)}
+
+/* ombre au sol : nappe ambiante (un rect SVG tres flouté, feGaussianBlur statique, raster une fois), decalee bas-droite,
+   aucune lisiere visible ; feuille en vol = ombre plus large, plus diffuse et plus legere ; elle se resserre et s assombrit
+   a l atterrissage (origine de l echelle vers le bas-droite : le bord haut reste sous le papier pendant toute la descente) */
+.scd__shadowmv{position:absolute;inset:0;opacity:.14;transform:translateZ(-44px) scale(1.18);transform-origin:54% 60%}
+.scd.is-in .scd__shadowmv{animation:scd-shadow 1.5s cubic-bezier(.22,.61,.36,1) both}
+@keyframes scd-shadow{0%{opacity:.12;transform:translateZ(-44px) scale(1.18)}40%{opacity:.42;transform:translateZ(-20px) scale(1.1)}76%{opacity:1;transform:translateZ(2px) scale(.99)}100%{opacity:1;transform:translateZ(0) scale(1)}}
+.scd__shadow{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.scd__shadow-core{fill:var(--scd-sh)}
+
+/* le papier */
+.scd__sheet{position:absolute;inset:0;border-radius:2px;background:var(--scd-paper);box-shadow:var(--scd-halo),inset 0 0 0 1px var(--scd-edge),inset 0 1px 0 var(--scd-hi),inset 0 -1px 0 rgba(90,70,30,.12);overflow:hidden;isolation:isolate;opacity:0}
+.scd.is-in .scd__sheet{animation:scd-fade-in .7s ease-out both}
+@keyframes scd-fade-in{from{opacity:0}to{opacity:1}}
+.scd__sheet::before{content:"";position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .22 0 0 0 0 .1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.07;mix-blend-mode:multiply;pointer-events:none}
+.scd__sheet::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 22%,transparent 78%,rgba(90,70,30,.08));pointer-events:none}
+/* reflet lent qui glisse sur le papier (vie) */
+.scd__sheen{position:absolute;inset:-30% -45%;background:linear-gradient(112deg,transparent 36%,rgba(255,244,214,1) 50%,transparent 64%);opacity:var(--scd-sheen);transform:translateX(-36%)}
+.scd.is-in .scd__sheen{animation:scd-sheen 12s ease-in-out -4s infinite alternate}
+@keyframes scd-sheen{from{transform:translateX(-38%)}to{transform:translateX(38%)}}
+/* balayage de lumiere diagonal, une seule fois */
+.scd__sweep{position:absolute;inset:-30% -60%;background:linear-gradient(108deg,transparent 44%,rgba(255,247,224,.55) 49%,rgba(255,250,236,1) 50%,rgba(255,247,224,.55) 51%,transparent 56%);opacity:0;transform:translateX(-58%)}
+.scd.is-swept .scd__sweep{animation:scd-sweep 1.35s cubic-bezier(.45,0,.25,1) both}
+@keyframes scd-sweep{0%{transform:translateX(-58%);opacity:0}18%{opacity:var(--scd-sweep)}82%{opacity:var(--scd-sweep)}100%{transform:translateX(58%);opacity:0}}
+
+/* cartouche, filet de titre, lignes de texte (tailles continues : jamais sous 7 px, approche resserree sur petit host) */
+.scd__cart{position:absolute;left:11%;top:7.6%;font:400 clamp(7px,calc(var(--u) * 1.5),11px)/1 var(--body,'Jost',system-ui,sans-serif);letter-spacing:clamp(.14em,calc(var(--un) * .05em),.3em);text-transform:uppercase;color:var(--scd-cart);white-space:nowrap;opacity:0;transform:translateY(calc(var(--u) * .6))}
+.scd.is-writing .scd__cart{animation:scd-rise .75s cubic-bezier(.22,.61,.36,1) both}
+@keyframes scd-rise{from{opacity:0;transform:translateY(calc(var(--u) * .6))}to{opacity:1;transform:none}}
+.scd__rule{position:absolute;left:11%;top:13.2%;width:56%;height:max(1px,calc(var(--u) * .22));background:linear-gradient(90deg,#c99a3f,#e8cd93 55%,#c99a3f);transform:scaleX(0);transform-origin:0 50%}
+.scd.is-writing .scd__rule{animation:scd-draw .85s cubic-bezier(.22,.61,.36,1) .22s both}
+@keyframes scd-draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.scd__lines{position:absolute;left:11%;right:11%;top:20.5%;height:37%;display:grid;grid-auto-rows:1fr;align-items:center}
+.scd__line{display:block;width:var(--w,100%);height:max(1px,calc(var(--u) * .3));border-radius:1px;background:var(--scd-line);transform:scaleX(0);transform-origin:0 50%}
+.scd__line--gap{visibility:hidden}
+.scd.is-writing .scd__line{animation:scd-draw .6s cubic-bezier(.22,.61,.36,1) calc(.5s + var(--i,0) * .1s) both}
+
+/* encre : signature + filet or */
+.scd__svg{position:absolute;left:10%;bottom:14%;width:60%;height:auto;overflow:visible;display:block}
+.scd__sig{fill:none;stroke:var(--scd-ink);stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round;opacity:.92}
+.scd__filet{fill:none;stroke:url(#scdGold);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:.95}
+.scd.is-signed .scd__filet{animation:scd-dash .75s cubic-bezier(.22,.61,.36,1) .2s both}
+@keyframes scd-dash{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.scd__pensh{fill:rgba(40,28,8,.9);opacity:0}
+/* plume : pointe or, corps laque sombre, bague et section or */
+.scd__pen{opacity:0}
+.scd__pen-nib{fill:url(#scdNib);stroke:rgba(110,78,22,.55);stroke-width:.6}
+.scd__pen-slit{stroke:rgba(90,60,12,.6);stroke-width:.7;stroke-linecap:round}
+.scd__pen-hole{fill:rgba(90,60,12,.55)}
+.scd__pen-ring{fill:url(#scdNib)}
+.scd__pen-body{fill:#2a2118}
+.scd__pen-cap{fill:#1f1812}
+.scd__pen-hl{fill:none;stroke:rgba(232,205,147,.5);stroke-width:.8;stroke-linecap:round}
+
+/* sceau losange or : feuille d or embossee (bevel clair en haut, ombre en bas), liseré grave, coeur presse (debosse) */
+.scd__seal{position:absolute;right:9%;bottom:8.5%;width:14%;aspect-ratio:1;transform:rotate(45deg) scale(1.6) translateZ(40px);opacity:0;
+  background:radial-gradient(circle at 28% 22%,rgba(255,250,236,.5),rgba(255,250,236,0) 46%),linear-gradient(135deg,#f0dcaa 0%,#d9b25c 34%,#c99a3f 56%,#b0883a 78%,#a67d2b 100%);
+  box-shadow:inset 0 1.5px 1px rgba(255,250,235,.62),inset 1.5px 0 1px rgba(255,250,235,.34),inset 0 -1.5px 1.5px rgba(90,60,12,.42),inset -1.5px 0 1.5px rgba(90,60,12,.26),inset 0 0 0 1px rgba(110,78,22,.5),0 0 0 1px rgba(255,250,236,.38),calc(var(--u) * .08) calc(var(--u) * .22) calc(var(--u) * .35) rgba(20,12,2,.22),0 calc(var(--u) * .3) calc(var(--u) * .9) rgba(20,12,2,.2);overflow:hidden}
+.scd__seal::before{content:"";position:absolute;inset:19%;border:1px solid rgba(255,246,222,.62);box-shadow:inset 0 0 0 1px rgba(110,78,22,.24),0 0 0 1px rgba(110,78,22,.16)}
+.scd__seal::after{content:"";position:absolute;left:50%;top:50%;width:27%;height:27%;translate:-50% -50%;background:linear-gradient(135deg,#84611d 0%,#9d7727 52%,#b98e36 100%);box-shadow:inset 0 1.5px 1.5px rgba(50,32,6,.55),inset 0 -1px 1px rgba(255,240,200,.34),0 1px 0 rgba(255,246,222,.4),0 0 0 1px rgba(110,78,22,.18)}
+.scd.is-sealed .scd__seal{animation:scd-seal .62s cubic-bezier(.2,.75,.2,1) both}
+@keyframes scd-seal{0%{opacity:0;transform:rotate(45deg) scale(1.6) translateZ(40px);filter:blur(2px)}55%{opacity:1;filter:blur(0)}100%{opacity:1;transform:rotate(45deg) scale(1) translateZ(0);filter:blur(0)}}
+.scd__glint{position:absolute;inset:-40% -60%;background:linear-gradient(110deg,transparent 40%,rgba(255,250,236,.85) 50%,transparent 60%);opacity:0;transform:translateX(-70%)}
+.scd.is-swept .scd__glint{animation:scd-glint .75s ease-in-out .5s both}
+@keyframes scd-glint{0%{transform:translateX(-70%);opacity:0}25%{opacity:.9}75%{opacity:.9}100%{transform:translateX(70%);opacity:0}}
+.scd__halo{position:absolute;right:9%;bottom:8.5%;width:14%;aspect-ratio:1;border:1px solid rgba(232,205,147,.95);opacity:0;transform:rotate(45deg) scale(.9);box-shadow:0 0 calc(var(--u) * 1.2) rgba(232,205,147,.5)}
+.scd.is-sealed .scd__halo{animation:scd-halo 1s ease-out .32s both}
+@keyframes scd-halo{0%{opacity:.75;transform:rotate(45deg) scale(.92)}100%{opacity:0;transform:rotate(45deg) scale(1.9)}}
+
+/* mentions de reglement */
+.scd__pay{position:absolute;left:0;right:0;bottom:8%;display:flex;justify-content:center;align-items:center;gap:calc(var(--u) * 1.6);font:400 clamp(8px,calc(var(--u) * 1.75),11px)/1 var(--body,'Jost',system-ui,sans-serif);letter-spacing:.28em;text-transform:uppercase;color:var(--gold-ink,#c99a3f);white-space:nowrap;opacity:0;transform:translateY(calc(var(--u) * 1.2))}
+.scd__pay i{width:calc(var(--u) * .75);height:calc(var(--u) * .75);background:linear-gradient(135deg,#e8cd93,#c99a3f);transform:rotate(45deg);flex:none}
+.scd.is-pay .scd__pay{animation:scd-rise .95s cubic-bezier(.22,.61,.36,1) both}
+
+/* petit host (mobile, < 420 px) : mentions un peu moins filiformes, gap et filets ajustes */
+@container scd (max-width:420px){
+  .scd__pay{font-weight:500;letter-spacing:.24em;gap:calc(var(--u) * 1.4)}
+  .scd__pay i{width:max(3px,calc(var(--u) * .9));height:max(3px,calc(var(--u) * .9))}
+  .scd__cart{font-weight:500}
+}
+
+/* ---------- pause / reduced ---------- */
+.scd.is-paused *,.scd.is-paused *::before,.scd.is-paused *::after{animation-play-state:paused !important}
+.scd.is-reduced *,.scd.is-reduced *::before,.scd.is-reduced *::after{animation:none !important;transition:none !important}
+.scd.is-reduced .scd__doc{transform:rotateX(18deg) rotateZ(-4deg)}
+.scd.is-reduced .scd__shadowmv{opacity:1;transform:none}
+.scd.is-reduced .scd__sheet{opacity:1}
+.scd.is-reduced .scd__sheen{opacity:calc(var(--scd-sheen) * .8);transform:translateX(-10%)}
+.scd.is-reduced .scd__sweep,.scd.is-reduced .scd__glint,.scd.is-reduced .scd__halo,.scd.is-reduced .scd__pen,.scd.is-reduced .scd__pensh{opacity:0}
+.scd.is-reduced .scd__cart,.scd.is-reduced .scd__pay{opacity:1;transform:none}
+.scd.is-reduced .scd__rule,.scd.is-reduced .scd__line{transform:scaleX(1)}
+.scd.is-reduced .scd__sig,.scd.is-reduced .scd__filet{stroke-dashoffset:0}
+.scd.is-reduced .scd__seal{opacity:1;transform:rotate(45deg);filter:none}

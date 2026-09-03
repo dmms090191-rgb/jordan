@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab domaines</title>
+<link rel="stylesheet" href="../assets/fonts/fonts.css">
+<link rel="stylesheet" href="../assets/css/accueil.css">
+<link rel="stylesheet" href="../assets/css/accueil-sections.css">
+<link rel="stylesheet" href="../assets/css/scenes/domaines.css">
+<script type="importmap">{"imports":{"three":"../assets/vendor/three.module.min.js","three/addons/":"../assets/vendor/addons/"}}</script>
+<script>(function(){var q=new URLSearchParams(location.search);var a=q.get('ambiance');if(a==='jour'||a==='nuit')document.documentElement.dataset.ambiance=a;})();</script>
+<style>
+  html,body{margin:0;background:var(--bg)}
+  body{min-height:100vh;overflow-x:hidden}
+  /* le lab reproduit la section a 1240 px (largeur max de .dom) ; entre 821 et 1264 px de viewport elle est mise a l'echelle
+     (transform) pour garder la composition 2 colonnes ; a 820 px et moins : mise en page mobile reelle (pastilles, cadre a plat).
+     ?scale=0 : aucune mise a l'echelle -> vraie mise en page du site a la largeur du viewport (ex. 1000 px : .dom en 1 colonne) */
+  .lab{width:1240px;margin:0 auto;transform-origin:50% 0}
+  .lab.no-scale{width:auto;max-width:1240px;transform:none !important}
+  .lab .sec{padding:2.2rem 2rem 3rem}
+  @media (max-width:820px){.lab{width:100%;transform:none !important}.lab .sec{padding:1.6rem 1.2rem 2.4rem}}
+  /* viewport bas (gabarit generique 760x620) : on masque l'en-tete pour cadrer liste + cadre */
+  @media (max-width:820px) and (max-height:720px){.lab .sec__head{display:none}.lab .sec{padding-top:1rem}}
+</style>
+</head>
+<body>
+<main class="lab" id="lab">
+<!-- ===== 4 · NOS DOMAINES D'EXPERTISE (copie de index.html, .dom__frame remplace par le snippet review/lab/domaines-markup.html) ===== -->
+<section class="sec in" id="domaines" aria-labelledby="domaines-title" data-reveal>
+  <div class="sec__head">
+    <p class="kicker rv" style="--i:0">Ce que nous rachetons</p>
+    <h2 class="sec__title rv" id="domaines-title" style="--i:1">Nos domaines d'expertise.</h2>
+    <p class="sec__lede rv" style="--i:2">Or, argent, platine, pièces, montres, pierres ou objets de collection&nbsp;: douze familles de biens que nos experts examinent lors de nos journées.</p>
+  </div>
+  <div class="dom">
+    <div class="dom__list rv" style="--i:3" role="tablist" aria-label="Catégories de biens">
+      <button class="dom__item" role="tab" data-n="01" data-name="Bijoux en or" data-line="Anciens, modernes ou cassés." data-img="../assets/img/cat-bijoux-or.jpg" data-video="../assets/video/tab-01.mp4"><span class="n">01</span><span class="name">Bijoux en or</span><span class="line">Anciens, modernes ou cassés.</span></button>
+      <button class="dom__item" role="tab" data-n="02" data-name="Bijoux en argent" data-line="Colliers, bracelets, bagues." data-img="../assets/img/cat-argente-etain.jpg" data-video="../assets/video/tab-02.mp4"><span class="n">02</span><span class="name">Bijoux en argent</span><span class="line">Colliers, bracelets, bagues.</span></button>
+      <button class="dom__item" role="tab" data-n="03" data-name="Montres" data-line="Anciennes, modernes ou de collection." data-img="../assets/img/cat-montres-luxe.jpg" data-video="../assets/video/dom-03-montres.mp4"><span class="n">03</span><span class="name">Montres</span><span class="line">Anciennes, modernes ou de collection.</span></button>
+      <button class="dom__item" role="tab" data-n="04" data-name="Pièces d'or et d'argent" data-line="De collection ou d'investissement." data-img="../assets/img/cat-pieces.jpg" data-video="../assets/video/tab-04.mp4"><span class="n">04</span><span class="name">Pièces d'or et d'argent</span><span class="line">De collection ou d'investissement.</span></button>
+      <button class="dom__item" role="tab" data-n="05" data-name="Lingots d'or et d'argent" data-line="Tous formats." data-img="../assets/img/cat-lingots.jpg" data-video="../assets/video/tab-05.mp4"><span class="n">05</span><span class="name">Lingots d'or et d'argent</span><span class="line">Tous formats.</span></button>
+      <button class="dom__item" role="tab" data-n="06" data-name="Bijoux signés" data-line="Créateurs et grandes maisons." data-img="../assets/img/cat-bijoux-signes.jpg" data-video="../assets/video/tab-06.mp4"><span class="n">06</span><span class="name">Bijoux signés</span><span class="line">Créateurs et grandes maisons.</span></button>
+      <button class="dom__item" role="tab" data-n="07" data-name="Pierres précieuses" data-line="Diamants, rubis, saphirs." data-img="../assets/img/cat-pierres.jpg" data-video="../assets/video/tab-07.mp4"><span class="n">07</span><span class="name">Pierres précieuses</span><span class="line">Diamants, rubis, saphirs.</span></button>
+      <button class="dom__item" role="tab" data-n="08" data-name="Argenterie" data-line="Ménagères, plateaux, orfèvrerie." data-img="../assets/img/cat-argente-etain.jpg" data-video="../assets/video/tab-08.mp4"><span class="n">08</span><span class="name">Argenterie</span><span class="line">Ménagères, plateaux, orfèvrerie.</span></button>
+      <button class="dom__item" role="tab" data-n="09" data-name="Plaqué or" data-line="Même usé." data-img="../assets/img/cat-plaque-or.jpg" data-video="../assets/video/tab-09.mp4"><span class="n">09</span><span class="name">Plaqué or</span><span class="line">Même usé.</span></button>
+      <button class="dom__item" role="tab" data-n="10" data-name="Or dentaire" data-line="Présenté avec discrétion." data-img="../assets/img/cat-dentaire.jpg" data-video="../assets/video/tab-10.mp4"><span class="n">10</span><span class="name">Or dentaire</span><span class="line">Présenté avec discrétion.</span></button>
+      <button class="dom__item" role="tab" data-n="11" data-name="Billets de collection" data-line="Anciens ou étrangers." data-img="../assets/img/cat-billets.jpg" data-video="../assets/video/tab-11.mp4"><span class="n">11</span><span class="name">Billets de collection</span><span class="line">Anciens ou étrangers.</span></button>
+      <button class="dom__item" role="tab" data-n="12" data-name="Platine et étain" data-line="Et autres métaux acceptés." data-img="../assets/img/cat-platine.jpg" data-video="../assets/video/tab-12.mp4"><span class="n">12</span><span class="name">Platine et étain</span><span class="line">Et autres métaux acceptés.</span></button>
+    </div>
+    <div class="dom__stage rv" style="--i:4">
+      <div class="dom__frame">
+        <div class="dom__media" aria-hidden="true">
+          <div class="dom__layer is-on" data-layer="a">
+            <div class="dom__kb">
+              <img class="dom__img" src="../assets/img/cat-bijoux-or.jpg" alt="" width="1600" height="894" loading="lazy" decoding="async">
+              <video class="dom__video" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>
+            </div>
+          </div>
+          <div class="dom__layer" data-layer="b">
+            <div class="dom__kb">
+              <img class="dom__img" src="../assets/img/cat-argente-etain.jpg" alt="" width="1600" height="894" loading="lazy" decoding="async">
+              <video class="dom__video" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>
+            </div>
+          </div>
+        </div>
+        <div class="dom__caption"><span class="dom__captext"><span class="dom__capname">Bijoux en or</span><br><span class="dom__capline">Anciens, modernes ou cassés.</span></span><span class="dom__capn">01 / 12</span></div>
+      </div>
+      <p class="dom__note">Vous hésitez sur une pièce&nbsp;? Apportez-la. L'expert vous dira ce qu'elle est, et ce qui compte dans son évaluation.</p>
+    </div>
+  </div>
+</section>
+</main>
+<script type="module">
+  import { initDomaines } from '../assets/js/scenes/domaines.js';
+  const q = new URLSearchParams(location.search);
+  const reduced = q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // mise a l'echelle du lab : conserve la composition 2 colonnes sur viewport etroit (821-1264 px) ; ?scale=0 la desactive
+  const lab = document.getElementById('lab');
+  const noScale = q.get('scale') === '0';
+  if (noScale) lab.classList.add('no-scale');
+  const fit = () => { if (noScale) return; const w = innerWidth; if (w <= 820) { lab.style.transform = ''; return; } lab.style.transform = `scale(${Math.min(1, (w - 24) / 1240).toFixed(4)})`; };
+  fit(); addEventListener('resize', fit);
+  // pause globale onglet cache (comme accueil-sections.js)
+  document.addEventListener('visibilitychange', () => document.body.classList.toggle('paused', document.hidden));
+  const section = document.getElementById('domaines');
+  const scene = initDomaines(section, { reduced, hoverSelect: q.get('hover') !== '0' });
+  window.__scene = scene;
+  await scene.ready;
+  document.body.dataset.ready = '1';
+  // ?auto=1 : lance la lecture (bouton Lecture) des que la scene est prete ; ?auto=N : depuis la categorie N (1-12)
+  const auto = q.get('auto');
+  if (auto) { const n = parseInt(auto, 10); if (n > 1) scene.show(n - 1, true); scene.play(); }
+  // bascule a chaud pour tester setAmbiance : ?toggle=1 bascule apres 3s
+  if (q.get('toggle') === '1') setTimeout(() => { const m = document.documentElement.dataset.ambiance === 'jour' ? 'nuit' : 'jour'; document.documentElement.dataset.ambiance = m; scene.setAmbiance(m); }, 3000);
+</script>
+</body>
+</html>

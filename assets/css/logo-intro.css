@@ -1,0 +1,64 @@
+/* ===========================================================================
+   logo-intro.css — habillage de l'animation d'introduction du logo.
+   Le SVG porte sa propre géométrie ; ici on ne fait que le placer, superposer
+   le canevas de la plume, et donner les couleurs des deux ambiances.
+   Aucune animation CSS : tout est piloté par l'horloge du module, pour que
+   `seek(t)` donne exactement la même image à chaque fois.
+   ========================================================================= */
+
+.lc-intro {
+  position: relative;
+  display: block;
+  /* --- palette NUIT (défaut) --- */
+  --lc-fond: #141210;
+  --lc-script: #efe6d2;
+  --lc-del: #e4dac2;
+  --lc-frais: #f8e3b4;
+  --lc-or1: #ad8526; --lc-or2: #d8b264; --lc-or3: #c19a33; --lc-or4: #a27c25;
+  --lc-cu1: #a06740; --lc-cu2: #c1854a; --lc-cu3: #ae7442;
+  --lc-tri-b: #33456f; --lc-tri-i: #e8dfca; --lc-tri-r: #8f3239;
+}
+
+html[data-ambiance="jour"] .lc-intro,
+.lc-intro[data-ambiance="jour"] {
+  --lc-fond: #f4efe6;
+  --lc-script: #241c10;
+  --lc-del: #3a2f1e;
+  --lc-frais: #4d3512;
+  --lc-or1: #7d5f1c; --lc-or2: #a8802c; --lc-or3: #8a6820; --lc-or4: #6f5518;
+  --lc-cu1: #8d5228; --lc-cu2: #a86a35; --lc-cu3: #96592c;
+  --lc-tri-b: #2b3a5e; --lc-tri-i: #9d8a6c; --lc-tri-r: #8a3036;
+}
+
+/* logo posé sur un fond déjà en place (header, hero) : on retire le sien */
+.lc-intro--nu { --lc-fond: transparent; }
+
+.lc-intro__scene {
+  position: relative;
+  width: 100%;
+}
+
+/* La viewBox fixe le rapport : la place est réservée avant même le rendu,
+   il n'y a donc aucun décalage de mise en page au chargement. */
+.lc-intro__scene > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Le canevas de la plume se superpose exactement au dessin : la caméra
+   orthographique est calée sur la même viewBox, la pointe tombe au pixel près. */
+.lc-intro__plume {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Rien ne bouge une fois l'animation finie : ni survol, ni flottement, ni halo. */
+.lc-intro__scene > svg * { transition: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-intro__plume { display: none; }
+}

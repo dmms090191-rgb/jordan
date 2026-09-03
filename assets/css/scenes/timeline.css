@@ -1,0 +1,164 @@
+/* La Compagnie de l'Or · Scene « timeline » — section #expertise « Comment se deroule une expertise ? »
+   A charger APRES accueil-sections.css : redefinit entierement .tl (ligne d'or, losanges fins, bille active, etats).
+   Regles : transform / opacity uniquement (+ box-shadow/couleur sur des elements de quelques px), tokens Jour/Nuit,
+   reduced-motion = tout allume, bille en bas, aucune animation. Sans JS (.tl--js absent) : tout est allume, bille cachee.
+   Etats poses par timeline.js : .tl--js .tl--anim|.tl--reduced .tl--in .is-live sur .tl ; .tl__item--r|--l .is-active .is-past sur les etapes.
+   Option : .tl--start-left sur .tl (ou initTimeline(..., { firstSide:'left' })) = etape 1 a GAUCHE de la ligne (defaut : a droite). */
+
+:root{
+  --tl-ease:cubic-bezier(.22,.61,.36,1);
+  --tl-track:rgba(243,236,220,.11);
+  --tl-ink-a:#e8cd93;                       /* depart de la ligne : or-bright */
+  --tl-ink-b:#c99a3f;                       /* corps de la ligne : or */
+  --tl-glow:rgba(232,205,147,.22);          /* lueur tres douce le long de la ligne */
+  --tl-bead-core:#fbefd2;
+  --tl-bead-mid:#e8cd93;
+  --tl-bead-edge:#c99a3f;
+  --tl-halo:rgba(232,205,147,.46);
+  --tl-halo-soft:rgba(232,205,147,.2);
+  --tl-trail-rgb:251,239,210;               /* trail de la bille (encre fraiche, ivoire, plus claire que la ligne) */
+  --tl-trail-glow:rgba(232,205,147,.22);    /* lueur du trail */
+  --tl-light-rgb:232,205,147;               /* lumiere ambiante derriere l'etape active : teinte + intensite de pointe */
+  --tl-light-a:.08;
+  --tl-diamond:rgba(201,154,63,.55);        /* losange non atteint */
+  --tl-diamond-on:#e8cd93;
+  --tl-step-ink:var(--gold-ink);            /* « Etape n » */
+  --tl-title-active:var(--text);
+  --tl-title-active:color-mix(in srgb,var(--text) 80%,var(--gold-bright) 20%);
+  /* opacites : non atteint / passe / survol — contrastes mesures sur --bg-2 : corps non atteint >= 3:1, « Etape n » >= 3.5:1 */
+  --tl-o-far:.5;   --tl-o-far-title:.64;  --tl-o-far-step:.64;
+  --tl-o-past:.68; --tl-o-past-title:.82; --tl-o-past-step:.72;
+  --tl-o-hover:.84;
+}
+:root[data-ambiance="jour"]{
+  --tl-track:rgba(36,28,16,.13);
+  --tl-ink-a:#bf9238;
+  --tl-ink-b:#8a6820;
+  --tl-glow:rgba(138,104,32,.16);
+  --tl-bead-core:#f6e6bd;
+  --tl-bead-mid:#d9ad4f;
+  --tl-bead-edge:#8a6820;
+  --tl-halo:rgba(201,154,63,.4);
+  --tl-halo-soft:rgba(201,154,63,.16);
+  --tl-trail-rgb:110,79,20;                 /* jour : encre fraiche plus profonde que la ligne (#8a6820), se lit sur le creme */
+  --tl-trail-glow:rgba(138,104,32,.1);
+  --tl-light-rgb:201,154,63;
+  --tl-light-a:.06;                         /* jour : a peine une chaleur derriere l'etape active (creme), jamais une tache */
+  --tl-diamond:rgba(138,104,32,.6);
+  --tl-diamond-on:#8a6820;
+  --tl-step-ink:#7a5b1c;                    /* or-ink a peine plus profond : « Etape n » reste >= 3.5:1 une fois attenue */
+  --tl-title-active:var(--text);
+  --tl-title-active:color-mix(in srgb,var(--text) 82%,var(--gold-ink) 18%);
+  --tl-o-far:.66;  --tl-o-far-title:.66;  --tl-o-far-step:.82;
+  --tl-o-past:.84; --tl-o-past-title:.9;  --tl-o-past-step:.92;
+  --tl-o-hover:.88;
+}
+
+/* ---------- Ossature ---------- */
+.tl{position:relative;max-width:960px;margin:0 auto;padding:2.4rem 0 3rem;--tl-x:50%;--tl-gap:3.6rem}
+
+/* ligne : piste discrete + encre d'or tracee progressivement (scaleY) + lueur */
+.tl .tl__line{position:absolute;left:var(--tl-x);top:0;bottom:0;width:1px;transform:translateX(-50%);z-index:1;
+  background:linear-gradient(180deg,transparent 0,var(--tl-track) 5%,var(--tl-track) 92%,transparent 100%);box-shadow:none}
+.tl .tl__line::before{content:"";position:absolute;left:50%;top:0;width:11px;height:100%;transform:translateX(-50%) scaleY(var(--tl-draw,0));transform-origin:50% 0;
+  background:linear-gradient(90deg,transparent,var(--tl-glow),transparent);
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.0),#000 4%,#000 80%,transparent);mask-image:linear-gradient(180deg,rgba(0,0,0,.0),#000 4%,#000 80%,transparent);
+  will-change:transform}
+.tl .tl__line::after{content:"";position:absolute;inset:0;box-shadow:none;transform:scaleY(var(--tl-draw,0));transform-origin:50% 0;
+  background:linear-gradient(180deg,var(--tl-ink-a) 0%,var(--tl-ink-b) 40%,var(--tl-ink-b) 91%,transparent 100%);will-change:transform}
+/* entree en scene : piste et bille se fondent a la premiere apparition de la section (.tl--in pose par le module au 1er .is-live) */
+.tl--anim .tl__line,.tl--anim .tl__bead{transition:opacity .9s var(--tl-ease)}
+.tl--anim:not(.tl--in) .tl__line,.tl--anim:not(.tl--in) .tl__bead{opacity:0}
+
+/* ---------- Etapes ---------- */
+.tl .tl__item{position:relative;z-index:0;width:calc(50% - var(--tl-gap));margin:0 0 2.5rem;opacity:1;transform:none;transition:none;
+  --tl-side:1;--tl-lx:36%;--tl-p-ml:0;--tl-in-l:calc(-1*var(--tl-gap));--tl-in-r:-2.4rem}
+.tl .tl__item+.tl__item{margin-top:-1.5rem}                                      /* zigzag entrelace, plus elegant */
+.tl .tl__item.is-on{opacity:1}
+/* cote : sans JS, parite (la ligne est 1er enfant, la bille dernier ; etape 1 a DROITE, .tl--start-left pour l'inverser) ; avec JS, classes explicites */
+.tl .tl__item:nth-child(even),.tl.tl--start-left .tl__item:nth-child(odd),.tl.tl--js .tl__item.tl__item--r{margin-left:auto;margin-right:0;text-align:left;
+  --tl-side:1;--tl-lx:36%;--tl-p-ml:0;--tl-in-l:calc(-1*var(--tl-gap));--tl-in-r:-2.4rem}
+.tl .tl__item:nth-child(odd),.tl.tl--start-left .tl__item:nth-child(even),.tl.tl--js .tl__item.tl__item--l{margin-right:auto;margin-left:0;text-align:right;
+  --tl-side:-1;--tl-lx:64%;--tl-p-ml:auto;--tl-in-l:-2.4rem;--tl-in-r:calc(-1*var(--tl-gap))}
+
+/* lumiere ambiante derriere l'etape active : nappe large (50 % x 58 %) et tres douce (decroissance en cloche, 5 paliers), contenue jusqu'a la ligne — de la lumiere, pas une aureole */
+.tl .tl__item::after{content:"";position:absolute;inset:-2.2rem var(--tl-in-r) -2.2rem var(--tl-in-l);z-index:-1;pointer-events:none;opacity:0;transition:opacity .9s var(--tl-ease);
+  background:radial-gradient(50% 58% at var(--tl-lx,36%) 50%,rgba(var(--tl-light-rgb),var(--tl-light-a)) 0,rgba(var(--tl-light-rgb),calc(var(--tl-light-a)*.7)) 28%,rgba(var(--tl-light-rgb),calc(var(--tl-light-a)*.32)) 55%,rgba(var(--tl-light-rgb),calc(var(--tl-light-a)*.08)) 80%,transparent 100%)}
+.tl .tl__item.is-active::after{opacity:1}
+
+/* losange fin, centre sur la ligne (top pose par JS a la hauteur du titre ; repli CSS) */
+.tl .tl__item .tl__dot{position:absolute;top:2.5rem;left:calc(50% - var(--tl-side)*(50% + var(--tl-gap)));right:auto;width:9px;height:9px;background:transparent;border:1px solid var(--tl-diamond);box-shadow:none;border-radius:0;
+  transform:translate(-50%,-50%) rotate(45deg) scale(var(--tl-ds,.82));transition:background .6s var(--tl-ease),border-color .6s var(--tl-ease),box-shadow .7s var(--tl-ease),transform .6s var(--tl-ease)}
+.tl .tl__item.is-past .tl__dot{--tl-ds:1;background:var(--tl-ink-b);border-color:var(--tl-ink-b)}
+.tl .tl__item.is-active .tl__dot{--tl-ds:1;background:var(--tl-diamond-on);border-color:var(--tl-diamond-on);box-shadow:0 0 0 3px var(--tl-halo-soft),0 0 18px var(--tl-halo)}
+
+/* typographie */
+.tl .tl__step{font-family:var(--display);font-style:italic;font-weight:400;color:var(--tl-step-ink);font-size:1.08rem;letter-spacing:.01em;line-height:1.3;margin:0 0 .3rem;
+  transition:opacity .6s var(--tl-ease),color .6s var(--tl-ease)}
+.tl .tl__item h3{font-family:var(--display);font-weight:400;font-size:clamp(1.45rem,1.2rem + .7vw,1.76rem);line-height:1.12;margin:0 0 .55rem;color:var(--text);text-wrap:balance;
+  transition:opacity .6s var(--tl-ease),color .6s var(--tl-ease)}
+.tl .tl__item>p:not(.tl__step){margin:0 0 0 var(--tl-p-ml);color:var(--text-2);font-size:.98rem;line-height:1.6;max-width:38ch;
+  transition:opacity .6s var(--tl-ease),color .6s var(--tl-ease)}
+
+/* etats (mode anime seulement : sans JS ou en reduced, tout est allume) — seuls les textes glissent, les losanges restent sur la ligne */
+.tl--anim .tl__item .tl__step,.tl--anim .tl__item h3,.tl--anim .tl__item>p:not(.tl__step){transform:translate3d(var(--tl-shift,0px),0,0);
+  transition:opacity .6s var(--tl-ease),color .6s var(--tl-ease),transform .75s var(--tl-ease)}
+.tl--anim .tl__item{--tl-shift:calc(var(--tl-side)*10px)}
+.tl--anim .tl__item.is-active,.tl--anim .tl__item.is-past{--tl-shift:0px}
+.tl--anim .tl__item>p:not(.tl__step){opacity:var(--tl-o-far)}
+.tl--anim .tl__item h3{opacity:var(--tl-o-far-title)}
+.tl--anim .tl__item .tl__step{opacity:var(--tl-o-far-step)}
+.tl--anim .tl__item.is-past>p:not(.tl__step){opacity:var(--tl-o-past)}
+.tl--anim .tl__item.is-past h3{opacity:var(--tl-o-past-title)}
+.tl--anim .tl__item.is-past .tl__step{opacity:var(--tl-o-past-step)}
+.tl--anim .tl__item.is-active .tl__step,.tl--anim .tl__item.is-active h3,.tl--anim .tl__item.is-active>p:not(.tl__step){opacity:1}
+.tl .tl__item.is-active h3{color:var(--tl-title-active)}
+.tl .tl__item.is-active>p:not(.tl__step){color:var(--text)}
+/* survol (desktop, pointeur fin) : une etape non atteinte se laisse lire en avance — textes seulement, 600 ms, retour au repos */
+@media (hover:hover) and (pointer:fine){
+  .tl--anim .tl__item:not(.is-active):not(.is-past):hover .tl__step,.tl--anim .tl__item:not(.is-active):not(.is-past):hover h3,.tl--anim .tl__item:not(.is-active):not(.is-past):hover>p:not(.tl__step){opacity:var(--tl-o-hover)}
+}
+
+/* ---------- Bille active ---------- */
+.tl .tl__bead{position:absolute;left:var(--tl-x);top:0;z-index:3;width:9px;height:9px;margin:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 38% 34%,var(--tl-bead-core) 0,var(--tl-bead-mid) 38%,var(--tl-bead-edge) 100%);
+  box-shadow:0 0 3px var(--tl-halo),0 0 12px var(--tl-halo-soft);
+  transform:translate3d(-50%,calc(var(--tl-y,0)*1px - 50%),0);will-change:transform}
+.tl .tl__bead::before{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;border-radius:50%;opacity:.85;
+  background:radial-gradient(circle,var(--tl-halo) 0,var(--tl-halo-soft) 45%,transparent 72%);transform:translate(-50%,-50%)}
+/* trail « encre fraiche » : 3 px x 80 px, tete franche, opacite = vitesse de la bille (plein vers 500 px/s), se retourne quand on remonte, decolle de 4 px de la bille */
+.tl .tl__bead::after{content:"";position:absolute;left:50%;bottom:calc(50% + 4px);width:3px;height:80px;margin-left:-1.5px;opacity:var(--tl-trail,0);border-radius:1.5px;
+  background:linear-gradient(0deg,rgb(var(--tl-trail-rgb)) 0,rgb(var(--tl-trail-rgb)) 10%,rgba(var(--tl-trail-rgb),.6) 34%,rgba(var(--tl-trail-rgb),.2) 64%,transparent 100%);box-shadow:0 0 8px var(--tl-trail-glow);
+  transform-origin:50% 100%;transform:translate3d(0,calc((1 - var(--tl-dir,1))*4px),0) scaleY(var(--tl-dir,1))}
+.tl:not(.tl--js) .tl__bead{display:none}
+/* sans JS : ligne entierement tracee, losanges pleins (meme image que reduced, sans bille) */
+.tl:not(.tl--js) .tl__line::before,.tl:not(.tl--js) .tl__line::after{--tl-draw:1}
+.tl:not(.tl--js) .tl__item .tl__dot{--tl-ds:1;background:var(--tl-ink-b);border-color:var(--tl-ink-b)}
+.tl.tl--anim.is-live .tl__bead::before{animation:tl-pulse 3.6s ease-in-out -1.2s infinite alternate}
+@keyframes tl-pulse{from{transform:translate(-50%,-50%) scale(1);opacity:.8}to{transform:translate(-50%,-50%) scale(1.3);opacity:.5}}
+
+/* ---------- Reduced motion : tout allume, bille en bas, rien ne bouge ---------- */
+.tl--reduced .tl__item,.tl--reduced .tl__item *,.tl--reduced .tl__line,.tl--reduced .tl__line::before,.tl--reduced .tl__line::after,.tl--reduced .tl__bead,.tl--reduced .tl__bead::before,.tl--reduced .tl__bead::after{transition:none !important;animation:none !important}
+.tl--reduced .tl__line::before,.tl--reduced .tl__line::after{--tl-draw:1}
+.tl--reduced .tl__item .tl__dot{--tl-ds:1;background:var(--tl-ink-b);border-color:var(--tl-ink-b)}
+.tl--reduced .tl__bead::after{opacity:0}
+@media (prefers-reduced-motion:reduce){
+  .tl .tl__item,.tl .tl__item *,.tl .tl__line,.tl .tl__line::before,.tl .tl__line::after,.tl .tl__bead,.tl .tl__bead::before,.tl .tl__bead::after{transition:none !important;animation:none !important}
+  .tl--anim .tl__line,.tl--anim .tl__bead{opacity:1}
+  .tl--anim .tl__item .tl__step,.tl--anim .tl__item h3,.tl--anim .tl__item>p:not(.tl__step){opacity:1}
+  .tl--anim .tl__item{--tl-shift:0px}
+}
+
+/* ---------- Mobile : ligne a gauche, textes a gauche, bille idem ---------- */
+@media (max-width:820px){
+  .tl{--tl-x:4px;--tl-gap:2.4rem;padding:1.4rem 0 2rem}
+  .tl .tl__item{width:calc(100% - var(--tl-gap));margin:0 0 2.2rem var(--tl-gap) !important;text-align:left !important;--tl-lx:36%}
+  .tl .tl__item+.tl__item{margin-top:0 !important}
+  .tl .tl__item .tl__dot{left:calc(var(--tl-x) - var(--tl-gap)) !important;right:auto !important;top:2.15rem;transform:translate(-50%,-50%) rotate(45deg) scale(var(--tl-ds,.82)) !important}
+  .tl .tl__item::after{inset:-.8rem -1rem -.8rem -1.4rem}
+  .tl--anim .tl__item--l,.tl--anim .tl__item--r{--tl-shift:8px}
+  .tl--anim .tl__item.is-active,.tl--anim .tl__item.is-past{--tl-shift:0px}
+  .tl .tl__item h3{font-size:1.42rem;margin-bottom:.45rem}
+  .tl .tl__item>p:not(.tl__step){font-size:.95rem;max-width:none;margin-left:0 !important}
+  .tl .tl__step{font-size:1rem}
+}

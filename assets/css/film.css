@@ -1,0 +1,410 @@
+/* ============================================================================
+   LE FILM INTERACTIF — calque de texte, commandes, et mode film sur mobile
+   ----------------------------------------------------------------------------
+   La page n'est plus une distance à parcourir : chaque section fait UN écran
+   (--h:100) et le moteur de séquences (main.js) pilote le progrès des
+   chapitres par le temps. Cette feuille porte ce que ce moteur affiche :
+
+     · .cine-texte — LE texte de la séquence, dans un calque fixe hors des
+       sections. C'est ce qui lui permet de rester immobile du début à la fin
+       d'une séquence qui traverse quatre chapitres, là où les bandes des
+       sections partent avec elles au moindre glissement de caméra.
+
+     · .cine-bar — précédent · lecture / pause · suivant · ×1 ×2 ×4 ×6 ×8 ·
+       boucle · progression. Une barre de projection, pas un tableau de bord :
+       filets fins, chiffres en romain de titre, rien qui brille.
+
+     · html.film-actif — les bandes des sections s'effacent (le calque les
+       remplace), et sur téléphone les règles du « mode statique » de main.css
+       sont rendues au film : la scène redevient plein écran, la vidéo se
+       montre, le texte passe en bas. Le mode statique reste ENTIER pour
+       prefers-reduced-motion, qui n'active jamais le film.
+   ========================================================================== */
+
+/* ── 1 · en mode film, les bandes des sections s'effacent ─────────────── */
+html.film-actif .chapter .band {
+  opacity: 0 !important;
+  visibility: hidden;
+  transition: none;
+}
+/* l'indice « Avancez » de l'intro est porté par la barre du film */
+html.film-actif .cue { display: none; }
+
+/* ── 2 · LE GRAND VOILE ────────────────────────────────────────────────
+   La scène joue NUE, sans texte : à la fin d'une séquence, un voile
+   sombre monte sur toute l'image — la ponctuation d'un chapitre de film.
+   Trois étages, chacun sur son temps : petit surtitre doré, GRAND TITRE
+   éditorial, court texte. Le voile se retire au premier geste (300 ms).
+   Il tient l'écran seul : plein cadre, composition centrée, rien à lire
+   pendant la course. */
+.cine-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vh, 3rem) clamp(1.2rem, 6vw, 5rem) clamp(4.2rem, 12vh, 7.5rem);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s ease;
+  background:
+    radial-gradient(ellipse 92% 72% at 50% 58%, rgba(6,5,4,.62) 0%, rgba(6,5,4,.34) 52%, rgba(6,5,4,0) 78%),
+    linear-gradient(180deg, rgba(6,5,4,0) 0%, rgba(6,5,4,.12) 42%, rgba(6,5,4,.58) 100%);
+}
+.cine-voile.is-on { opacity: 1; transition: opacity .85s ease; }
+.cine-voile__cadre {
+  max-width: min(58ch, 86vw);
+  text-align: center;
+  text-shadow: 0 1px 24px rgba(4, 3, 2, .55);
+}
+.cine-voile__sur {
+  margin: 0 0 clamp(.7rem, 1.6vh, 1.15rem);
+  font-family: var(--body);
+  font-size: clamp(.6rem, .55rem + .22vw, .74rem);
+  letter-spacing: .34em;
+  text-indent: .34em;             /* recentre la lettre malgré l'espacement */
+  text-transform: uppercase;
+  color: var(--gold, #c99a3f);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.cine-voile__titre {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 1.2rem + 3.4vw, 4.1rem);
+  line-height: 1.05;
+  text-wrap: balance;
+  color: var(--text-primary, #f3ecdc);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.cine-voile__lede {
+  margin: clamp(.85rem, 2vh, 1.4rem) auto 0;
+  max-width: 46ch;
+  font-size: clamp(.88rem, .82rem + .2vw, 1.02rem);
+  line-height: 1.66;
+  color: rgba(240, 230, 210, .8);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.cine-voile__cta {
+  margin: clamp(1.1rem, 2.6vh, 1.8rem) 0 0;
+  display: flex;
+  justify-content: center;
+  gap: .8rem;
+  flex-wrap: wrap;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.cine-voile.is-on .cine-voile__sur    { opacity: 1; transform: none; transition: opacity .6s ease .2s,  transform .7s cubic-bezier(.22,.61,.36,1) .2s; }
+.cine-voile.is-on .cine-voile__titre  { opacity: 1; transform: none; transition: opacity .75s ease .34s, transform .85s cubic-bezier(.22,.61,.36,1) .34s; }
+.cine-voile.is-on .cine-voile__lede   { opacity: 1; transform: none; transition: opacity .7s ease .58s,  transform .8s cubic-bezier(.22,.61,.36,1) .58s; }
+.cine-voile.is-on .cine-voile__cta    { opacity: 1; transform: none; transition: opacity .7s ease .78s,  transform .8s cubic-bezier(.22,.61,.36,1) .78s; }
+.cine-voile.is-on .cine-voile__cta a  { pointer-events: auto; }
+
+/* ── 3 · la barre du film ─────────────────────────────────────────────── */
+.cine-bar {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(.9rem, 2.6vh, 1.7rem);
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: clamp(.15rem, .5vw, .45rem);
+  padding: .34rem clamp(.55rem, 1.2vw, .95rem);
+  background: rgba(10, 9, 7, .55);
+  border: 1px solid rgba(201, 154, 63, .26);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 3px;
+  opacity: 0;
+  translate: 0 8px;
+  transition: opacity .8s ease, translate .8s cubic-bezier(.22,.61,.36,1);
+  pointer-events: none;
+}
+html.film-actif .cine-bar { opacity: 1; translate: 0 0; pointer-events: auto; }
+/* au-delà du film (pied de page), la barre se retire */
+html.film-actif.film-sorti .cine-bar { opacity: 0; translate: 0 8px; pointer-events: none; }
+html.film-actif.film-sorti .cine-voile { opacity: 0; }
+
+.cine-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 2px;
+  color: var(--gold, #c99a3f);
+  cursor: pointer;
+  transition: color .3s ease, background .3s ease, opacity .3s ease;
+}
+.cine-bar__btn svg { width: 21px; height: 21px; }
+.cine-bar__btn:hover { color: var(--gold-2, #e8cd93); background: rgba(201, 154, 63, .08); }
+.cine-bar__btn:focus-visible { outline: 1px solid var(--gold, #c99a3f); outline-offset: -2px; }
+.cine-bar__btn[disabled] { opacity: .3; pointer-events: none; }
+
+/* lecture / pause : un seul bouton, deux glyphes */
+.cine-bar__btn--lect { width: 46px; height: 46px; border: 1px solid rgba(201, 154, 63, .38); border-radius: 50%; }
+.cine-bar__btn--lect svg { width: 18px; height: 18px; }
+.cine-bar__btn--lect .cine-ico-pause { display: none; }
+.cine-bar__btn--lect[aria-pressed="true"] .cine-ico-play { display: none; }
+.cine-bar__btn--lect[aria-pressed="true"] .cine-ico-pause { display: block; }
+
+.cine-bar__sep { width: 1px; height: 22px; background: rgba(201, 154, 63, .22); margin: 0 clamp(.1rem, .4vw, .35rem); }
+
+.cine-bar__vitesses { display: flex; gap: 1px; }
+.cine-bar__vitesses button {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 .3rem;
+  background: none;
+  border: 0;
+  border-radius: 2px;
+  font-family: var(--body);
+  font-size: .68rem;
+  letter-spacing: .06em;
+  color: rgba(240, 230, 210, .5);
+  cursor: pointer;
+  transition: color .3s ease, background .3s ease;
+}
+.cine-bar__vitesses button:hover { color: var(--gold-2, #e8cd93); }
+.cine-bar__vitesses button:focus-visible { outline: 1px solid var(--gold, #c99a3f); outline-offset: -2px; }
+.cine-bar__vitesses button.is-active { color: var(--gold, #c99a3f); background: rgba(201, 154, 63, .12); }
+
+.cine-bar__btn--boucle { width: 36px; height: 36px; opacity: .65; }
+.cine-bar__btn--boucle svg { width: 17px; height: 17px; }
+.cine-bar__btn--boucle[aria-pressed="true"] { opacity: 1; background: rgba(201, 154, 63, .12); }
+
+.cine-bar__prog {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .3rem;
+  margin-left: clamp(.15rem, .5vw, .4rem);
+  padding-right: .25rem;
+  font-family: var(--display);
+  color: var(--text-primary, #f3ecdc);
+  white-space: nowrap;
+}
+.cine-bar__prog b { font-weight: 400; font-size: 1.06rem; letter-spacing: .02em; }
+.cine-bar__prog i { font-style: normal; font-size: .8rem; opacity: .45; }
+.cine-bar__prog > span { font-size: .8rem; opacity: .6; }
+.cine-bar__prog em {
+  font-family: var(--body);
+  font-style: normal;
+  font-size: .58rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--gold, #c99a3f);
+  margin-left: .35rem;
+}
+
+/* ── 4 · l'ambiance JOUR ──────────────────────────────────────────────── */
+:root[data-ambiance="jour"] .cine-bar {
+  background: rgba(250, 246, 238, .68);
+  border-color: rgba(138, 104, 32, .3);
+}
+:root[data-ambiance="jour"] .cine-bar__btn { color: #8a6820; }
+:root[data-ambiance="jour"] .cine-bar__btn:hover { color: #6b4d17; background: rgba(138, 104, 32, .08); }
+:root[data-ambiance="jour"] .cine-bar__btn--lect { border-color: rgba(138, 104, 32, .42); }
+:root[data-ambiance="jour"] .cine-bar__vitesses button { color: rgba(50, 40, 22, .55); }
+:root[data-ambiance="jour"] .cine-bar__vitesses button.is-active { color: #8a6820; background: rgba(138, 104, 32, .1); }
+:root[data-ambiance="jour"] .cine-bar__prog { color: #241c10; }
+:root[data-ambiance="jour"] .cine-bar__prog em { color: #8a6820; }
+
+/* ── 5 · TÉLÉPHONE : le film s'active, le mode statique se retire ──────
+   main.css transforme les chapitres film en blocs d'article sous 720 px.
+   Quand le moteur tourne (html.film-actif), on rend à la scène son écran :
+   ces règles répètent, préfixées, la mise en scène du bureau. Le bloc
+   statique de main.css reste ENTIER pour prefers-reduced-motion. */
+@media (max-width: 720px), (orientation: portrait) and (max-width: 1024px), (orientation: portrait) and (pointer: coarse), (orientation: landscape) and (pointer: coarse) and (max-height: 560px) {
+  html.film-actif .chapter.film { height: calc(var(--h) * 1vh); }
+  html.film-actif .chapter.film .stage {
+    position: sticky;
+    height: 100vh;
+    height: 100svh;
+    display: block;
+    justify-content: normal;
+  }
+  html.film-actif .chapter.film .film__video { display: block; }
+  html.film-actif .chapter.film .ring { display: block; }
+  html.film-actif .chapter.film .dust { display: block; }
+  html.film-actif .chapter.film .scrim { background: linear-gradient(180deg, rgba(8,7,5,.12) 0%, rgba(8,7,5,0) 40%, rgba(8,7,5,.62) 78%, rgba(8,7,5,.9) 100%); }
+  html.film-actif .chapter.film .bands { position: absolute; inset: 0; display: block; padding: 0; pointer-events: none; }
+  html.film-actif .chapter.film .veil { display: block; }
+  html.film-actif .chapter--pesee .readout {
+    position: absolute;
+    right: clamp(.9rem, 4vw, 2rem);
+    bottom: calc(clamp(.9rem, 2.6vh, 1.7rem) + 74px);
+    margin: 0;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  /* le voile respire au-dessus de la barre ; le titre garde sa stature */
+  .cine-voile {
+    padding: clamp(.8rem, 3vh, 1.6rem) 1.1rem calc(max(.65rem, env(safe-area-inset-bottom)) + 78px);
+  }
+  .cine-voile__cadre { max-width: 92vw; }
+  .cine-voile__titre { font-size: clamp(1.7rem, 1rem + 5vw, 2.7rem); }
+  .cine-voile__lede { font-size: .85rem; line-height: 1.55; max-width: 40ch; }
+  .cine-voile__sur { letter-spacing: .26em; text-indent: .26em; }
+
+  .cine-bar { bottom: max(.65rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 1rem); }
+  /* deux elements flottants entraient en collision avec le film sur petit
+     ecran : le bouton SON recouvrait la vitesse x8, et la pastille JOUR/NUIT
+     se posait sur la derniere ligne du texte. Le SON monte au-dessus de la
+     barre ; la pastille rejoint le haut, sous l'en-tete. */
+  html.film-actif .sound { bottom: calc(max(.65rem, env(safe-area-inset-bottom)) + 62px); right: .7rem; }
+  html.film-actif .ab-toggle { top: 96px; bottom: auto; right: .7rem; }
+  .cine-bar__btn { width: 44px; height: 44px; }
+  .cine-bar__btn--lect { width: 48px; height: 48px; }
+  .cine-bar__vitesses button { min-width: 30px; height: 40px; font-size: .62rem; }
+  .cine-bar__btn--boucle { display: none; }             /* la boucle est un raffinement de bureau */
+  .cine-bar__prog em { display: none; }
+}
+@media (max-width: 430px) {
+  .cine-bar { gap: 0; padding: .28rem .4rem; }
+  .cine-bar__sep { display: none; }
+  .cine-bar__vitesses button { min-width: 26px; }
+}
+
+/* ── 6 · mouvement réduit : pas de film, pas de barre ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cine-bar, .cine-voile { display: none !important; }
+}
+
+/* ── 7 · V3 — lignes de chapitre, readouts, scenes code ─────────────── */
+.cine-ligne {
+  position: fixed;
+  left: clamp(1.4rem, 6vw, 5rem);
+  bottom: calc(clamp(.9rem, 2.6vh, 1.7rem) + 84px);
+  z-index: 40;
+  margin: 0;
+  max-width: 46ch;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(1.05rem, .9rem + .8vw, 1.5rem);
+  color: rgba(240, 230, 210, .92);
+  text-shadow: 0 1px 18px rgba(4, 3, 2, .65);
+  border-left: 2px solid var(--gold, #c99a3f);
+  padding-left: .8rem;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+.cine-ligne.is-on { opacity: 1; transform: none; transition: opacity .7s ease, transform .8s cubic-bezier(.22,.61,.36,1); }
+:root[data-ambiance="jour"] .cine-ligne { color: #241c10; text-shadow: 0 1px 14px rgba(250, 246, 238, .6); }
+
+.v3-readout {
+  position: absolute;
+  right: clamp(1rem, 5vw, 3rem);
+  bottom: clamp(5.2rem, 16vh, 9rem);
+  z-index: 5;
+  display: grid;
+  gap: .15rem;
+  justify-items: end;
+  text-align: right;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .5s ease, transform .5s ease;
+  pointer-events: none;
+  text-shadow: 0 1px 16px rgba(4, 3, 2, .6);
+}
+.v3-readout.is-on { opacity: 1; transform: none; }
+.v3-readout__k { font-size: .6rem; letter-spacing: .26em; text-transform: uppercase; color: var(--gold, #c99a3f); }
+.v3-readout b { font-family: var(--display); font-weight: 400; font-size: clamp(1.9rem, 1.2rem + 2.4vw, 3.2rem); line-height: 1; color: #f3ecdc; font-variant-numeric: tabular-nums; }
+.v3-readout i { font-style: normal; font-size: .66rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(240, 230, 210, .6); }
+.v3-readout.is-stable i { color: var(--gold-2, #e8cd93); }
+.v3-readout--lingot i { text-transform: none; letter-spacing: .04em; max-width: 34ch; }
+:root[data-ambiance="jour"] .v3-readout b { color: #241c10; text-shadow: 0 1px 12px rgba(250, 246, 238, .65); }
+:root[data-ambiance="jour"] .v3-readout i { color: rgba(50, 40, 22, .65); }
+
+/* fonds jumeaux des scenes code */
+.v3bg { opacity: 1; transition: opacity .6s ease; }
+.v3bg--jour { opacity: 0; }
+:root[data-ambiance="jour"] .v3bg--nuit { opacity: 0; }
+:root[data-ambiance="jour"] .v3bg--jour { opacity: 1; }
+
+/* S9 · le calcul */
+.v3calc {
+  position: absolute;
+  left: clamp(1.4rem, 8vw, 9rem);
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  gap: clamp(.5rem, 1.4vh, 1rem);
+  z-index: 4;
+}
+.v3calc__l {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.3rem, 1rem + 1.5vw, 2.3rem);
+  color: #f0e6d2;
+  text-shadow: 0 1px 16px rgba(4, 3, 2, .6);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .6s ease, transform .7s cubic-bezier(.22,.61,.36,1);
+}
+.v3calc__l.is-on { opacity: 1; transform: none; }
+.v3calc__l span { color: var(--gold, #c99a3f); }
+.v3calc__l i { font-style: italic; color: rgba(240, 230, 210, .65); font-size: .8em; }
+.v3calc__l--em { color: var(--gold-2, #e8cd93); }
+.v3calc__l--total { font-size: clamp(1rem, .9rem + .6vw, 1.4rem); color: rgba(240, 230, 210, .8); border-top: 1px solid rgba(201, 154, 63, .35); padding-top: .7rem; }
+:root[data-ambiance="jour"] .v3calc__l { color: #241c10; text-shadow: 0 1px 12px rgba(250, 246, 238, .7); }
+:root[data-ambiance="jour"] .v3calc__l--em { color: #8a6820; }
+:root[data-ambiance="jour"] .v3calc__l--total { color: rgba(50, 40, 22, .8); }
+
+/* S10 · document — vraies lignes + medaillon */
+.doc__lignes { display: grid; gap: .45rem; margin: .9rem 0; }
+.doc__lignes span {
+  font-size: .74rem; letter-spacing: .02em; color: rgba(40, 32, 18, .78);
+  border-bottom: 1px dotted rgba(40, 32, 18, .22); padding-bottom: .35rem;
+  opacity: 0; transform: translateY(6px); transition: opacity .5s ease, transform .5s ease;
+}
+.doc__lignes span.is-on { opacity: 1; transform: none; }
+.doc__choice--trois { display: flex; gap: .5rem; flex-wrap: wrap; }
+.doc__medaillon { margin-top: .8rem; display: grid; grid-template-columns: 74px 1fr; gap: .7rem; align-items: center; }
+.doc__medaillon img { width: 74px; height: 46px; object-fit: cover; border-radius: 2px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.doc__medaillon p { margin: 0; font-size: .78rem; font-style: italic; color: rgba(40, 32, 18, .8); }
+
+/* S18 · la reponse du kit */
+.v3kitdoc {
+  position: absolute; inset: 0; z-index: 4;
+  display: grid; align-content: center; justify-items: start;
+  padding: 0 clamp(1.4rem, 8vw, 9rem);
+  gap: clamp(1rem, 3vh, 2rem);
+}
+.v3kitdoc__doc { display: grid; gap: .5rem; }
+.v3kitdoc__ref { margin: 0; font-size: .64rem; letter-spacing: .3em; text-transform: uppercase; color: var(--gold, #c99a3f); }
+.v3kitdoc__l { margin: 0; font-family: var(--display); font-size: clamp(1.1rem, .95rem + 1vw, 1.8rem); color: #f0e6d2; text-shadow: 0 1px 16px rgba(4,3,2,.6); }
+.v3kitdoc__l--total { font-size: clamp(.95rem, .85rem + .5vw, 1.25rem); color: rgba(240,230,210,.75); }
+.v3kitdoc__ref, .v3kitdoc__l, .v3kitdoc__voie { opacity: 0; transform: translateY(10px); transition: opacity .55s ease, transform .6s ease; }
+.v3kitdoc .is-on { opacity: 1; transform: none; }
+.v3kitdoc__split { display: flex; gap: clamp(1rem, 4vw, 2.5rem); flex-wrap: wrap; }
+.v3kitdoc__voie { display: grid; gap: .2rem; border-left: 2px solid var(--gold, #c99a3f); padding-left: .9rem; }
+.v3kitdoc__voie b { font-family: var(--display); font-weight: 400; font-size: clamp(1.2rem, 1rem + .9vw, 1.7rem); color: var(--gold-2, #e8cd93); }
+.v3kitdoc__voie span { font-size: .78rem; color: rgba(240, 230, 210, .7); }
+:root[data-ambiance="jour"] .v3kitdoc__l, :root[data-ambiance="jour"] .v3kitdoc__l--total { color: #241c10; text-shadow: 0 1px 12px rgba(250,246,238,.7); }
+:root[data-ambiance="jour"] .v3kitdoc__voie span { color: rgba(50, 40, 22, .7); }
+:root[data-ambiance="jour"] .v3kitdoc__voie b { color: #8a6820; }
+
+@media (max-width: 720px), (orientation: portrait) and (pointer: coarse) {
+  .cine-ligne { left: 1rem; right: 1rem; max-width: none; bottom: calc(max(.65rem, env(safe-area-inset-bottom)) + 78px); font-size: 1.05rem; }
+  .v3-readout { right: 1rem; bottom: clamp(7rem, 20vh, 10rem); }
+  .v3calc, .v3kitdoc { padding-left: 1.1rem; padding-right: 1.1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cine-ligne { display: none !important; }
+  .v3calc__l, .v3kitdoc__ref, .v3kitdoc__l, .v3kitdoc__voie, .doc__lignes span { opacity: 1; transform: none; }
+}

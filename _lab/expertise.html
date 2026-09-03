@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab expertise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/accueil.css">
+<link rel="stylesheet" href="../assets/css/accueil-sections.css">
+<link rel="stylesheet" href="../assets/css/scenes/expertise.css">
+<script type="importmap">{"imports":{"three":"../assets/vendor/three.module.min.js","three/addons/":"../assets/vendor/addons/"}}</script>
+<script>(function(){var q=new URLSearchParams(location.search);var a=q.get('ambiance');if(a==='jour'||a==='nuit')document.documentElement.dataset.ambiance=a;})();</script>
+<style>
+  html,body{margin:0;background:var(--bg)}
+  body{display:grid;place-items:center;min-height:100vh;padding:2rem 0}
+  .lab{width:min(640px,92vw)}
+  .lab .steps{display:block;perspective:none}
+  .lab .step3d{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<main class="lab">
+  <div class="steps">
+    <article class="step3d in is-live" data-live>
+      <div class="step3d__inner">
+        <div class="step3d__scene" id="scene" aria-hidden="true"></div>
+        <div class="step3d__body"><span class="step3d__n">03</span><h3>Expertise &amp; proposition</h3><p>Votre expert examine vos biens devant vous, effectue les contrôles nécessaires et vous remet une proposition de rachat claire et écrite.</p></div>
+      </div>
+    </article>
+  </div>
+</main>
+<script type="module">
+  import { createExpertiseScene } from '../assets/js/scenes/expertise.js';
+  const q = new URLSearchParams(location.search);
+  const reduced = q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const debug = q.get('debug') === '1';
+  const quality = q.get('quality') || 'auto';
+  const host = document.getElementById('scene');
+  const scene = await createExpertiseScene(host, { reduced, ambiance: document.documentElement.dataset.ambiance || 'nuit', quality, debug });
+  window.__scene = scene;
+  scene.start();
+  document.body.dataset.ready = '1';
+  document.addEventListener('visibilitychange', () => document.hidden ? scene.stop() : scene.start());
+  if (q.get('toggle') === '1') setTimeout(() => { const m = document.documentElement.dataset.ambiance === 'jour' ? 'nuit' : 'jour'; document.documentElement.dataset.ambiance = m; scene.setAmbiance(m); }, 3000);
+</script>
+</body>
+</html>

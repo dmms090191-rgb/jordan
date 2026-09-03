@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Compagnie de l'Or · Rachat d'or partout en France</title>
+<meta name="description" content="La Compagnie de l'Or rachète bijoux, pièces, lingots, montres et biens précieux. Nos experts se déplacent dans différentes régions de France pour vous recevoir lors de journées d'expertise. Expertise gratuite, sans engagement.">
+<meta name="theme-color" content="#0b0a08">
+<script>try{document.documentElement.dataset.ambiance=localStorage.getItem("compagnie-or-ambiance")==="jour"?"jour":"nuit"}catch(e){document.documentElement.dataset.ambiance="nuit"}</script>
+<meta property="og:type" content="website">
+<meta property="og:title" content="La Compagnie de l'Or · Rachat d'or partout en France">
+<meta property="og:description" content="Bijoux, pièces, lingots, montres : nos experts vous reçoivent lors de journées d'expertise organisées au plus près de chez vous. Expertise gratuite, sans engagement.">
+<!-- DEPLOY STEP: patch og:url and og:image with the live absolute URL -->
+<meta property="og:url" content="https://lacompagniedelor.fr/">
+<meta property="og:image" content="https://lacompagniedelor.fr/assets/img/og.jpg">
+<meta property="og:locale" content="fr_FR">
+<link rel="icon" href="assets/logo/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/logo/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/logo/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logo/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="assets/logo/favicon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/logo/apple-touch-icon-180.png">
+<link rel="manifest" href="assets/site.webmanifest">
+<link rel="preload" href="assets/fonts/cormorant-garamond-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/jost-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/css/poincon.css">
+<link rel="stylesheet" href="assets/css/accueil.css">
+<link rel="stylesheet" href="assets/css/hero-montre.css">
+<link rel="stylesheet" href="assets/css/accueil-sections.css">
+<link rel="stylesheet" href="assets/css/logo-intro.css">
+<link rel="stylesheet" href="assets/css/scenes/cours.css">
+<link rel="stylesheet" href="assets/css/scenes/france.css">
+<link rel="stylesheet" href="assets/css/scenes/hotelcss.css">
+<link rel="stylesheet" href="assets/css/scenes/expertise.css">
+<link rel="stylesheet" href="assets/css/scenes/decide.css">
+<link rel="stylesheet" href="assets/css/scenes/timeline.css">
+<link rel="stylesheet" href="assets/css/scenes/domaines.css">
+<link rel="stylesheet" href="assets/css/scenes/carte3d.css">
+<link rel="stylesheet" href="assets/css/da-rythme.css">
+<link rel="stylesheet" href="assets/css/da-parcours.css">
+<link rel="stylesheet" href="assets/css/da-carte.css">
+<link rel="stylesheet" href="assets/css/da-rendezvous.css">
+<link rel="stylesheet" href="assets/css/da-final.css">
+<link rel="stylesheet" href="assets/css/da-marche.css">
+<link rel="stylesheet" href="assets/css/da-faq.css">
+<link rel="stylesheet" href="assets/css/da-cta.css">
+<link rel="stylesheet" href="assets/css/da-chiffre.css">
+<script type="importmap">{"imports":{"three":"./assets/vendor/three.module.min.js","three/addons/":"./assets/vendor/addons/"}}</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"LocalBusiness","name":"La Compagnie de l'Or","legalName":"Société Or Expert SAS","description":"Rachat d'or, bijoux, pièces, montres, lingots et métaux précieux lors de journées d'expertise organisées dans les hôtels de France.","telephone":"+33981222566","email":"contact@orexpert.fr","address":{"@type":"PostalAddress","streetAddress":"8 rue Etienne Richerand","postalCode":"69003","addressLocality":"Lyon","addressCountry":"FR"},"areaServed":"France","url":"https://lacompagniedelor.fr/"}
+</script>
+</head>
+<body>
+<script>(function(){
+  try {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (sessionStorage.getItem('lc-intro-vu')) return;
+  } catch (e) { return; }
+  var amb = document.documentElement.dataset.ambiance === 'jour' ? 'jour' : 'nuit';
+  var ov = document.createElement('div');
+  ov.id = 'lc-splash';
+  ov.setAttribute('aria-hidden', 'true');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;'
+    + 'padding:6vh 8vw;background:' + (amb === 'jour' ? '#f4efe6' : '#141210') + ';'
+    + 'opacity:1;transition:opacity .55s ease';
+  var host = document.createElement('div');
+  host.style.cssText = 'width:min(640px,82vw)';
+  ov.appendChild(host);
+  document.body.appendChild(ov);   // le script s'execute pendant le parsing, juste apres l'ouverture de <body> : l'element existe deja
+  import('./assets/js/logo-intro.js').then(function (m) {
+    return m.createLogoIntro(host, { ambiance: amb });
+  }).then(function (intro) {
+    // Detection reelle de la fin (intro.etat().fini), plutot qu'un minuteur fixe :
+    // le montage du module (import + fetch du SVG + scene de la plume) peut prendre
+    // un instant variable selon l'appareil ; un minuteur cale sur la duree seule
+    // partirait avant que la lecture ait commence. On sonde l'etat toutes les 80 ms.
+    var v = setInterval(function () {
+      var e = intro.etat();
+      if (!e.fini) return;
+      clearInterval(v);
+      ov.style.opacity = '0';
+      setTimeout(function () { ov.remove(); }, 600);
+    }, 80);
+    // Filet de securite : si etat().fini ne se declenche jamais (cas impreveu),
+    // ne pas laisser le voile bloquer la page indefiniment.
+    setTimeout(function () { if (document.body.contains(ov)) { clearInterval(v); ov.style.opacity = '0'; setTimeout(function () { ov.remove(); }, 600); } }, intro.duree * 1000 + 4000);
+  }).catch(function () { ov.remove(); });
+})();</script>
+
+<header class="hd" id="hd">
+  <!-- Etage 1 : le logo, centre, en pleine presence. Les actions restent calees a droite. -->
+  <div class="hd__haut">
+    <!-- A - LE POINCON. Le symbole est rendu en matiere reelle par WebGL ; le nom et
+         la signature restent du vecteur. Sans WebGL, le SVG du symbole reste affiche. -->
+    <a class="hd__logo" href="index.html" aria-label="La Compagnie de l'Or, accueil">
+      <span class="hd__poincon" data-poincon data-base="assets/logo/"></span>
+    </a>
+    <div class="hd__actions">
+      <a class="btn btn--rdv" href="#rendezvous">Prendre rendez-vous</a>
+      <a class="btn-exp" href="experience.html">
+        <span class="btn-exp__jewel" aria-hidden="true"><span class="btn-exp__play"></span></span>
+        <span class="btn-exp__txt"><span class="btn-exp__label">Vivre l'expérience</span></span>
+      </a>
+    </div>
+    <button class="hd__burger" id="burger" type="button" aria-expanded="false" aria-controls="mmenu" aria-label="Ouvrir le menu"><span></span><span></span></button>
+  </div>
+  <!-- Etage 2 : la navigation, centree sous un filet tres discret. -->
+  <div class="hd__bas" data-nav>
+    <nav class="hd__nav" aria-label="Navigation principale">
+      <a href="index.html" aria-current="page">Accueil</a>
+      <a href="#etapes">Comment ça marche</a>
+      <a href="#domaines">Ce que nous rachetons</a>
+      <a href="#cours">Cours de l'or</a>
+      <a href="#journees">Prochaines journées</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </div>
+</header>
+
+<div class="mmenu" id="mmenu" hidden>
+  <nav aria-label="Menu">
+    <a href="index.html" aria-current="page">Accueil</a>
+    <a href="#etapes">Comment ça marche</a>
+    <a href="#domaines">Ce que nous rachetons</a>
+    <a href="#cours">Cours de l'or</a>
+    <a href="#journees">Prochaines journées</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <div class="mmenu__ctas">
+    <a class="btn btn--rdv" href="#rendezvous">Prendre rendez-vous</a>
+    <a class="btn-exp" href="experience.html"><span class="btn-exp__jewel" aria-hidden="true"><span class="btn-exp__play"></span></span><span class="btn-exp__txt"><span class="btn-exp__label">Vivre l'expérience</span></span></a>
+  </div>
+</div>
+
+<main id="main">
+
+<!-- ===== HERO ===== -->
+<section class="hero" aria-label="La Compagnie de l'Or">
+  <!-- La scene horlogere. Quatre couches solidaires : les deux boucles video,
+       la poussiere d'or dessinee en temps reel, les aiguilles a l'heure de
+       Paris, et le rai de lumiere de l'introduction. Le script pose la
+       poussiere et les aiguilles sur le rectangle REELLEMENT occupe par
+       l'image une fois recadree, ce qui les garde solidaires du cadran a
+       n'importe quelle taille de fenetre. Les sources sont choisies par le
+       script selon la taille affichee : 1080p sur un ecran, 720p sur un
+       telephone, dont le decodeur tournerait pour rien. -->
+  <div class="hero__bg" id="heroBg" aria-hidden="true">
+    <div class="hero__plate hm" id="heroPlate">
+      <video class="hm__v" id="hmNuit" muted loop playsinline preload="auto"
+             poster="assets/img/hero-montre-nuit.jpg" disablepictureinpicture></video>
+      <video class="hm__v" id="hmJour" muted loop playsinline preload="none"
+             poster="assets/img/hero-montre-jour.jpg" disablepictureinpicture></video>
+      <canvas class="hm__pous" id="hmPous"></canvas>
+      <svg class="hm__aig" id="hmAig" viewBox="0 0 1920 1080"></svg>
+      <div class="hm__rai" id="hmRai"></div>
+    </div>
+    <div class="hm__voile" id="hmVoile"></div>
+    <div class="hero__fade"></div>
+    <div class="hero__sheen"></div>
+  </div>
+  <div class="hero__inner">
+    <p class="kicker">La Compagnie de l'Or</p>
+    <h1 class="hero__title">Nous rachetons votre&nbsp;or, partout en&nbsp;France.</h1>
+    <p class="hero__lede">Bijoux, pièces, lingots, montres et autres biens précieux&nbsp;: nos experts se déplacent dans différentes régions de France pour vous recevoir lors de journées d'expertise organisées au plus près de chez vous.</p>
+    <div class="hero__ctas">
+      <a class="btn btn--primary" href="#rendezvous">Prendre rendez-vous</a>
+      <a class="btn-exp btn-exp--hero" href="experience.html">
+        <span class="btn-exp__jewel" aria-hidden="true"><span class="btn-exp__play"></span></span>
+        <span class="btn-exp__txt"><span class="btn-exp__label">Vivre l'expérience</span><span class="btn-exp__hint">Le parcours en immersion</span></span>
+      </a>
+    </div>
+  </div>
+  <!-- Le tic-tac ne peut demarrer que sur un geste : les navigateurs
+       n'autorisent pas le son autrement. Le choix est ensuite conserve, et
+       repris a la premiere interaction lors des visites suivantes. -->
+  <button class="hm__son" id="hmSon" type="button" aria-pressed="false"
+          aria-label="Activer ou couper le tic-tac de la montre">
+    <span class="hm__onde" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="hm__son-txt">Son</span>
+  </button>
+  <ul class="trust" aria-label="Nos engagements">
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Expertise gratuite</li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Sans engagement</li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Paiement par chèque ou virement</li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Journées organisées dans différentes régions de France</li>
+  </ul>
+</section>
+
+
+<!-- ===== 1 · PILIERS DE REASSURANCE ===== -->
+<section class="sec sec--alt" id="piliers" aria-label="Nos engagements" data-reveal>
+  <div class="pillars">
+    <div class="pillar rv" style="--i:0"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="13" cy="13" r="8"/><path d="M19 19l8 8"/><path d="M9.5 13h7M13 9.5v7"/></svg><h3>Expertise</h3><p>Gratuite et sans engagement. Vos biens sont examinés et pesés devant vous, chaque élément vous est expliqué.</p></div>
+    <div class="pillar rv" style="--i:1"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="10" r="5"/><path d="M6 27c1.5-5.5 5.2-8.5 10-8.5S24.5 21.5 26 27"/></svg><h3>Un expert pour vous</h3><p>Vous êtes reçu individuellement, dans un espace réservé, par un expert qui vous accompagne à chaque étape.</p></div>
+    <div class="pillar rv" style="--i:2"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="8" width="24" height="16" rx="2"/><path d="M4 14h24M9 20h6"/></svg><h3>Règlement</h3><p>Si vous acceptez la proposition écrite, le règlement est effectué par chèque ou par virement bancaire.</p></div>
+    <div class="pillar rv" style="--i:3"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28s-9-8.2-9-15a9 9 0 0118 0c0 6.8-9 15-9 15z"/><circle cx="16" cy="13" r="3"/></svg><h3>Proximité</h3><p>Des journées d'expertise organisées dans différentes régions de France, dans des hôtels sélectionnés.</p></div>
+  </div>
+</section>
+
+<!-- ===== 2 · LE PARCOURS EN QUATRE ÉTAPES · scène 3D continue =====
+     Il n'y a plus quatre cartes : il y a UNE scène. Un seul canevas, collant,
+     occupe toute la hauteur de la section ; les quatre tableaux vivent dans un
+     même espace 3D que la caméra descend au défilement. Les textes défilent
+     par-dessus, dans le flux normal — ils restent donc nets, sélectionnables
+     et responsives, et ce sont eux qui creusent les espaces négatifs où les
+     objets viennent se poser. -->
+<section class="sec parc" id="etapes" aria-labelledby="etapes-title" data-reveal>
+
+  <div class="parc__scene" aria-hidden="true"><canvas class="parc__toile" id="parcoursToile"></canvas></div>
+
+  <div class="parc__flux">
+
+    <nav class="parc__index" aria-label="Les quatre étapes du parcours">
+      <a href="#etape-01" data-vers="1"><i></i><span>01</span></a>
+      <a href="#etape-02" data-vers="2"><i></i><span>02</span></a>
+      <a href="#etape-03" data-vers="3"><i></i><span>03</span></a>
+      <a href="#etape-04" data-vers="4"><i></i><span>04</span></a>
+    </nav>
+
+    <div class="parc__head sec__head">
+      <p class="kicker rv" style="--i:0">Comment se déroule votre rendez-vous&nbsp;?</p>
+      <h2 class="sec__title rv" id="etapes-title" style="--i:1">En quatre étapes simples.</h2>
+      <p class="sec__lede rv" style="--i:2">Du choix de la journée à votre décision finale, tout se passe devant vous, à votre rythme.</p>
+    </div>
+
+    <article class="parc__etape" id="etape-01" data-etape="1">
+      <p class="parc__n"><span>01</span></p>
+      <h3>Trouvez une journée près de chez vous</h3>
+      <p>Consultez les villes où nous nous déplaçons et repérez celle qui est la plus proche de chez vous.</p>
+    </article>
+
+    <article class="parc__etape" id="etape-02" data-etape="2">
+      <p class="parc__n"><span>02</span></p>
+      <h3>Rencontrez votre expert</h3>
+      <p>Rendez-vous dans l'hôtel sélectionné avec les bijoux, pièces, montres, lingots ou autres biens que vous souhaitez faire examiner.</p>
+    </article>
+
+    <article class="parc__etape" id="etape-03" data-etape="3">
+      <p class="parc__n"><span>03</span></p>
+      <h3>Expertise &amp; proposition</h3>
+      <p>Votre expert examine vos biens devant vous, effectue les contrôles nécessaires et vous remet une proposition de rachat claire et écrite.</p>
+    </article>
+
+    <article class="parc__etape" id="etape-04" data-etape="4">
+      <p class="parc__n"><span>04</span></p>
+      <h3>Vous restez libre de décider</h3>
+      <p>Après l'expertise, vous choisissez librement d'accepter ou de refuser la proposition. En cas d'acceptation, le règlement est effectué selon les modalités proposées par La Compagnie de l'Or.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ===== 3 · COMMENT SE DÉROULE UNE EXPERTISE (timeline) ===== -->
+<section class="sec sec--alt" id="expertise" aria-labelledby="expertise-title" data-reveal>
+  <div class="sec__head sec__head--center">
+    <p class="kicker rv" style="--i:0">Comment se déroule une expertise&nbsp;?</p>
+    <h2 class="sec__title rv" id="expertise-title" style="--i:1">Chaque étape se déroule devant vous.</h2>
+    <p class="sec__lede rv" style="--i:2">De l'examen de vos biens jusqu'à la proposition finale, votre expert vous explique clairement chaque étape de l'expertise.</p>
+  </div>
+  <div class="tl">
+    <div class="tl__line" aria-hidden="true"></div>
+    <div class="tl__item"><i class="tl__dot" aria-hidden="true"></i><p class="tl__step">Étape 1</p><h3>Vous apportez vos biens</h3><p>Bijoux, pièces, montres, lingots, argenterie ou autres objets précieux&nbsp;: venez avec ce que vous souhaitez faire examiner, même usé, cassé ou dépareillé.</p></div>
+    <div class="tl__item"><i class="tl__dot" aria-hidden="true"></i><p class="tl__step">Étape 2</p><h3>Vous êtes reçu individuellement</h3><p>À l'hôtel, vous êtes accueilli puis orienté vers un espace réservé. Votre expertise se déroule seul avec votre expert, jamais en public.</p></div>
+    <div class="tl__item"><i class="tl__dot" aria-hidden="true"></i><p class="tl__step">Étape 3</p><h3>Vos biens sont examinés devant vous</h3><p>Rien ne quitte votre vue. L'expert identifie le métal, contrôle le titre et pèse chaque pièce sur une balance de précision placée devant vous.</p></div>
+    <div class="tl__item"><i class="tl__dot" aria-hidden="true"></i><p class="tl__step">Étape 4</p><h3>Chaque élément vous est expliqué</h3><p>Le poids, le titre de l'or et les caractéristiques de vos biens vous sont expliqués avec clarté, pour que vous compreniez précisément ce qui est pris en compte.</p></div>
+    <div class="tl__item"><i class="tl__dot" aria-hidden="true"></i><p class="tl__step">Étape 5</p><h3>Vous recevez une proposition écrite</h3><p>Une proposition de rachat claire vous est remise par écrit, à l'issue de l'expertise.</p></div>
+    <div class="tl__item"><i class="tl__dot" aria-hidden="true"></i><p class="tl__step">Étape 6</p><h3>Vous restez libre</h3><p>Vous acceptez ou vous refusez, sans engagement. Si vous acceptez, le règlement est effectué par chèque ou par virement bancaire.</p></div>
+    <i class="tl__bead" aria-hidden="true"></i>
+  </div>
+</section>
+
+<!-- ===== 4 · NOS DOMAINES D'EXPERTISE ===== -->
+<section class="sec" id="domaines" aria-labelledby="domaines-title" data-reveal>
+  <div class="sec__head">
+    <p class="kicker rv" style="--i:0">Ce que nous rachetons</p>
+    <h2 class="sec__title rv" id="domaines-title" style="--i:1">Nos domaines d'expertise.</h2>
+    <p class="sec__lede rv" style="--i:2">Or, argent, platine, pièces, montres, pierres ou objets de collection&nbsp;: douze familles de biens que nos experts examinent lors de nos journées.</p>
+  </div>
+  <div class="dom">
+    <div class="dom__stage rv" style="--i:4">
+            <span class="dom__ghost" aria-hidden="true"></span>
+      <div class="dom__frame">
+  <div class="dom__media" aria-hidden="true">
+    <div class="dom__layer is-on" data-layer="a">
+      <div class="dom__kb">
+        <img class="dom__img" src="assets/img/cat-bijoux-or.jpg" alt="" width="1600" height="894" loading="lazy" decoding="async">
+        <video class="dom__video" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>
+      </div>
+    </div>
+    <div class="dom__layer" data-layer="b">
+      <div class="dom__kb">
+        <img class="dom__img" src="assets/img/cat-argente-etain.jpg" alt="" width="1600" height="894" loading="lazy" decoding="async">
+        <video class="dom__video" muted playsinline loop preload="none" aria-hidden="true" tabindex="-1"></video>
+      </div>
+    </div>
+  </div>
+  <div class="dom__caption"><span class="dom__captext"><span class="dom__capname">Bijoux en or</span><br><span class="dom__capline">Anciens, modernes ou cassés.</span></span><span class="dom__capn">01 / 12</span></div>
+</div>
+      <p class="dom__note">Vous hésitez sur une pièce&nbsp;? Apportez-la. L'expert vous dira ce qu'elle est, et ce qui compte dans son évaluation.</p>
+    </div>
+    <div class="dom__list rv" style="--i:3" role="tablist" aria-label="Catégories de biens">
+      <button class="dom__item" role="tab" data-n="01" data-name="Bijoux en or" data-line="Anciens, modernes ou cassés." data-img="assets/img/cat-bijoux-or.jpg" data-video="assets/video/tab-01.mp4"><span class="n">01</span><span class="name">Bijoux en or</span><span class="line">Anciens, modernes ou cassés.</span></button>
+      <button class="dom__item" role="tab" data-n="02" data-name="Bijoux en argent" data-line="Colliers, bracelets, bagues." data-img="assets/img/cat-argente-etain.jpg" data-video="assets/video/tab-02.mp4"><span class="n">02</span><span class="name">Bijoux en argent</span><span class="line">Colliers, bracelets, bagues.</span></button>
+      <button class="dom__item" role="tab" data-n="03" data-name="Montres" data-line="Anciennes, modernes ou de collection." data-img="assets/img/cat-montres-luxe.jpg" data-video="assets/video/dom-03-montres.mp4"><span class="n">03</span><span class="name">Montres</span><span class="line">Anciennes, modernes ou de collection.</span></button>
+      <button class="dom__item" role="tab" data-n="04" data-name="Pièces d'or et d'argent" data-line="De collection ou d'investissement." data-img="assets/img/cat-pieces.jpg" data-video="assets/video/tab-04.mp4"><span class="n">04</span><span class="name">Pièces d'or et d'argent</span><span class="line">De collection ou d'investissement.</span></button>
+      <button class="dom__item" role="tab" data-n="05" data-name="Lingots d'or et d'argent" data-line="Tous formats." data-img="assets/img/cat-lingots.jpg" data-video="assets/video/tab-05.mp4"><span class="n">05</span><span class="name">Lingots d'or et d'argent</span><span class="line">Tous formats.</span></button>
+      <button class="dom__item" role="tab" data-n="06" data-name="Bijoux signés" data-line="Créateurs et grandes maisons." data-img="assets/img/cat-bijoux-signes.jpg" data-video="assets/video/tab-06.mp4"><span class="n">06</span><span class="name">Bijoux signés</span><span class="line">Créateurs et grandes maisons.</span></button>
+      <button class="dom__item" role="tab" data-n="07" data-name="Pierres précieuses" data-line="Diamants, rubis, saphirs." data-img="assets/img/cat-pierres.jpg" data-video="assets/video/tab-07.mp4"><span class="n">07</span><span class="name">Pierres précieuses</span><span class="line">Diamants, rubis, saphirs.</span></button>
+      <button class="dom__item" role="tab" data-n="08" data-name="Argenterie" data-line="Ménagères, plateaux, orfèvrerie." data-img="assets/img/cat-argente-etain.jpg" data-video="assets/video/tab-08.mp4"><span class="n">08</span><span class="name">Argenterie</span><span class="line">Ménagères, plateaux, orfèvrerie.</span></button>
+      <button class="dom__item" role="tab" data-n="09" data-name="Plaqué or" data-line="Même usé." data-img="assets/img/cat-plaque-or.jpg" data-video="assets/video/tab-09.mp4"><span class="n">09</span><span class="name">Plaqué or</span><span class="line">Même usé.</span></button>
+      <button class="dom__item" role="tab" data-n="10" data-name="Or dentaire" data-line="Présenté avec discrétion." data-img="assets/img/cat-dentaire.jpg" data-video="assets/video/tab-10.mp4"><span class="n">10</span><span class="name">Or dentaire</span><span class="line">Présenté avec discrétion.</span></button>
+      <button class="dom__item" role="tab" data-n="11" data-name="Billets de collection" data-line="Anciens ou étrangers." data-img="assets/img/cat-billets.jpg" data-video="assets/video/tab-11.mp4"><span class="n">11</span><span class="name">Billets de collection</span><span class="line">Anciens ou étrangers.</span></button>
+      <button class="dom__item" role="tab" data-n="12" data-name="Platine et étain" data-line="Et autres métaux acceptés." data-img="assets/img/cat-platine.jpg" data-video="assets/video/tab-12.mp4"><span class="n">12</span><span class="name">Platine et étain</span><span class="line">Et autres métaux acceptés.</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 5 · TROUVER UNE JOURNÉE PRÈS DE CHEZ VOUS (carte de France) ===== -->
+<section class="sec sec--alt" id="journees" aria-label="Les villes où nous nous déplaçons" data-reveal>
+  <!-- Le kicker, le titre, le chapo ET la liste des villes vivent maintenant DANS la colonne
+       editoriale que construit carte3d-ui.js (a gauche de la carte, ~35%) : voir § 4 de
+       review/lab/POLISH.md. index.html ne garde que le conteneur minimal de la carte. -->
+  <div class="map map--3d">
+    <div class="map__stage rv" id="carte-france" style="--i:0"></div>
+  </div>
+</section>
+
+<!-- ===== 6 · LE COURS DE L'OR ===== -->
+<section class="sec" id="cours" aria-labelledby="cours-title" data-reveal>
+  <div class="gold">
+    <div class="sec__head">
+      <p class="kicker rv" style="--i:0">Le cours des métaux</p>
+      <h2 class="sec__title rv" id="cours-title" style="--i:1">Suivez l'évolution du marché, en direct.</h2>
+    </div>
+    <div class="rv" style="--i:2" id="cours-hote"></div>
+  </div>
+</section>
+
+<!-- ===== 7 · FAQ ===== -->
+<section class="sec sec--alt" id="faq" aria-labelledby="faq-title" data-reveal>
+  <div class="faq__inner">
+    <div class="sec__head sec__head--center">
+      <p class="kicker rv" style="--i:0">Questions fréquentes</p>
+      <h2 class="sec__title rv" id="faq-title" style="--i:1">Ce que l'on nous demande le plus souvent.</h2>
+      <p class="faq__aide rv" style="--i:2">Une question qui n'y figure pas&nbsp;? Nos conseillers y répondent au <a href="tel:+33981222566">09&nbsp;81&nbsp;22&nbsp;25&nbsp;66</a>.</p>
+    </div>
+    <div class="faq rv" style="--i:2">
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Quels types de biens puis-je faire expertiser&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Bijoux en or ou en argent, bijoux signés, montres, pièces d'or et d'argent, lingots, pierres précieuses, argenterie, plaqué or, or dentaire, billets de collection, platine et autres métaux. Les pièces usées, cassées ou dépareillées sont examinées comme les autres.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Dois-je prendre rendez-vous&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Nos journées d'expertise vous accueillent à l'hôtel indiqué, sans rendez-vous, aux horaires annoncés. Vous pouvez aussi nous contacter à l'avance par téléphone ou par e-mail pour préparer votre venue.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Où ont lieu vos journées d'expertise&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Dans des hôtels sélectionnés, dans différentes régions de France. La carte ci-dessus montre les territoires que nous parcourons. Les dates sont communiquées par téléphone ou par e-mail au fur et à mesure de leur organisation.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">L'expertise est-elle gratuite&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Oui. L'expertise est gratuite et sans engagement. Vous repartez avec vos biens si vous le souhaitez.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Suis-je obligé d'accepter la proposition&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Non. La proposition vous est remise par écrit et vous restez entièrement libre de l'accepter ou de la refuser.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Comment mes biens sont-ils évalués&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Devant vous. L'expert identifie le métal, contrôle le titre, pèse chaque pièce sur une balance de précision et vous explique ce qui est pris en compte&nbsp;: le poids, le titre et les caractéristiques du bien.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Comment se déroule le règlement&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Si vous acceptez la proposition, le règlement est effectué par chèque ou par virement bancaire.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Puis-je venir avec plusieurs bijoux ou objets&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Bien sûr. Apportez l'ensemble des biens que vous souhaitez faire examiner&nbsp;: chaque pièce est évaluée devant vous, une par une.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Comment trouver la prochaine journée organisée dans ma région&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Repérez votre ville sur la carte, ou contactez-nous au 09 81 22 25 66 ou à contact@orexpert.fr&nbsp;: nous vous indiquerons la journée la plus proche de chez vous.</p></div></div></div>
+      <div class="faq__item"><button class="faq__q" type="button" aria-expanded="false">Sur quoi repose la valeur de mon or&nbsp;?<i aria-hidden="true"></i></button><div class="faq__a"><div><p>Sur son poids, son titre (la teneur en or fin) et les caractéristiques du bien. L'expert vous explique chacun de ces éléments avant de vous remettre la proposition écrite.</p></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRENDRE RENDEZ-VOUS (bloc simple, le module complet arrivera plus tard) ===== -->
+<section class="rdv" id="rendezvous" aria-label="Prendre rendez-vous" data-reveal>
+  <div class="rdv__inner">
+    <div class="rdv__tete">
+      <p class="kicker rv" style="--i:0">Prendre rendez-vous</p>
+    <h2 class="rdv__title rv" style="--i:1">Parlons de vos biens précieux.</h2>
+    <p class="rdv__lede rv" style="--i:2">Nos conseillers vous renseignent sur les prochaines journées d'expertise organisées près de chez vous. L'expertise est gratuite et sans engagement.</p>
+    </div>
+
+    <div class="rdv__corps">
+      <!-- L'ENVOI EST REEL. L'adresse du Web App Google Apps Script vit dans
+           assets/js/formulaire.js, sous la constante CONTACT_FORM_ENDPOINT.
+           Tant qu'elle est vide, ce formulaire ouvre le logiciel de courrier du
+           visiteur : jamais de faux « message envoyé ».
+           L'attribut action assure la meme chose sans JavaScript. -->
+      <form class="rdvf rv" id="rdv-form" style="--i:3" novalidate
+            action="mailto:contact@orexpert.fr" method="post" enctype="text/plain">
+
+        <div class="rdvf__ligne">
+          <p class="rdvf__champ">
+            <label class="rdvf__label" for="rdvf-prenom">Prénom</label>
+            <input class="rdvf__in" id="rdvf-prenom" name="prenom" type="text" autocomplete="given-name" required>
+            <span class="rdvf__dit"></span>
+          </p>
+          <p class="rdvf__champ">
+            <label class="rdvf__label" for="rdvf-nom">Nom</label>
+            <input class="rdvf__in" id="rdvf-nom" name="nom" type="text" autocomplete="family-name" required>
+            <span class="rdvf__dit"></span>
+          </p>
+        </div>
+
+        <div class="rdvf__ligne">
+          <p class="rdvf__champ">
+            <label class="rdvf__label" for="rdvf-email">E-mail</label>
+            <input class="rdvf__in" id="rdvf-email" name="email" type="email" autocomplete="email" inputmode="email" required>
+            <span class="rdvf__dit"></span>
+          </p>
+          <p class="rdvf__champ">
+            <label class="rdvf__label" for="rdvf-tel">Téléphone</label>
+            <input class="rdvf__in" id="rdvf-tel" name="telephone" type="tel" autocomplete="tel" inputmode="tel" required>
+            <span class="rdvf__dit"></span>
+          </p>
+        </div>
+
+        <p class="rdvf__champ rdvf__champ--large">
+          <label class="rdvf__label" for="rdvf-msg">Message <span class="rdvf__fac">facultatif</span></label>
+          <textarea class="rdvf__in rdvf__in--zone" id="rdvf-msg" name="message" rows="4"></textarea>
+          <span class="rdvf__dit"></span>
+        </p>
+
+        <!-- Ce champ n'est ni vu ni atteignable par une personne : seuls les robots le remplissent. -->
+        <p class="rdvf__leurre" aria-hidden="true">
+          <label for="rdvf-societe">Ne remplissez pas ce champ</label>
+          <input class="rdvf__piege" id="rdvf-societe" name="societe" type="text" tabindex="-1" autocomplete="off">
+        </p>
+
+        <div class="rdvf__pied">
+          <button class="rdvf__envoi" type="submit">Envoyer ma demande</button>
+          <p class="rdvf__etat" role="status"></p>
+        </div>
+
+        <p class="rdvf__mention">Vos informations servent uniquement à vous recontacter. Elles ne sont ni revendues, ni utilisées à d'autres fins.</p>
+      </form>
+
+      <aside class="rdv__open rv" style="--i:5">
+        <img class="rdv__mono" src="assets/logo/poincon-symbole.svg" width="30" height="30" alt="" aria-hidden="true">
+  
+        <div class="rdv__contacts">
+          <a class="rdv__contact rdv__contact--tel" href="tel:+33981222566">
+            <span class="rdv__how">Par téléphone</span>
+            <span class="rdv__big">09&nbsp;81&nbsp;22&nbsp;25&nbsp;66</span>
+            <span class="rdv__note">Appel non surtaxé</span>
+          </a>
+          <span class="rdv__sep" aria-hidden="true"></span>
+          <a class="rdv__contact rdv__contact--mail" href="mailto:contact@orexpert.fr">
+            <span class="rdv__how">Par e-mail</span>
+            <span class="rdv__big rdv__big--mail">contact@orexpert.fr</span>
+            <span class="rdv__note">Réponse rapide</span>
+          </a>
+        </div>
+  
+        <span class="rdv__signature" aria-hidden="true"></span>
+        <span class="logo__tricolore rdv__tri" aria-hidden="true"><i></i><i></i><i></i></span>
+      </aside>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="ft">
+  <a class="ft__marque" href="#hero" aria-label="Haut de page"><img class="ft__poincon" src="assets/logo/poincon-symbole.svg" width="34" height="34" alt="" aria-hidden="true"></a>
+  <p class="ft__legal">La Compagnie de l'Or · Société Or Expert SAS · 8 rue Etienne Richerand, 69003 Lyon · SIRET 893&nbsp;848&nbsp;846&nbsp;00018</p>
+  <a class="ft__exp" href="experience.html">Découvrir le parcours en immersion&nbsp;→</a>
+</footer>
+
+<div class="ab-toggle" id="ab-toggle" aria-label="Ambiance jour ou nuit">
+  <button type="button" data-ab="jour">Jour</button>
+  <button type="button" data-ab="nuit" class="is-active">Nuit</button>
+</div>
+
+<script src="assets/js/journees-data.js"></script>
+<script src="assets/js/villes-france.js"></script>
+<script src="assets/js/accueil.js" defer></script>
+<!-- La scene horlogere du hero. Module ES : il est differe par nature, il ne
+     bloque donc jamais l affichage. Il gere lui-meme le choix de definition,
+     le prechargement de la seconde ambiance, la mise en veille onglet cache,
+     prefers-reduced-motion et l introduction jouee une seule fois par session. -->
+<script type="module" src="assets/js/hero/hero-montre.js"></script>
+<script type="module" src="assets/js/accueil-sections.js"></script>
+<script type="module">import { initFormulaire } from "./assets/js/formulaire.js"; initFormulaire();</script>
+
+<!-- Logo du header en rendu PBR temps reel.
+     Le SVG statique reste le rendu de reference : il s affiche immediatement et n est
+     jamais retire. La couche metal se pose PAR-DESSUS, seulement quand tout le reste
+     est charge et que le navigateur est au repos. Si WebGL manque, si l utilisateur
+     demande moins d animation, ou si l ecran est tactile, on ne charge tout simplement
+     rien de plus : aucun octet, aucun risque de regression. -->
+<!-- A - LE POINCON. Le composant gere lui-meme : le repli sans WebGL (le SVG du
+     symbole reste affiche), prefers-reduced-motion (une seule image, aucun
+     mouvement), la mise en pause hors ecran et onglet cache, le plafond de DPR,
+     la bascule Jour/Nuit par data-ambiance, et le retrait de la signature sous
+     220 px de large. Rien de tout cela n'a a etre repete ici. -->
+<script src="assets/js/poincon.js" defer></script>
+<script>
+(function () {
+  function poser() {
+    if (!window.Poincon) return;
+    var e = document.querySelector('[data-poincon]');
+    if (e) window.Poincon.monter(e, { frappe: true });
+  }
+  if (document.readyState === 'complete') poser();
+  else window.addEventListener('load', poser, { once: true });
+})();
+</script>
+</body>
+</html>

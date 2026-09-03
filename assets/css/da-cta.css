@@ -1,0 +1,170 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · LE SYSTÈME D'APPELS À L'ACTION
+   ----------------------------------------------------------------------------
+   Le site portait SIX langages de bouton pour une seule fonction : .btn-exp,
+   .btn--rdv, .btn--primary, .rdvf__envoi, .btn--gold, .btn--nav. Chacun avait
+   été dessiné pour son coin de page, et le contraste mesuré le disait :
+
+     ambiance NUIT   ENVOYER MA DEMANDE — bordure à 1,05 : invisible.
+     ambiance JOUR   ENVOYER MA DEMANDE — texte à 1,27 sur son fond, et 1,20
+                     au survol. Le bouton n'était pas peu lisible : il était
+                     illisible. L'état désactivé tombait à 1,04.
+                     Les trois autres avaient des bordures entre 1,25 et 1,55.
+
+   La cause est unique : ces boutons étaient SEMI-TRANSPARENTS. Sur la page
+   sombre ils devenaient sombres, sur la page claire ils devenaient clairs — et
+   un texte champagne, qui se détache admirablement du premier, disparaît dans
+   le second.
+
+   LA DÉCISION : le bouton est une PLAQUE DE BRONZE SOMBRE, dans les deux
+   ambiances. Il ne suit plus le fond, il s'y pose. C'est ce qui lui donne la
+   même identité de jour comme de nuit, ce qui l'empêche de s'effacer sur fond
+   clair, et ce que fait n'importe quelle maison dont l'objet doit se
+   reconnaître quelle que soit la vitrine.
+
+   Trois valeurs tiennent tout le système — le fond, le trait, la lettre — et
+   rien d'autre n'est réglé bouton par bouton.
+   ========================================================================== */
+
+:root {
+  /* la plaque : deux tons pour le galbe, presque opaques pour ne pas dépendre
+     de ce qu'il y a dessous */
+  --cta-fond-1: rgba(36, 29, 18, .90);
+  --cta-fond-2: rgba(17, 14, 9, .95);
+  --cta-bord:   rgba(201, 154, 63, .58);
+  --cta-texte:  #f1e4c8;
+  --cta-second: rgba(241, 228, 200, .62);   /* le sous-titre : présent, en retrait */
+  /* au survol : la plaque prend la lumière, elle ne change pas de nature */
+  --cta-fond-1-h: rgba(56, 45, 27, .95);
+  --cta-fond-2-h: rgba(30, 24, 15, .97);
+  --cta-bord-h: #e8cd93;
+  --cta-texte-h: #fdf7e8;
+  /* le liseré intérieur : c'est lui qui donne l'épaisseur de la plaque */
+  --cta-lisere: rgba(255, 241, 208, .14);
+  --cta-ombre: 0 14px 34px -18px rgba(0, 0, 0, .95);
+}
+
+/* EN JOUR la plaque reste sombre — c'est tout le principe. On la fait
+   seulement un peu plus dense et son trait un peu plus soutenu, parce qu'un
+   fond clair réclame un bord plus affirmé pour que l'objet garde son arête. */
+:root[data-ambiance="jour"] {
+  --cta-fond-1: rgba(48, 38, 23, .97);
+  --cta-fond-2: rgba(26, 21, 13, .99);
+  --cta-bord:   rgba(146, 107, 40, .85);
+  --cta-texte:  #f3e7ca;
+  --cta-second: rgba(243, 231, 202, .68);
+  --cta-fond-1-h: rgba(66, 53, 32, .99);
+  --cta-fond-2-h: rgba(38, 30, 19, 1);
+  --cta-bord-h: #b8873a;
+  --cta-texte-h: #fdf7e8;
+  --cta-lisere: rgba(255, 241, 208, .16);
+  --cta-ombre: 0 14px 30px -18px rgba(60, 44, 16, .55);
+}
+
+/* ── 1 · la plaque, commune à tous ─────────────────────────────────────
+   Une seule déclaration, reprise telle quelle par chaque bouton du site.
+   Ce qui change d'un bouton à l'autre, c'est sa forme et ce qu'il contient —
+   jamais sa matière. */
+.btn-exp,
+.btn--rdv,
+.btn--primary,
+.btn--gold,
+.btn--nav,
+.rdvf__envoi {
+  background: linear-gradient(180deg, var(--cta-fond-1), var(--cta-fond-2));
+  border: 1px solid var(--cta-bord);
+  color: var(--cta-texte);
+  box-shadow:
+    inset 0 1px 0 var(--cta-lisere),
+    inset 0 -1px 0 rgba(0, 0, 0, .38),
+    var(--cta-ombre);
+  transition:
+    border-color .4s cubic-bezier(.22, .61, .36, 1),
+    background .4s ease,
+    color .35s ease,
+    box-shadow .45s ease;
+}
+
+.btn-exp:hover,
+.btn--rdv:hover,
+.btn--primary:hover,
+.btn--gold:hover,
+.btn--nav:hover,
+.rdvf__envoi:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--cta-fond-1-h), var(--cta-fond-2-h));
+  border-color: var(--cta-bord-h);
+  color: var(--cta-texte-h);
+  transform: none;                 /* une plaque gravée ne bondit pas */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 224, .2),
+    inset 0 -1px 0 rgba(0, 0, 0, .38),
+    var(--cta-ombre);
+}
+
+.btn-exp:focus-visible,
+.btn--rdv:focus-visible,
+.btn--primary:focus-visible,
+.btn--gold:focus-visible,
+.btn--nav:focus-visible,
+.rdvf__envoi:focus-visible {
+  outline: 2px solid var(--cta-bord-h);
+  outline-offset: 3px;
+}
+
+/* ── 2 · la capsule garde sa forme et son médaillon ────────────────────
+   Le cercle de lecture, son galbe et son lustre ne sont pas touchés : ils
+   sont la signature de ce bouton-là. Seule la plaque qui les porte change. */
+.btn-exp {
+  border-radius: 999px;
+}
+.btn-exp .btn-exp__label {
+  color: var(--cta-texte);
+  transition: color .35s ease;
+}
+.btn-exp:hover .btn-exp__label { color: var(--cta-texte-h); }
+/* le sous-titre : lisible, mais il ne dispute rien au libellé */
+.btn-exp .btn-exp__hint {
+  color: var(--cta-second);
+  transition: color .35s ease;
+}
+.btn-exp:hover .btn-exp__hint { color: rgba(253, 247, 232, .78); }
+
+/* ── 3 · le bouton d'envoi ─────────────────────────────────────────────
+   Même matière, forme rectangulaire à angle presque vif : c'est une plaque
+   apposée, pas une pastille. */
+.rdvf__envoi {
+  border-radius: 1px;
+  padding: 1.15rem 2.6rem;
+  letter-spacing: .2em;
+  font-weight: 500;
+}
+/* Désactivé, il doit se LIRE sans APPELER. L'ancien état tombait à 1,04 de
+   contraste : on ne le lisait plus du tout, ce qui n'est pas « discret »,
+   c'est absent. */
+.rdvf__envoi:disabled {
+  opacity: 1;
+  cursor: default;
+  background: linear-gradient(180deg,
+              color-mix(in srgb, var(--cta-fond-1) 70%, transparent),
+              color-mix(in srgb, var(--cta-fond-2) 80%, transparent));
+  border-color: color-mix(in srgb, var(--cta-bord) 45%, transparent);
+  color: color-mix(in srgb, var(--cta-texte) 62%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 241, 208, .06);
+}
+
+/* ── 4 · le bouton « rendez-vous » de l'en-tête ────────────────────────
+   Il était un simple contour ; il devient la même plaque, en plus compact.
+   Deux boutons côte à côte dans l'en-tête doivent appartenir au même objet. */
+.btn--rdv { border-radius: 999px; }
+
+/* ── 5 · ce que le système remplace ────────────────────────────────────
+   .btn--primary portait l'aplat d'or plein — le seul objet de la page à
+   concentrer autant de lumière. Il rejoint la plaque. */
+.btn--primary {
+  font-weight: 500;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-exp, .btn--rdv, .btn--primary, .btn--gold, .btn--nav, .rdvf__envoi { transition: none; }
+}

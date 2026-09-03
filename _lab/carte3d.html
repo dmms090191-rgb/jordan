@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab carte3d — carte de France, 111 communes, liste et focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/accueil.css">
+<link rel="stylesheet" href="../assets/css/accueil-sections.css">
+<link rel="stylesheet" href="../assets/css/scenes/carte3d.css">
+<script type="importmap">{"imports":{"three":"../assets/vendor/three.module.min.js","three/addons/":"../assets/vendor/addons/"}}</script>
+<script>(function(){var q=new URLSearchParams(location.search);var a=q.get('ambiance');if(a==='jour'||a==='nuit')document.documentElement.dataset.ambiance=a;})();</script>
+<style>
+  /* ---- habillage du banc d essai (jamais livre) ---- */
+  html,body{margin:0;background:var(--bg)}
+  body{font-family:var(--body);color:var(--text);min-height:300vh}   /* page longue : on verifie la restauration du scroll */
+  .lab-head{position:relative;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:.7rem;
+    padding:1rem clamp(1rem,4vw,3rem);border-bottom:1px solid var(--line-soft)}
+  .lab-head h1{font-family:var(--display);font-weight:400;font-size:1.1rem;margin:0 auto 0 0;letter-spacing:.02em}
+  .lab-b{font-family:var(--body);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);
+    background:none;border:1px solid var(--line-soft);border-radius:999px;padding:.5rem .8rem;cursor:pointer}
+  .lab-b:hover{border-color:var(--gold);color:var(--text)}
+  .lab-sec{padding:clamp(2rem,6vh,4rem) clamp(1rem,4vw,3rem)}
+  .lab-kicker{font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-ink);margin:0 0 .5rem}
+  .lab-t{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,3vw,2.6rem);margin:0 0 1.6rem;line-height:1.06}
+  /* la vignette reprend exactement le gabarit .step3d__scene du site */
+  .lab-host{position:relative;width:min(1180px,94vw);margin:0 auto;aspect-ratio:16/10;border-radius:8px;
+    background:var(--map-bg);border:1px solid var(--panel-line);box-shadow:0 30px 80px rgba(0,0,0,.25);
+    overflow:hidden;transform-style:preserve-3d}
+  .lab-tail{margin:2.4rem auto 0;width:min(1180px,94vw);color:var(--text-3);font-size:.8rem;line-height:1.7}
+  .lab-hud{position:fixed;z-index:4;left:12px;bottom:12px;padding:8px 11px;border:1px solid rgba(201,154,63,.24);
+    background:rgba(11,13,20,.78);border-radius:2px;color:rgba(243,236,220,.72);
+    font:400 10.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;pointer-events:none;white-space:pre}
+  html[data-ambiance="jour"] .lab-hud{background:rgba(255,252,246,.86);color:rgba(36,28,16,.72);border-color:rgba(138,104,32,.24)}
+</style>
+</head>
+<body>
+<header class="lab-head">
+  <h1>lab · carte3d — 111 communes, liste, focus</h1>
+  <button class="lab-b" id="bAmb">Jour / Nuit</button>
+  <button class="lab-b" id="bOpen">Agrandir / Réduire</button>
+  <button class="lab-b" id="bLille">Lille</button>
+  <button class="lab-b" id="bStras">Strasbourg</button>
+  <button class="lab-b" id="bNice">Nice</button>
+  <button class="lab-b" id="bReset">Vue France</button>
+  <button class="lab-b" id="bFb">Repli sans WebGL</button>
+</header>
+
+<section class="lab-sec">
+  <p class="lab-kicker">Territoires parcourus</p>
+  <h2 class="lab-t">Les villes où nous nous déplaçons</h2>
+  <div class="lab-host" id="carte"></div>
+  <p class="lab-tail">Banc d'essai : géométrie du lot <code>geo3d</code>, coquille du lot <code>carteui</code>,
+    111 communes réelles de <code>assets/js/villes-france.js</code> (coordonnées officielles geo.api.gouv.fr).
+    La carte ne fait que quatre choses : le territoire, les pins, la liste, l'animation de focus.</p>
+</section>
+
+<div class="lab-hud" id="hud">…</div>
+
+<script src="../assets/js/journees-data.js"></script>
+<script src="../assets/js/villes-france.js"></script>
+<script type="module">
+import { createCarteScene, initCarte3D, buildFallbackMap } from '../assets/js/scenes/carte3d.js';
+import { createCarteUI } from '../assets/js/scenes/carte3d-ui.js';
+
+const q = new URLSearchParams(location.search);
+const reduced = q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const forceMobile = q.get('mobile') === '1' ? true : (q.get('mobile') === '0' ? false : undefined);
+const noWebGL = q.get('fallback') === '1';
+const host = document.getElementById('carte');
+const hud = document.getElementById('hud');
+
+/* --- COQUILLE : creer -> s abonner -> mount() --- */
+const ui = createCarteUI(host, { reduced, mobile: forceMobile });
+let scene = null;
+const off = ui.onIntent(i => {
+  if (!scene) return;
+  if (i.type === 'stage') scene.setStage(i.el);
+  else if (i.type === 'place') scene.setPlace(i.place);
+  else if (i.type === 'reset') scene.resetView();
+  else if (i.type === 'focus') scene.focusCity(i.id, true);
+  else if (i.type === 'hover') scene.setHover(i.id);
+});
+ui.mount();
+
+/* --- MOTEUR --- */
+let t0 = performance.now(), firstPaint = 0, kit = null;
+if (!noWebGL) {
+  try {
+    scene = await createCarteScene(host, {
+      reduced, mobile: forceMobile, ui, stage: ui.stage,
+      idle: q.get('idle') === 'still' ? 'still' : 'pulse',
+      quality: q.get('quality') || 'auto'
+    });
+    firstPaint = Math.round(performance.now() - t0);
+    scene.setStage(ui.stage);
+    scene.start();
+  /* AUCUN console.warn ici : le contrat exige 0 erreur ET 0 avertissement dans TOUS les etats,
+     y compris sans WebGL. La raison du repli est lisible dans le HUD et dans window.__lab.repli. */
+  } catch (e) { scene = null; window.__repli = e && e.message ? e.message : 'WebGL unavailable'; }
+}
+if (!scene) kit = await initCarte3D(host, { ui, reduced, mobile: forceMobile, forceFallback: true });
+
+/* --- parallaxe souris comme dans le shell du site --- */
+host.addEventListener('pointermove', ev => {
+  if (!scene || ui.state !== 'closed') return;
+  const r = host.getBoundingClientRect();
+  scene.setPointer((ev.clientX - r.left) / r.width - 0.5, (ev.clientY - r.top) / r.height - 0.5);
+});
+host.addEventListener('pointerleave', () => { if (scene) scene.setPointer(0, 0); });
+
+/* --- commandes du banc --- */
+const openNow = () => ui.setPlace('full');
+const closeNow = () => ui.setPlace('page');
+document.getElementById('bAmb').addEventListener('click', () => {
+  const m = document.documentElement.dataset.ambiance === 'jour' ? 'nuit' : 'jour';
+  document.documentElement.dataset.ambiance = m;
+});
+document.getElementById('bOpen').addEventListener('click', () => { ui.place === 'page' ? openNow() : closeNow(); });
+document.getElementById('bLille').addEventListener('click', () => lab.clickCity('Lille'));
+document.getElementById('bStras').addEventListener('click', () => lab.clickCity('Strasbourg'));
+document.getElementById('bNice').addEventListener('click', () => lab.clickCity('Nice'));
+document.getElementById('bReset').addEventListener('click', () => { ui.setActive(null); if (scene) scene.resetView(); });
+let fbOn = false;
+document.getElementById('bFb').addEventListener('click', () => { fbOn = !fbOn; ui.setFallback(fbOn); if (fbOn) buildFallbackMap(host, {}); });
+
+/* --- HUD --- */
+function refreshHud() {
+  if (!scene) { hud.textContent = 'repli sans WebGL' + (window.__repli ? '\nraison      ' + window.__repli : ''); return; }
+  const s = scene.stats();
+  hud.textContent =
+    'etat        ' + s.etat + ' · ' + s.ambiance + (s.reduced ? ' · reduced' : '') + (s.mobile ? ' · mobile' : '') + '\n' +
+    'triangles   ' + s.triangles_rendus + '  (scene ' + s.triangles_scene + ', pins ' + s.pins_triangles + ')\n' +
+    'appels      ' + s.appels + ' · dpr ' + s.pixelRatio + ' · grille ' + s.resolution + '\n' +
+    'pins        ' + s.pins + ' · boucle ' + (s.boucle ? 'active' : 'arretee') + ' · 1er rendu ' + firstPaint + ' ms\n' +
+    'ville       ' + (s.ville_active || '—');
+}
+setInterval(refreshHud, 320); refreshHud();
+
+/* --- API du banc pour le script de capture --- */
+const idOf = v => {
+  const list = scene ? scene.items : ui.cities;
+  const it = list.find(i => i.nom === v);
+  return it ? it.id : null;
+};
+const lab = {
+  ui, get scene() { return scene; }, get kit() { return kit; },
+  villes: () => (window.COMPAGNIE_OR_VILLES || []).slice(),
+  open() { openNow(); },
+  close() { closeNow(); },
+  place(p) { ui.setPlace(p); },
+  hover(v) { const id = idOf(v); if (scene && id) scene.setHover(id); },
+  /* simule un CLIC sur le pin : la sequence complete du moteur */
+  clickCity(v) { const id = idOf(v); if (scene && id) scene.focusCity(id, false); },
+  /* simule un clic dans la LISTE (chemin de l utilisateur) */
+  clickRow(v) {
+    const id = idOf(v); if (!id) return false;
+    const b = ui._dbg.listUI.rows.get(id);
+    if (b) { b.click(); return true; }
+    return false;
+  },
+  reset() { ui.setActive(null); if (scene) scene.resetView(); },
+  ambiance(m) { document.documentElement.dataset.ambiance = m; },
+  fallback(on) { fbOn = !!on; ui.setFallback(fbOn); if (fbOn) buildFallbackMap(host, {}); },
+  stats() { return scene ? scene.stats() : { repli: true, raison: window.__repli || null }; },
+  get repli() { return scene ? null : (window.__repli || 'repli force'); },
+  uiStats() { return ui.stats(); },
+  firstPaint: () => firstPaint,
+  /* position ecran d un pin (verification de la projection) */
+  pinAt(v) {
+    if (!scene) return null;
+    const d = scene._dbg, id = idOf(v);
+    const i = d.items.findIndex(o => o.id === id);
+    if (i < 0) return null;
+    const p = d.pins[i];
+    return { nom: v, x: Math.round(p.sx), y: Math.round(p.sy), onScreen: p.onScreen, region: d.items[i].region };
+  },
+  fps(ms) {
+    return new Promise(r => { let n = 0; const t = performance.now(); (function f() { n++; if (performance.now() - t < (ms || 1500)) requestAnimationFrame(f); else r(Math.round(n / ((performance.now() - t) / 1000))); })(); });
+  },
+  dbg() { return scene ? scene._dbg : null; },
+  /* CAPTURES DETERMINISTES : on avance la chorégraphie de `t` secondes exactement, hors rAF.
+     Indispensable en headless (SwiftShader tourne à quelques images/seconde). */
+  scrub(t, dt) {
+    if (!scene) return;
+    const d = scene._dbg, step = dt || 1 / 60;
+    scene.stop();
+    for (let e = 0; e < t - 1e-6; e += step) d.step(Math.min(step, t - e), false);
+    d.step(0, true);
+  },
+  scrubClick(v, t) { this.clickCity(v); this.scrub(t); },
+  scrubRow(v, t) { this.clickRow(v); this.scrub(t); },
+  scrubOpen(t) { this.open(); this.scrub(t); },
+  /* cout CPU d une image de chorégraphie (hors dessin) */
+  cpu(n) {
+    if (!scene) return 0;
+    const d = scene._dbg, k = n || 120, t = performance.now();
+    for (let i = 0; i < k; i++) d.step(1 / 60, false);
+    return +((performance.now() - t) / k).toFixed(3);
+  },
+  resume() { if (scene) scene.start(); },
+  hold() { if (scene) scene.stop(); },
+  replayIntro(kind) { if (scene) { scene.stop(); scene._dbg.runIntro(kind || 'closed'); } },
+  destroy() { off(); if (kit) kit.destroy(); if (scene) scene.destroy(); ui.destroy(); scene = null; kit = null; }
+};
+window.__lab = lab;
+window.__ui = ui;
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

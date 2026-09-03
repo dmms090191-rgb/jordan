@@ -1,0 +1,335 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · PRENDRE RENDEZ-VOUS   (#rendezvous)
+   ----------------------------------------------------------------------------
+   La section se terminait sur un numéro de téléphone centré. C'est une fin
+   polie, mais c'est une impasse : la page entière conduit à ce moment, et le
+   seul geste possible était de décrocher un téléphone.
+
+   On y met donc un vrai formulaire — et on le compose comme le reste de la
+   page, pas comme un module d'interface :
+
+     · les champs n'ont ni boîte ni fond ; une ligne d'écriture sous chacun,
+       qui prend l'or au moment où l'on écrit dedans. C'est la même écriture
+       que la recherche de la carte : deux commandes de la même main ;
+     · le formulaire tient les deux tiers de la largeur, le contact direct
+       le dernier tiers, séparé par un filet. Écrire ou appeler : deux voies,
+       jamais deux blocs concurrents ;
+     · une seule ligne parle à la fois — l'état de l'envoi — et elle dit ce
+       qui se passe, pas ce qui a raté.
+
+   L'envoi lui-même vit dans assets/js/formulaire.js, sous la constante
+   CONTACT_FORM_ENDPOINT. Aucun secret ne passe par cette page.
+   ========================================================================== */
+
+/* ── 1 · la section cesse d'être centrée ───────────────────────────────
+   Un formulaire centré oblige l'œil à repartir du milieu à chaque ligne.
+   On l'aligne à gauche, comme tout ce qui se lit sur cette page. */
+.rdv__inner {
+  max-width: min(1240px, 94vw);
+  text-align: left;
+}
+.rdv__tete {
+  max-width: 46rem;
+  margin-bottom: clamp(2.2rem, 5vh, 3.6rem);
+}
+.rdv__title {
+  font-size: clamp(2.1rem, 1.35rem + 2.5vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -.008em;
+}
+.rdv__lede { max-width: 56ch; margin-inline: 0; }
+
+/* ── 2 · écrire, ou appeler ────────────────────────────────────────────
+   Deux voies côte à côte, séparées par un filet. Le formulaire est deux fois
+   plus large : c'est lui qu'on propose, l'autre reste ouvert. */
+.rdv__corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2.4rem, 6vh, 3.6rem);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .rdv__corps {
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, .72fr);
+    column-gap: clamp(2.6rem, 6vw, 6rem);
+  }
+  .rdv__open {
+    border-left: 1px solid var(--line-soft);
+    padding-left: clamp(2rem, 4vw, 3.4rem);
+  }
+}
+
+/* ── 3 · les champs ────────────────────────────────────────────────────
+   Pas de boîte : une étiquette en petites capitales, une ligne d'écriture,
+   et la place — réservée d'avance — de ce qu'on aura à corriger. Réserver
+   cette place évite que la page saute quand une erreur apparaît. */
+.rdvf { position: relative; }
+
+.rdvf__ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: clamp(1.2rem, 3vw, 2.4rem);
+}
+@media (min-width: 560px) {
+  .rdvf__ligne { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+.rdvf__champ {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin: 0 0 clamp(1.1rem, 2.6vh, 1.7rem);
+  min-width: 0;
+}
+.rdvf__label {
+  font-family: var(--body);
+  font-size: .62rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  transition: color .35s ease;
+}
+.rdvf__champ:focus-within .rdvf__label { color: var(--gold-ink); }
+.rdvf__fac {
+  letter-spacing: .1em;
+  text-transform: none;
+  font-style: italic;
+  opacity: .7;
+  margin-left: .4rem;
+}
+
+.rdvf__in {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 0;
+  color: var(--text);
+  font-family: var(--body);
+  font-size: .95rem;
+  line-height: 1.5;
+  padding: .5rem 0 .55rem;
+  width: 100%;
+  min-width: 0;
+  transition: border-color .35s ease;
+}
+.rdvf__in:hover { border-bottom-color: color-mix(in srgb, var(--gold) 40%, transparent); }
+.rdvf__in:focus { outline: none; border-bottom-color: var(--gold); }
+.rdvf__in--zone { resize: vertical; min-height: 5.5rem; }
+
+/* ce qu'on a à corriger — la place est tenue même quand il n'y a rien à dire */
+.rdvf__dit {
+  min-height: 1.05rem;
+  font-family: var(--body);
+  font-size: .72rem;
+  line-height: 1.45;
+  color: #dc9179;
+}
+.rdvf__champ[data-faux="1"] .rdvf__in { border-bottom-color: #c2624a; }
+.rdvf__champ[data-faux="1"] .rdvf__label { color: #dc9179; }
+
+/* le champ que seuls les robots remplissent : hors de l'écran, hors du
+   parcours de tabulation, et jamais annoncé par un lecteur d'écran. */
+.rdvf__leurre {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ── 4 · envoyer ───────────────────────────────────────────────────────
+   Le bouton reprend l'or plein des appels à l'action de la page. Désactivé,
+   il ne disparaît pas : il s'éteint, et le dit. */
+.rdvf__pied {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.5vw, 1.8rem);
+  flex-wrap: wrap;
+  margin-top: .4rem;
+}
+.rdvf__envoi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--body);
+  font-size: .78rem;
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  padding: 1.05rem 2.3rem;
+  border: 0;
+  border-radius: 2px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  box-shadow: 0 10px 30px rgba(201, 154, 63, .22);
+  cursor: pointer;
+  transition: transform .25s ease, box-shadow .3s ease, opacity .3s ease;
+}
+.rdvf__envoi:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(201, 154, 63, .32);
+}
+.rdvf__envoi:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+.rdvf__envoi:disabled { opacity: .5; cursor: default; transform: none; box-shadow: none; }
+
+/* ── 5 · une seule ligne parle à la fois ───────────────────────────────
+   L'état de l'envoi. Sa couleur dit la nature du message avant qu'on l'ait lu,
+   mais elle ne le dit jamais SEULE : le texte suffit sans la couleur. */
+.rdvf__etat {
+  margin: 0;
+  flex: 1 1 16rem;
+  min-width: 0;
+  font-family: var(--body);
+  font-size: .82rem;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.rdvf[data-etat="ok"] .rdvf__etat { color: var(--gold-bright); }
+.rdvf[data-etat="erreur"] .rdvf__etat { color: #e0937c; }
+.rdvf[data-etat="envoi"] .rdvf__etat { color: var(--text-3); }
+.rdvf[data-etat="envoi"] .rdvf__etat::before {
+  content: "";
+  display: inline-block;
+  width: .42rem;
+  height: .42rem;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: .55rem;
+  vertical-align: middle;
+  animation: rdvf-souffle 1.15s ease-in-out infinite;
+}
+@keyframes rdvf-souffle { 0%, 100% { opacity: .22; } 50% { opacity: 1; } }
+
+.rdvf__mention {
+  margin: clamp(1.2rem, 3vh, 1.8rem) 0 0;
+  max-width: 52ch;
+  font-family: var(--body);
+  font-size: .72rem;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+
+/* ── 6 · le contact direct ─────────────────────────────────────────────
+   Il était centré au milieu de la section ; il devient une colonne, alignée
+   à gauche comme le reste, et garde sa signature. */
+.rdv__open {
+  align-items: flex-start;
+  text-align: left;
+  max-width: none;
+  margin: 0;
+}
+.rdv__contacts {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(1.2rem, 3vh, 1.9rem);
+  width: 100%;
+}
+.rdv__contact { align-items: flex-start; text-align: left; }
+.rdv__sep { display: none; }
+
+/* ── 7 · mouvement réduit ──────────────────────────────────────────────
+   Le point qui bat pendant l'envoi est une information : il ne disparaît pas,
+   il cesse seulement de battre. */
+@media (prefers-reduced-motion: reduce) {
+  .rdvf[data-etat="envoi"] .rdvf__etat::before { animation: none; opacity: .8; }
+  .rdvf__envoi { transition: none; }
+  .rdvf__envoi:hover:not(:disabled) { transform: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   8 · LE BOUTON N'EST PLUS UN APLAT
+   ----------------------------------------------------------------------
+   Dans le code, ce bouton n'a jamais été jaune fluo : c'est un dégradé
+   #e2bd6b → #c99a3f. Mais il se LIT comme un aplat, et sur ce point c'est
+   l'œil qui juge, pas la valeur hexadécimale — un or plein et clair posé sur
+   un fond presque noir concentre toute la luminance de la page en un
+   rectangle de 258 × 52 px. Rien d'autre sur cette page ne brille autant, pas
+   même la montre du hero.
+
+   On inverse le rapport : la matière devient sombre et l'or passe dans le
+   TRAIT et dans la lettre. Ce que fait une plaque gravée — la lumière vient
+   du relief, pas de la surface. Le bouton reste le point le plus contrasté de
+   la section, mais par le dessin, pas par la puissance. */
+.rdvf__envoi {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--gold, #c99a3f) 20%, transparent) 0%,
+      color-mix(in srgb, var(--gold, #c99a3f) 7%, transparent) 100%);
+  color: var(--gold-bright, #e8cd93);
+  border: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 52%, transparent);
+  border-radius: 1px;
+  padding: 1.15rem 2.6rem;
+  letter-spacing: .2em;
+  /* le liseré intérieur : c'est lui qui donne l'épaisseur de la plaque */
+  box-shadow:
+    inset 0 1px 0 rgba(232, 205, 147, .16),
+    inset 0 -1px 0 rgba(0, 0, 0, .35),
+    0 16px 40px rgba(0, 0, 0, .34);
+  transition: border-color .4s ease, background .4s ease, box-shadow .45s ease, color .4s ease;
+}
+.rdvf__envoi:hover:not(:disabled) {
+  transform: none;                 /* une plaque gravée ne saute pas */
+  color: #f6e9c8;
+  border-color: var(--gold-bright, #e8cd93);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--gold, #c99a3f) 30%, transparent) 0%,
+      color-mix(in srgb, var(--gold, #c99a3f) 12%, transparent) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(246, 233, 200, .26),
+    inset 0 -1px 0 rgba(0, 0, 0, .35),
+    0 18px 46px rgba(201, 154, 63, .13);
+}
+.rdvf__envoi:disabled {
+  opacity: 1;
+  color: color-mix(in srgb, var(--gold-bright, #e8cd93) 40%, transparent);
+  border-color: color-mix(in srgb, var(--gold, #c99a3f) 22%, transparent);
+  background: none;
+  box-shadow: none;
+}
+
+/* ── 9 · le contact devient une signature de maison ────────────────────
+   Un numéro et une adresse posés l'un sous l'autre sont des coordonnées ;
+   ce qu'on attend à la fin d'un site de ce niveau, c'est une signature.
+   Le filet vertical qui séparait les deux colonnes devient donc le montant
+   de cette signature : il descend, porte le poinçon en tête, et les deux
+   voies de contact s'y accrochent. */
+@media (min-width: 900px) {
+  .rdv__open {
+    position: relative;
+    padding-top: .3rem;
+  }
+}
+.rdv__mono {
+  width: clamp(30px, 2.4vw, 38px);
+  height: auto;
+  opacity: .9;
+  margin-bottom: clamp(1.4rem, 3vh, 2.1rem);
+}
+.rdv__how {
+  font-size: .6rem;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--gold, #c99a3f) 78%, transparent);
+}
+.rdv__big {
+  font-family: var(--display);
+  font-size: clamp(1.5rem, 1rem + 1.3vw, 2.05rem);
+  line-height: 1.1;
+  letter-spacing: .01em;
+  color: var(--text);
+  transition: color .4s ease;
+}
+.rdv__big--mail { font-size: clamp(1.05rem, .8rem + .7vw, 1.35rem); }
+.rdv__contact:hover .rdv__big { color: var(--gold-bright, #e8cd93); }
+.rdv__note {
+  font-size: .68rem;
+  letter-spacing: .06em;
+  color: var(--text-3);
+  margin-top: .2rem;
+}
+/* la signature et le tricolore ferment la colonne, très bas et très discrets */
+.rdv__signature { margin-top: clamp(2rem, 5vh, 3.2rem); width: 100%; }
+.rdv__tri { margin-top: .9rem; opacity: .75; }

@@ -1,0 +1,378 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · LA CARTE DE FRANCE   (#journees)
+   ----------------------------------------------------------------------------
+   Le relevé : le conteneur imposait un rapport 4/3 rigide, la carte n'occupait
+   que 65 % d'une colonne, et les 35 % restants étaient mangés par la liste
+   déroulante des 111 communes. Résultat mesuré : la France tenait dans environ
+   780 px de côté — le plus bel objet de la page était le plus petit.
+
+   Trois décisions :
+
+     1. LE CONTENEUR NE DICTE PLUS LA HAUTEUR. Le rapport 4/3 était un cadre
+        arbitraire dans lequel il fallait faire tenir la tête, la carte et la
+        liste. On rend la hauteur au contenu, et on donne à la carte une
+        hauteur choisie, bornée par la fenêtre.
+
+     2. LA CARTE PREND TOUTE LA LARGEUR, CENTRÉE. La France est une silhouette
+        presque carrée : sa taille vaut le PLUS PETIT des deux côtés de sa
+        scène. Lui rendre les 35 % perdus, c'est la faire grandir d'un cinquième
+        sans rien allonger.
+
+     3. LA LISTE DEVIENT DEUX COMMANDES. Un champ de recherche et un choix de
+        région, sous la carte ; les communes n'apparaissent qu'en réponse. Cent
+        onze lignes déroulées en permanence n'étaient pas une liste, c'était un
+        mur — et il tenait la moitié de la section.
+
+   Rien n'est touché du moteur : la rotation au glissé, le pincement et le
+   recentrage existaient déjà, bornés par LIM dans carte3d.js.
+   ========================================================================== */
+
+/* ── 1 · le conteneur rend la hauteur au contenu ───────────────────────
+   Le rapport d'aspect ET le rayon disparaissent : les bords de la carte se
+   fondent déjà dans le fond de section (.c3d__map::after), un rayon de 8 px
+   n'y dessinait qu'un coin d'autocollant. */
+.map--3d .map__stage {
+  aspect-ratio: auto;
+  border-radius: 0;
+  height: auto;
+  overflow: visible;
+}
+/* Le calque de la carte etait pose EN ABSOLU dans le conteneur : c est ce qui permettait au
+   rapport 4/3 de commander. En le remettant dans le flux, c est lui qui donne sa hauteur a la
+   section — sans quoi #journees ne mesurait plus que ses propres marges. */
+.map--3d .c3d {
+  position: relative;
+  inset: auto;
+  overflow: visible;
+}
+
+/* ── 2 · une seule colonne : la tête, la carte, les commandes ──────────
+   La grille passe de « deux colonnes, deux rangées » à une descente simple.
+   Elle cesse d'être posée en absolu : c'est elle qui donne sa hauteur au
+   conteneur, et non l'inverse. */
+.c3d__grid {
+  position: relative;
+  inset: auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  grid-template-areas: "head" "map" "list";
+  column-gap: 0;
+  row-gap: clamp(1.1rem, 2.4vh, 2rem);
+}
+
+/* le filet vertical séparait les deux colonnes — il n'y en a plus qu'une */
+.c3d__map::before { display: none; }
+
+/* ── 3 · la tête ───────────────────────────────────────────────────────
+   Elle ne s'aligne pas sur l'axe de la carte : elle part du bord gauche et
+   s'arrête tôt. C'est ce décalage qui empêche la section de se lire comme un
+   bloc centré de plus. */
+.c3d__head {
+  max-width: 46rem;
+  margin-bottom: clamp(1.4rem, 3vh, 2.4rem);
+  padding-right: 0;
+}
+
+/* ── 4 · la carte, pleine largeur ──────────────────────────────────────
+   La hauteur est bornée par la fenêtre : la carte doit pouvoir être vue d'un
+   seul regard, sinon la rotation au glissé n'a plus de sens — on ferait
+   tourner un objet dont on ne voit pas les bords. */
+.c3d__map {
+  width: 100%;
+  height: min(94svh, 1000px);
+  min-height: 420px;
+}
+
+/* ── 5 · les deux commandes ────────────────────────────────────────────
+   Elles se posent sous la carte, alignées à gauche comme la tête. Le panneau
+   ne montre des communes QUE si l'on a demandé quelque chose. */
+.c3d__side {
+  display: block;
+  min-height: 0;
+}
+.c3d__side > .c3d-list {
+  width: 100%;
+  height: auto;
+  padding: 0;
+}
+.c3d-list__head {
+  display: flex;
+  align-items: baseline;
+  gap: .9rem;
+  padding: clamp(.9rem, 2vh, 1.4rem) 0 0;
+}
+.c3d-list__compte {
+  margin: 0;
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c3d-gold) 72%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.c3d-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  margin: .9rem 0 0;
+  max-width: 42rem;
+}
+
+/* Un champ et un menu qui ne ressemblent pas à des contrôles de formulaire
+   posés là : pas de boîte, pas de rayon — un filet dessous, comme une ligne
+   d'écriture. La couleur ne vient qu'au focus. */
+.c3d-find,
+.c3d-reg {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--c3d-gold) 26%, transparent);
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  font-size: .82rem;
+  padding: .55rem .2rem .5rem;
+  min-height: 2.6rem;
+  transition: border-color .35s ease, color .35s ease;
+}
+.c3d-find { flex: 1 1 15rem; min-width: 0; }
+.c3d-reg {
+  flex: 0 1 15rem;
+  cursor: pointer;
+  padding-right: 1.6rem;
+  /* le chevron est dessiné, pas importé : aucune requête pour une flèche */
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right .72rem center, right .38rem center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.c3d-find::placeholder { color: color-mix(in srgb, currentColor 46%, transparent); }
+.c3d-find:focus-visible,
+.c3d-reg:focus-visible {
+  outline: none;
+  border-bottom-color: var(--c3d-gold);
+}
+.c3d-find:hover,
+.c3d-reg:hover { border-bottom-color: color-mix(in srgb, var(--c3d-gold) 52%, transparent); }
+/* le menu déroulant est dessiné par le système : il lui faut un fond opaque */
+.c3d-reg option { background: var(--c3d-page-bg, #100e0b); color: inherit; }
+/* la petite croix native du champ de recherche jure avec le reste */
+.c3d-find::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* ── 6 · le résultat ───────────────────────────────────────────────────
+   Il ne se déroule pas : il se déplie sur quelques rangées, en colonnes, et
+   s'arrête. Une hauteur bornée garantit que la carte ne recule jamais. */
+.c3d-list__scroll {
+  max-height: clamp(9rem, 24vh, 15rem);
+  padding-right: .4rem;
+  margin-top: .9rem;
+}
+.c3d[data-place="page"] .c3d__side .c3d-grp__ul {
+  grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
+  column-gap: 1.4rem;
+}
+.c3d-list[data-vide="1"] .c3d-list__scroll { display: none; }
+
+.c3d-list__vide {
+  margin: 1rem 0 0;
+  max-width: 40rem;
+  font-size: .84rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+}
+
+/* ── 7 · formats étroits ───────────────────────────────────────────────
+   La carte garde la priorité : elle occupe la hauteur utile, les commandes
+   passent l'une sous l'autre. */
+@media (max-width: 820px) {
+  .map--3d .map__stage { aspect-ratio: auto; }
+  .c3d__map { height: min(62svh, 560px); min-height: 320px; }
+  .c3d__head { max-width: none; }
+  .c3d-filtres { flex-direction: column; gap: .4rem; }
+  .c3d-find, .c3d-reg { flex: 1 1 auto; width: 100%; }
+  .c3d-list__scroll { max-height: 40vh; }
+  .c3d[data-place="page"] .c3d__side .c3d-grp__ul { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── 8 · le prix de la hauteur ─────────────────────────────────────────
+   Rendre la pleine largeur à la carte l'a fait grandir de 13 % (silhouette
+   mesurée : 754 → 853 px de haut), mais la tête et les commandes, qui
+   partageaient autrefois une colonne LATÉRALE, coûtent maintenant leur propre
+   hauteur. La section passait de 1120 à 1565 px — trop.
+
+   On reprend l'écart là où il ne se voit pas : sur l'air de la section, qui
+   n'a plus à être généreux puisque la carte apporte elle-même son vide, et
+   sur la hauteur de la carte, ramenée à ce qui tient dans une fenêtre. */
+#journees {
+  --air-haut: clamp(4rem, 9vh, 7rem);
+  --air-bas: clamp(3.4rem, 8vh, 6rem);
+}
+.c3d__map { height: min(92svh, 950px); }
+.c3d__head { margin-bottom: clamp(1rem, 2.2vh, 1.7rem); }
+.c3d-list__head { padding-top: clamp(.7rem, 1.6vh, 1.1rem); }
+
+/* ── 9 · la tête reprend l'échelle de la page ──────────────────────────
+   Deux valeurs avaient été taillées pour l'ancienne colonne de 35 % et n'ont
+   plus lieu d'être maintenant que la tête occupe toute la largeur :
+
+     · le titre plafonnait à 2,1 rem — il restait sous l'échelle « mineure »
+       de la page alors que la carte est l'une des deux pièces maîtresses ;
+     · le chapô était bridé à 33 caractères, ce qui le cassait en six lignes
+       courtes au milieu d'un vide de mille pixels.
+
+   Le titre rejoint donc l'échelle majeure, celle de la vitrine. */
+.c3d__title {
+  font-size: clamp(2.4rem, 1.4rem + 3.1vw, 4.2rem);
+  line-height: .99;
+  letter-spacing: -.012em;
+  margin-bottom: clamp(.85rem, 1.8vh, 1.35rem);
+}
+.c3d__lede {
+  max-width: 56ch;
+  font-size: .93rem;
+}
+.c3d__kicker { margin-bottom: .75rem; }
+
+@media (max-width: 820px) {
+  .c3d__title { font-size: clamp(1.75rem, 1.2rem + 3.4vw, 2.4rem); }
+  .c3d__lede { max-width: 44ch; font-size: .86rem; }
+}
+
+/* ── 10 · l'indice de première visite ──────────────────────────────────
+   Le plein écran disait déjà « glissez pour explorer ». Dans la page, rien ne
+   l'annonçait : une carte immobile ne dit pas qu'elle tourne. Il se pose dans
+   la marge gauche de la scène — la France est centrée, cette bande est vide —
+   et il s'efface au premier geste. */
+.c3d-hint--page {
+  max-width: 14rem;
+  white-space: normal;
+  line-height: 1.35;
+}
+.c3d[data-indice="1"] .c3d-hint--page {
+  opacity: 1;
+  transition-delay: .9s;
+}
+@media (max-width: 820px) {
+  .c3d-hint--page { font-size: .82rem; max-width: 11rem; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   11 · LA NAVIGATION REMONTE AU-DESSUS DE LA CARTE
+   ----------------------------------------------------------------------
+   Mesure : le champ de recherche et le choix de région se trouvaient à
+   1363 px dans une section de 1496. Il fallait franchir toute la France
+   avant de découvrir par où l'explorer — c'est-à-dire découvrir la porte
+   après avoir fait le tour de la maison.
+
+   L'ordre devient : titre · index des régions · recherche · CARTE ·
+   communes trouvées. La navigation annonce, la carte répond, le résultat
+   suit. Les communes restent SOUS la carte : les faire apparaître au-dessus
+   repousserait la France de deux cent quarante pixels à chaque clic.
+
+   Fait entièrement par `display: contents` : le panneau reste d'un seul
+   tenant dans le DOM, et continue donc de voyager intact vers le plein
+   écran, où ces règles ne s'appliquent pas. */
+@media (min-width: 900px) {
+  .c3d[data-place="page"] .c3d__grid {
+    grid-template-areas: none;
+    grid-template-rows: repeat(7, auto);
+  }
+  .c3d[data-place="page"] .c3d__head        { grid-area: auto; grid-row: 1; }
+  .c3d[data-place="page"] .c3d__side        { display: contents; }
+  .c3d[data-place="page"] .c3d__side > .c3d-list { display: contents; }
+  .c3d[data-place="page"] .c3d-list__head   { grid-area: auto; grid-row: 2; }
+  .c3d[data-place="page"] .c3d-rail         { grid-area: auto; grid-row: 3; }
+  .c3d[data-place="page"] .c3d-filtres      { grid-area: auto; grid-row: 4; }
+  .c3d[data-place="page"] .c3d__map         { grid-area: auto; grid-row: 5; }
+  .c3d[data-place="page"] .c3d-list__scroll { grid-area: auto; grid-row: 6; }
+  .c3d[data-place="page"] .c3d-list__vide   { grid-area: auto; grid-row: 7; }
+
+  /* deux commandes pour une seule chose : on n'en montre qu'une. Le rail
+     dit les treize régions ; le menu les cacherait. */
+  .c3d[data-place="page"] .c3d-reg { display: none; }
+  .c3d[data-place="page"] .c3d-filtres { max-width: 26rem; margin-top: .2rem; }
+}
+
+/* ── 12 · le rail des régions ──────────────────────────────────────────
+   Ni onglets, ni pastilles, ni menu : une ligne d'index, comme le sommaire
+   d'une revue. Les régions s'écrivent, séparées par un point ; celle qu'on
+   regarde prend l'or et se souligne d'un filet qui se dessine — la même
+   écriture que les numéros du parcours et que les intertitres. */
+.c3d-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 clamp(1.1rem, 2.2vw, 1.9rem);
+  margin: clamp(.9rem, 2vh, 1.3rem) 0 0;
+  max-width: min(1180px, 100%);
+}
+.c3d-rail__b {
+  position: relative;
+  appearance: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--c3d-body);
+  font-size: .68rem;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: .55rem 0 .6rem;
+  color: color-mix(in srgb, var(--c3d-text, #efe7d8) 46%, transparent);
+  transition: color .38s ease;
+}
+.c3d-rail__b:hover { color: var(--c3d-text, #efe7d8); }
+.c3d-rail__b:focus-visible { outline: 1px solid var(--c3d-gold); outline-offset: 4px; }
+.c3d-rail__b.is-on { color: var(--c3d-gold); }
+/* le filet de la région regardée */
+.c3d-rail__b::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: .1rem;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .5s cubic-bezier(.22, .61, .36, 1);
+}
+.c3d-rail__b.is-on::before { transform: scaleX(1); }
+/* le point de séparation vit dans la gouttière, pas dans le libellé */
+.c3d-rail__b:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: calc(clamp(1.1rem, 2.2vw, 1.9rem) / -2);
+  top: 50%;
+  width: 2px; height: 2px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .32;
+  transform: translate(50%, -50%);
+}
+
+/* ── 13 · format étroit ────────────────────────────────────────────────
+   Treize libellés ne tiennent pas : le menu reprend la main, et l'ordre
+   d'origine — commandes sous la carte — redevient le bon, puisqu'on ne
+   voit de toute façon jamais la carte entière d'un seul regard. */
+@media (max-width: 899px) {
+  .c3d-rail { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c3d-rail__b::before { transition: none; }
+}
+
+/* ── 14 · reprendre la hauteur que la navigation a prise ───────────────
+   Placer l'index des régions avant la carte coûte une rangée : la section
+   passait de 1496 à 1653 px. On ne relève pas la borne, on rend la hauteur —
+   la carte cède la cinquantaine de pixels qu'il faut, et les gouttières se
+   resserrent. La France reste au-dessus de ce qu'elle mesurait avant la
+   refonte ; c'est ce qui compte. */
+@media (min-width: 900px) {
+  .c3d[data-place="page"] .c3d__map { height: min(86svh, 880px); }
+  .c3d[data-place="page"] .c3d__grid { row-gap: clamp(.7rem, 1.6vh, 1.2rem); }
+  .c3d[data-place="page"] .c3d__head { margin-bottom: clamp(.6rem, 1.4vh, 1rem); }
+  .c3d[data-place="page"] .c3d-list__head { padding-top: clamp(.5rem, 1.2vh, .9rem); }
+  .c3d[data-place="page"] .c3d-list__scroll { margin-top: .6rem; }
+}

@@ -1,0 +1,30 @@
+<!doctype html><html lang="fr" data-ambiance="nuit"><head><meta charset="utf-8">
+<!-- SANS CETTE BALISE, une emulation mobile retombe sur le viewport de mise en page de 980 px :
+     `window.innerWidth` valait 981 pour une fenetre de 375, et toute mesure « mobile » prise sur
+     cette page ne testait pas 375. C est le meme <meta> que index.html. -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab carte3d — intégration réelle (shell .step3d, lazy-load, destroy)</title>
+<link rel="stylesheet" href="../assets/css/accueil.css"><link rel="stylesheet" href="../assets/css/accueil-sections.css">
+<link rel="stylesheet" href="../assets/css/scenes/carte3d.css">
+<script type="importmap">{"imports":{"three":"../assets/vendor/three.module.min.js","three/addons/":"../assets/vendor/addons/"}}</script>
+<style>html,body{margin:0;background:var(--bg);min-height:250vh;font-family:var(--body)}
+.spacer{height:120vh}.step3d__scene{position:relative;width:min(1100px,92vw);margin:0 auto;aspect-ratio:16/10;overflow:hidden;transform-style:preserve-3d;border-radius:8px;background:var(--map-bg)}</style>
+</head><body>
+<div class="spacer"></div>
+<article class="step3d in is-live"><div class="step3d__inner"><div class="step3d__scene" id="sc"></div></div></article>
+<div class="spacer"></div>
+<script src="../assets/js/journees-data.js"></script>
+<script src="../assets/js/villes-france.js"></script>
+<script type="module">
+const host = document.getElementById('sc');
+let inst = null;
+const io = new IntersectionObserver(async (e) => {
+  if (!e.some(x => x.isIntersecting) || inst) return;
+  io.disconnect();
+  const m = await import('../assets/js/scenes/carte3d.js');
+  inst = await m.initCarte3D(host, {});
+  window.__int = inst;
+  document.body.dataset.ready = '1';
+}, { rootMargin: '600px 0px' });
+io.observe(host);
+</script></body></html>

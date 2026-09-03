@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab cours — interface de la section « Cours des métaux »</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/accueil.css">
+<link rel="stylesheet" href="../assets/css/accueil-sections.css">
+<link rel="stylesheet" href="../assets/css/scenes/cours.css">
+<script>(function(){var q=new URLSearchParams(location.search);var a=q.get('ambiance');if(a==='jour'||a==='nuit')document.documentElement.dataset.ambiance=a;})();</script>
+<style>
+  /* Habillage du BANC D'ESSAI uniquement (jamais servi par le site). */
+  html,body{margin:0;background:var(--bg)}
+  .lab-bandeau{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;
+    padding:.6rem clamp(1rem,3vw,2rem);background:var(--panel-2,rgba(28,24,19,.92));border-bottom:1px solid var(--line-soft);
+    font-family:var(--body);font-size:.68rem;letter-spacing:.06em;color:var(--text-2);backdrop-filter:blur(8px)}
+  .lab-bandeau strong{font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink)}
+  .lab-bandeau .lab-avert{color:var(--text-3);max-width:52ch;line-height:1.4}
+  .lab-btns{display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto}
+  .lab-btns button{font-family:var(--body);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;padding:.42rem .7rem;
+    border:1px solid var(--line-soft);border-radius:2px;background:none;color:var(--text-3);cursor:pointer}
+  .lab-btns button:hover{color:var(--text);border-color:var(--line)}
+  .lab-btns button[aria-pressed="true"]{color:var(--gold-ink);border-color:var(--line)}
+  .lab-simule{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .6rem;border:1px solid var(--line);border-radius:2px;color:var(--gold-ink);text-transform:uppercase;letter-spacing:.16em;font-size:.6rem}
+  #cours{padding-top:clamp(2rem,5vh,3.5rem)}
+  @media (max-width:760px){
+    .lab-bandeau{gap:.5rem;padding:.5rem .9rem}
+    .lab-bandeau .lab-avert{display:none}
+    .lab-btns{margin-left:0}
+    .lab-btns button{padding:.34rem .5rem;font-size:.56rem;letter-spacing:.1em}
+  }
+</style>
+</head>
+<body>
+
+<div class="lab-bandeau">
+  <strong>Banc d'essai · lot coursui</strong>
+  <span class="lab-simule">Données simulées</span>
+  <span class="lab-avert">Fixtures écrites à la main, conformes à la documentation Gold-API. Aucun appel réseau : cette page ne prouve que l'interface.</span>
+  <span class="lab-btns" id="labBtns"></span>
+</div>
+
+<section class="sec in" id="cours" aria-labelledby="cours-title" data-reveal>
+  <div class="gold">
+    <div class="sec__head">
+      <p class="kicker rv" style="--i:0">Le cours des métaux</p>
+      <h2 class="sec__title rv" id="cours-title" style="--i:1">Suivez l'évolution du marché, en direct.</h2>
+    </div>
+    <div class="rv" style="--i:2" id="hote"></div>
+  </div>
+</section>
+
+<script type="module">
+import { createCours } from '../assets/js/scenes/cours.js';
+
+const q = new URLSearchParams(location.search);
+const reduced = q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* =====================================================================
+   FIXTURES — écrites à la main, à la forme EXACTE des réponses documentées.
+   Les prix vifs reprennent un relevé public réel de /price/{symbole}/EUR
+   (2026-08-23) ; les bougies, elles, sont SIMULÉES : le banc d'essai sert
+   à juger l'interface, pas à afficher un marché.
+   ===================================================================== */
+const TAUX = 0.856;                                   // exchangeRate observé sur /price
+const ONCE = 31.1034768;                              // grammes par once troy (contrat § 2.5)
+const REF = {                                         // relevé public réel, en EUR
+  XAU: 3941.366316112, XAG: 59.156449712, XPT: 1615.272, XPD: 1173.576
+};
+const NOMS = { XAU: 'Gold', XAG: 'Silver', XPT: 'Platinum', XPD: 'Palladium' };
+const iso = (ilYaSec) => new Date(Date.now() - ilYaSec * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+function prixFixture(o) {
+  o = o || {};
+  const age = o.age === undefined ? 14 : o.age;
+  const varis = {
+    XAU: { pct: 0.42, abs: 16.4, depuis: 'sur 24 h' },
+    XAG: { pct: -0.31, abs: -0.18, depuis: 'sur 24 h' }
+    /* XPT et XPD : aucune variation fournie -> l'interface ne doit rien afficher */
+  };
+  return {
+    devise: 'EUR',
+    metaux: Object.keys(REF).map(s => ({
+      symbole: s, nom: NOMS[s], prix: REF[s], devise: 'EUR',
+      majAt: iso(age), majReadable: 'a few seconds ago',
+      variation: o.sansVariation ? undefined : varis[s]
+    })),
+    or24k: { prixGramme: REF.XAU / ONCE, devise: 'EUR' },
+    cache: { age, ttl: 30 },
+    degrade: !!o.degrade
+  };
+}
+
+/* Générateur déterministe : les captures doivent être reproductibles. */
+function rng(seed) { let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+function bougiesFixture(symbole, tf) {
+  const base = REF[symbole] / TAUX;                    // /history répond vraisemblablement en USD
+  const plan = { '1J': [78, 300], '1S': [84, 3600], '1M': [30, 86400], '3M': [64, 86400], '1A': [52, 604800], 'MAX': [60, 2592000] };
+  const [n, pas] = plan[tf] || plan['1J'];
+  const r = rng(symbole.charCodeAt(2) * 7919 + n * 131 + tf.length * 17);
+  const fin = Math.floor(Date.now() / 1000 / pas) * pas;
+  const out = [];
+  let c = base * (1 - 0.012 * n / 78);
+  for (let i = n - 1; i >= 0; i--) {
+    const o = c;
+    const amp = base * (0.0009 + r() * 0.0016);
+    c = o + (r() - 0.47) * amp * 2.1;
+    const h = Math.max(o, c) + r() * amp;
+    const l = Math.min(o, c) - r() * amp;
+    out.push({
+      time: fin - i * pas,
+      open: +o.toFixed(2), high: +h.toFixed(2), low: +l.toFixed(2), close: +c.toFixed(2)
+    });
+  }
+  return out;
+}
+function serieFixture(symbole, tf, devise) {
+  const b = bougiesFixture(symbole, tf);
+  const g = { '1J': 'minute', '1S': 'hour', '1M': 'hour', '3M': 'day', '1A': 'day', 'MAX': 'week' };
+  const bg = { '1J': '5 min', '1S': '1 h', '1M': '1 jour', '3M': '1 jour', '1A': '1 semaine', 'MAX': '1 mois' };
+  return {
+    symbole, tf, devise: devise || 'USD', bougies: b, source: 'history',
+    granularite: g[tf] || 'minute', bougie: bg[tf] || null, points: b.length * 5, tronque: false
+  };
+}
+function statsFixture(symbole, tf, devise) {
+  const b = bougiesFixture(symbole, tf);
+  const open = b[0].open, close = b[b.length - 1].close;
+  const high = Math.max(...b.map(x => x.high)), low = Math.min(...b.map(x => x.low));
+  return {
+    symbole, tf, devise: devise || 'USD',
+    open: +open.toFixed(2), high: +high.toFixed(2), low: +low.toFixed(2), close: +close.toFixed(2),
+    highLowChangePercent: +(((high - low) / low) * 100).toFixed(4),
+    openCloseChangePercent: +(((close - open) / open) * 100).toFixed(4),
+    debut: new Date(b[0].time * 1000).toISOString(), fin: new Date(b[b.length - 1].time * 1000).toISOString()
+  };
+}
+const CAP_COMPLETES = {
+  cle: true,
+  groupBy: { minute: true, hour: true, day: true, week: true, month: true, year: true },
+  devise: 'USD',
+  tf: ['1J', '1S', '1M', '3M', '1A', 'MAX']
+};
+const CAP_SANS_MINUTE = {                              /* forfait sans minute/hour : 1J et 1S disparaissent */
+  cle: true,
+  groupBy: { minute: false, hour: false, day: true, week: true, month: true, year: true },
+  devise: 'USD',
+  tf: ['1A', 'MAX']
+};
+
+/* =====================================================================
+   ESQUISSE DE GRAPHIQUE — outil de banc d'essai UNIQUEMENT.
+   Elle dessine exactement les bougies qu'on lui passe (rien d'autre) pour
+   juger les proportions du cadre. Le vrai moteur (Lightweight Charts) est
+   branché par le lot suivant via ui.brancherGraphique().
+   ===================================================================== */
+function esquisse(hote, ui) {
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
+  hote.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  let data = [], geo = null;
+  const lire = n => getComputedStyle(hote.closest('.cx')).getPropertyValue(n).trim();
+  function taille() {
+    const r = hote.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
+    ctx.setTransform(d, 0, 0, d, 0, 0); dessiner();
+  }
+  function dessiner() {
+    const w = cv.width / Math.min(2, devicePixelRatio || 1), h = cv.height / Math.min(2, devicePixelRatio || 1);
+    ctx.clearRect(0, 0, w, h);
+    if (!data.length) { geo = null; return; }
+    const P = { t: 14, b: 22, l: 10, r: 62 };
+    const hi = Math.max(...data.map(d => d.high)), lo = Math.min(...data.map(d => d.low));
+    const span = (hi - lo) || 1;
+    const X = i => P.l + (i + .5) * ((w - P.l - P.r) / data.length);
+    const Y = v => P.t + (1 - (v - lo) / span) * (h - P.t - P.b);
+    const pas = (w - P.l - P.r) / data.length, larg = Math.max(1.5, Math.min(9, pas * .62));
+    const up = lire('--cx-up') || '#8fae86', dn = lire('--cx-down') || '#bf7f6f';
+    ctx.lineWidth = 1;
+    data.forEach((d, i) => {
+      const x = X(i), hausse = d.close >= d.open;
+      ctx.strokeStyle = hausse ? up : dn; ctx.fillStyle = hausse ? up : dn;
+      ctx.globalAlpha = .95;
+      ctx.beginPath(); ctx.moveTo(Math.round(x) + .5, Y(d.high)); ctx.lineTo(Math.round(x) + .5, Y(d.low)); ctx.stroke();
+      const y1 = Y(Math.max(d.open, d.close)), y2 = Y(Math.min(d.open, d.close));
+      ctx.globalAlpha = hausse ? .55 : .8;
+      ctx.fillRect(x - larg / 2, y1, larg, Math.max(1, y2 - y1));
+      ctx.globalAlpha = .95;
+      ctx.strokeRect(Math.round(x - larg / 2) + .5, Math.round(y1) + .5, Math.round(larg), Math.max(1, Math.round(y2 - y1)));
+    });
+    ctx.globalAlpha = 1;
+    /* échelle de droite : uniquement des valeurs réellement présentes */
+    ctx.fillStyle = lire('--text-3') || 'rgba(243,236,220,.52)';
+    ctx.font = '11px Jost, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const nfr = v => v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    [hi, (hi + lo) / 2, lo].forEach(v => ctx.fillText(nfr(v), w - P.r + 10, Y(v)));
+    geo = { X, Y, P, w, h };
+  }
+  hote.addEventListener('pointermove', ev => {
+    if (!geo || !data.length) return;
+    const r = hote.getBoundingClientRect();
+    const i = Math.round((ev.clientX - r.left - geo.P.l) / ((geo.w - geo.P.l - geo.P.r) / data.length) - .5);
+    ui.setCurseur(data[Math.max(0, Math.min(data.length - 1, i))]);
+  });
+  hote.addEventListener('pointerleave', () => ui.setCurseur(null));
+  const ro = new ResizeObserver(taille); ro.observe(hote);
+  taille();
+  return {
+    setSerie(bougies) { data = Array.isArray(bougies) ? bougies : []; dessiner(); },
+    setAmbiance() { dessiner(); },
+    destroy() { ro.disconnect(); cv.remove(); }
+  };
+}
+
+/* ============================== montage ============================== */
+const hote = document.getElementById('hote');
+const ui = createCours(hote, { reduced });
+ui.mount();
+const journal = [];
+let moteur = q.get('moteur') === '0' ? null : esquisse(ui.zoneGraphique, ui);
+if (moteur) ui.brancherGraphique(moteur);
+
+/* L'intégrateur ferait ici de vrais appels ; le banc rejoue des fixtures. */
+let courant = { nom: 'complet', devise: 'USD' };
+let attente = 0;
+function repondre(intent) {
+  journal.push(intent);
+  if (intent.type === 'metal' || intent.type === 'periode' || intent.type === 'reessayer') {
+    if (['chargement', 'indisponible', 'sans-cle', 'vide'].indexOf(courant.nom) >= 0 && intent.type !== 'reessayer') return;
+    ui.setEtat('chargement');
+    clearTimeout(attente);
+    const suite = () => {
+      ui.setSerie(serieFixture(ui.symbole, ui.tf || '1M', courant.devise));
+      ui.setStats(statsFixture(ui.symbole, ui.tf || '1M', courant.devise));
+      ui.setEtat('pret');
+    };
+    if (window.__lab && window.__lab.instant) suite(); else attente = setTimeout(suite, 380);
+  }
+}
+ui.onIntent(repondre);
+
+const SCENARIOS = {
+  /* tout va bien : /history répond en USD, les prix vifs en EUR */
+  complet() {
+    courant = { nom: 'complet', devise: 'USD' };
+    ui.setCapacites(CAP_COMPLETES);
+    ui.setPrix(prixFixture());
+    ui.setSerie(serieFixture(ui.symbole, ui.tf, 'USD'));
+    ui.setStats(statsFixture(ui.symbole, ui.tf, 'USD'));
+    ui.setEtat('pret', { perime: false });
+  },
+  /* le serveur a détecté que la source accepte l'euro sur l'historique */
+  'serie-eur'() {
+    courant = { nom: 'serie-eur', devise: 'EUR' };
+    ui.setCapacites(Object.assign({}, CAP_COMPLETES, { devise: 'EUR' }));
+    ui.setPrix(prixFixture());
+    ui.setSerie(serieFixture(ui.symbole, ui.tf, 'EUR'));
+    ui.setStats(statsFixture(ui.symbole, ui.tf, 'EUR'));
+    ui.setEtat('pret', { perime: false });
+  },
+  /* forfait sans minute ni heure : 1J et 1S n'ont PAS de bouton */
+  'capacites-reduites'() {
+    courant = { nom: 'capacites-reduites', devise: 'USD' };
+    ui.setCapacites(CAP_SANS_MINUTE);
+    ui.setPrix(prixFixture());
+    ui.setSerie(serieFixture(ui.symbole, ui.tf || '1A', 'USD'));
+    ui.setStats(statsFixture(ui.symbole, ui.tf || '1A', 'USD'));
+    ui.setEtat('pret', { perime: false });
+  },
+  /* première lecture : rien n'est encore connu */
+  chargement() {
+    courant = { nom: 'chargement', devise: 'USD' };
+    ui.setCapacites(CAP_COMPLETES);
+    ui.setEtat('chargement');
+  },
+  /* rafraîchissement par-dessus des données déjà lues : baisse d'opacité + indicateur */
+  rechargement() {
+    SCENARIOS.complet();
+    courant = { nom: 'rechargement', devise: 'USD' };
+    ui.setEtat('chargement');
+  },
+  /* la source ne répond plus : on garde la dernière lecture, marquée périmée */
+  perime() {
+    courant = { nom: 'perime', devise: 'USD' };
+    ui.setCapacites(CAP_COMPLETES);
+    ui.setPrix(prixFixture({ age: 1560, degrade: true }));
+    ui.setSerie(serieFixture(ui.symbole, ui.tf, 'USD'));
+    ui.setStats(statsFixture(ui.symbole, ui.tf, 'USD'));
+    ui.setEtat('perime');
+  },
+  /* panne franche, sans rien en cache */
+  indisponible() {
+    courant = { nom: 'indisponible', devise: 'USD' };
+    ui.setCapacites(CAP_COMPLETES);
+    ui.setPrix({ indisponible: true, raison: 'timeout' });
+    ui.setSerie({ indisponible: true, raison: 'timeout' });
+    ui.setStats({ indisponible: true, raison: 'timeout' });
+    ui.setEtat('indisponible', { raison: 'timeout' });
+  },
+  /* aucune clé sur le serveur : prix publics oui, historique non */
+  'sans-cle'() {
+    courant = { nom: 'sans-cle', devise: 'USD' };
+    ui.setCapacites({ cle: false, groupBy: {}, tf: [] });
+    ui.setPrix(prixFixture());
+    ui.setStats({ indisponible: true, raison: 'sans-cle' });
+    ui.setEtat('sans-cle');
+  },
+  /* la période existe mais aucune bougie n'est constructible : on ne fabrique rien */
+  vide() {
+    courant = { nom: 'vide', devise: 'USD' };
+    ui.setCapacites(CAP_COMPLETES);
+    ui.setPrix(prixFixture());
+    ui.setSerie({ symbole: ui.symbole, tf: ui.tf, devise: 'USD', bougies: [], source: 'history', granularite: 'minute', points: 0 });
+    ui.setStats({ indisponible: true, raison: 'vide' });
+    ui.setEtat('pret');
+  },
+  /* réponse partielle : chaque case manquante s'explique toute seule */
+  partiel() {
+    courant = { nom: 'partiel', devise: 'USD' };
+    ui.setCapacites(CAP_COMPLETES);
+    const p = prixFixture({ sansVariation: true });
+    p.or24k = null;                                     /* le serveur n'a pas pu calculer l'or au gramme */
+    ui.setPrix(p);
+    const s = serieFixture(ui.symbole, ui.tf, 'USD');
+    s.tronque = true;
+    ui.setSerie(s);
+    const st = statsFixture(ui.symbole, ui.tf, 'USD');
+    st.open = null; st.low = null; st.highLowChangePercent = null;   /* champs absents de la réponse */
+    ui.setStats(st);
+    ui.setEtat('pret');
+  }
+};
+
+/* boutons du banc */
+const btns = document.getElementById('labBtns');
+const ordre = ['complet', 'serie-eur', 'capacites-reduites', 'chargement', 'rechargement', 'perime', 'indisponible', 'sans-cle', 'vide', 'partiel'];
+for (const nom of ordre) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = nom; b.dataset.sc = nom;
+  b.addEventListener('click', () => appliquer(nom));
+  btns.appendChild(b);
+}
+const bAmb = document.createElement('button');
+bAmb.type = 'button'; bAmb.textContent = 'jour / nuit';
+bAmb.addEventListener('click', () => {
+  const m = document.documentElement.dataset.ambiance === 'jour' ? 'nuit' : 'jour';
+  document.documentElement.dataset.ambiance = m; ui.setAmbiance(m);
+});
+btns.appendChild(bAmb);
+
+function appliquer(nom) {
+  clearTimeout(attente);
+  (SCENARIOS[nom] || SCENARIOS.complet)();
+  Array.from(btns.querySelectorAll('button[data-sc]')).forEach(b => b.setAttribute('aria-pressed', b.dataset.sc === nom ? 'true' : 'false'));
+}
+
+window.__lab = {
+  ui, journal, instant: q.get('instant') === '1',
+  scenario: appliquer,
+  fixtures: { prixFixture, serieFixture, statsFixture, CAP_COMPLETES, CAP_SANS_MINUTE },
+  moteurOn(on) {
+    if (on && !moteur) { moteur = esquisse(ui.zoneGraphique, ui); ui.brancherGraphique(moteur); }
+    if (!on && moteur) { ui.brancherGraphique(null); moteur.destroy(); moteur = null; }
+  },
+  setAmbiance(m) { document.documentElement.dataset.ambiance = m; ui.setAmbiance(m); },
+  debordement() {
+    const r = document.documentElement;
+    const cx = document.querySelector('.cx');
+    return { page: r.scrollWidth - r.clientWidth, cx: cx.scrollWidth - cx.clientWidth };
+  }
+};
+
+appliquer(q.get('scenario') || 'complet');
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

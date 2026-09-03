@@ -1,0 +1,52 @@
+# =====================================================================
+# La Compagnie de l'Or — dossier /api
+# 1) memes URL que le proxy Node : /api/metaux/<route>
+# 2) fermeture stricte de tout ce qui pourrait contenir la cle
+# =====================================================================
+
+# --- 1. Reecriture des routes ---------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /api/
+
+  # /api/metaux/prix -> metaux.php?route=prix (idem serie, ohlc, capacites,
+  # sante, autotest). La chaine de requete d'origine est conservee (QSA).
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^metaux/([A-Za-z]+)/?$ metaux.php?route=$1 [QSA,L]
+
+  # /api/metaux -> racine de l'API (liste des routes)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^metaux/?$ metaux.php [QSA,L]
+</IfModule>
+
+# Si mod_rewrite est absent, l'interface doit appeler
+#   /api/metaux.php?route=prix
+# qui fonctionne sans aucune reecriture.
+
+# --- 2. Secrets et caches : acces interdit --------------------------
+<FilesMatch "^\.env|^\.env\..*|\.json$|\.lock$|\.tmp$|\.froid$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^cache(/|$) - [F,L]
+</IfModule>
+
+# --- 3. Pas d'indexation de dossier ---------------------------------
+Options -Indexes
+
+# --- 4. Reponses JSON : jamais mises en cache par un intermediaire ---
+<IfModule mod_headers.c>
+  <FilesMatch "metaux\.php$">
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Cache-Control "no-store"
+  </FilesMatch>
+</IfModule>

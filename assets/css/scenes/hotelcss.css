@@ -1,0 +1,436 @@
+/* La Compagnie de l'Or · Carte 2 « Rencontrez votre expert » — scène CSS 3D PURE (namespace .schc-) — tour 3
+   Auberge alsacienne d'hiver en vrai volume (transform-style:preserve-3d), posée comme un OBJET sur le panel de la carte :
+   disque de ciel vignetté (.schc-sky masqué), sol qui s'évanouit avant le cadre, horizon / brume / village masqués aux extrémités ;
+   le fond radial or de .step3d__scene reste visible autour (cohérence cartes 1/3/4).
+   Façade à colombages sobres (or = accent rare : chants du volume + cadres .8, colombages .4), 2 murs, toit 2 pans noir satiné,
+   cheminée, enseigne de ferronnerie en potence (balancement), porte à double battant qui s'ouvre sur un hall éclairé
+   (tapis, comptoir, lustre) dont la lumière déborde sur le parvis, ombres de contact / portée teintées, village lointain en
+   2 rangs de vraies maisons, neige discrète (4 flocons proches).
+   Chorégraphie d'entrée (.schc--in ou .step3d.in) : fenêtres qui s'allument en cascade 0.4 → 2.8 s (0.9 s chacune), puis
+   porte 2.7 → 6.0 s, nappe 2.9 → 6.3 s, dolly du monde 2.6 → 8.8 s (translateZ +8.6 u ≈ ×1.08 — legerement plus proche
+   pour appuyer l'accueil), puis respiration.
+   Ambiance : tokens enregistrés (@property) → fondu nuit↔jour .75 s (transition) ; sans support : bascule + dip d'opacité (JS).
+   Unité : --u = 1 % de la largeur de l'hôte (posée par le module JS, repli 6px).
+   Repères sol (.schc-ground 120×100 u, rotateX 90°, pivot à top 62u) : top = 62u + z ; left = 60u + x ; z > 0 = vers le spectateur.
+   Règles : animations transform/opacity uniquement ; .schc--paused = gel ; .schc--reduced = état final statique. */
+
+/* ---------- tokens interpolables (fondu d'ambiance) ---------- */
+@property --schc-sky-0{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sky-1{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sky-2{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sky-3{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sky-4{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sky-5{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sky-6{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sky-7{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-star-o{syntax:'<number>';inherits:true;initial-value:0}
+@property --schc-haze{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-haze-2{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-haze-foot{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-far-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-far-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-far2-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-far2-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-far-win{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-hill-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-hill-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-ground-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-ground-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-snowveil{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-pave{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-pave-2{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-ao{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-ao-door{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-cast{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-face-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-face-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-stone{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-face-light{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-face-shade{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-line{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-line-2{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-line-3{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-eave-sh{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-lamp{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-lamp-glass{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-lamp-off{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-side-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-side-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-roof-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-roof-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-roof-warm{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-roof-rows{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-roof-snow{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-roof-edge{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sheen{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-chim-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-chim-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-glass-0{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-glass-1{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-glass-2{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-lit-0{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-lit-1{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-lit-o{syntax:'<number>';inherits:true;initial-value:1}
+@property --schc-halo{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-mullion{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-hall-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-hall-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-hall-glow{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-hall-floor{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-runner{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-runner-line{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-wood-a{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-wood-b{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-wood-hi{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-wood-line{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-wood-edge{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-knob{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-counter{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-counter-top{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-lustre{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-bloom-o{syntax:'<number>';inherits:true;initial-value:1}
+@property --schc-spill{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-spill-2{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-spill-o{syntax:'<number>';inherits:true;initial-value:1}
+@property --schc-flake{syntax:'<color>';inherits:true;initial-value:transparent}
+@property --schc-sign-plate{syntax:'<color>';inherits:true;initial-value:transparent}
+
+/* ---------- racine : perspective, fondu d'ambiance, voile de sécurité aux bords (rien ne touche jamais le cadre) ---------- */
+.schc{position:absolute;inset:0;overflow:hidden;--u:6px;
+  perspective:calc(var(--u)*130);perspective-origin:50% 36%;
+  /* fondu d'ambiance : `transition:all` n'inclut PAS les propriétés personnalisées enregistrées (vérifié Chrome 151) → liste explicite */
+  transition-property:opacity,--schc-sky-0,--schc-sky-1,--schc-sky-2,--schc-sky-3,--schc-sky-4,--schc-sky-5,--schc-sky-6,--schc-sky-7,--schc-star-o,--schc-haze,--schc-haze-2,--schc-haze-foot,--schc-far-a,--schc-far-b,--schc-far2-a,--schc-far2-b,--schc-far-win,--schc-hill-a,--schc-hill-b,--schc-ground-a,--schc-ground-b,--schc-snowveil,--schc-pave,--schc-pave-2,--schc-ao,--schc-ao-door,--schc-cast,--schc-face-a,--schc-face-b,--schc-stone,--schc-face-light,--schc-face-shade,--schc-line,--schc-line-2,--schc-line-3,--schc-eave-sh,--schc-lamp,--schc-lamp-glass,--schc-lamp-off,--schc-side-a,--schc-side-b,--schc-roof-a,--schc-roof-b,--schc-roof-warm,--schc-roof-rows,--schc-roof-snow,--schc-roof-edge,--schc-sheen,--schc-chim-a,--schc-chim-b,--schc-glass-0,--schc-glass-1,--schc-glass-2,--schc-lit-0,--schc-lit-1,--schc-lit-o,--schc-halo,--schc-mullion,--schc-hall-a,--schc-hall-b,--schc-hall-glow,--schc-hall-floor,--schc-runner,--schc-runner-line,--schc-wood-a,--schc-wood-b,--schc-wood-hi,--schc-wood-line,--schc-wood-edge,--schc-knob,--schc-counter,--schc-counter-top,--schc-lustre,--schc-bloom-o,--schc-spill,--schc-spill-2,--schc-spill-o,--schc-flake,--schc-sign-plate;
+  transition-duration:.75s;transition-timing-function:cubic-bezier(.22,.61,.36,1);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent),linear-gradient(180deg,transparent,#000 5%,#000 90%,transparent);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent),linear-gradient(180deg,transparent,#000 5%,#000 90%,transparent);
+  mask-composite:intersect;
+  /* ---- tokens NUIT (défaut) ---- */
+  --schc-sky-0:#0a0a0e;--schc-sky-1:#0d0e17;--schc-sky-2:#151726;--schc-sky-3:#1c1a1d;--schc-sky-4:#1f1b19;--schc-sky-5:#1a1614;--schc-sky-6:#14110e;--schc-sky-7:#0e0c0a;
+  --schc-star-o:.9;
+  --schc-haze:rgba(64,58,56,.74);--schc-haze-2:rgba(72,66,64,.3);--schc-haze-foot:rgba(64,58,56,.42);
+  --schc-far-a:rgba(27,24,22,.97);--schc-far-b:rgba(17,15,13,.98);--schc-far2-a:rgba(21,18,16,.98);--schc-far2-b:rgba(13,11,10,.99);--schc-far-win:rgba(255,190,110,.74);
+  --schc-hill-a:rgba(36,33,32,.92);--schc-hill-b:rgba(22,20,19,.96);
+  --schc-ground-a:#13110e;--schc-ground-b:#16141b;--schc-snowveil:rgba(243,236,220,.08);
+  --schc-pave:rgba(201,154,63,.08);--schc-pave-2:rgba(243,236,220,.035);
+  --schc-ao:rgba(8,6,4,.74);--schc-ao-door:rgba(8,6,4,.4);--schc-cast:rgba(8,6,4,.5);
+  --schc-face-a:#1c1712;--schc-face-b:#120f0c;--schc-stone:#16120f;--schc-face-light:rgba(255,236,200,.03);--schc-face-shade:rgba(8,6,4,.22);
+  --schc-line:rgba(201,154,63,.82);--schc-line-2:rgba(201,154,63,.4);--schc-line-3:rgba(201,154,63,.3);
+  --schc-eave-sh:rgba(8,6,4,.5);
+  --schc-lamp:rgba(255,199,122,.31);--schc-lamp-glass:rgba(255,222,166,.97);--schc-lamp-off:rgba(52,42,32,.9);
+  --schc-side-a:#16120f;--schc-side-b:#0e0b09;
+  --schc-roof-a:#1d1d23;--schc-roof-b:#111013;--schc-roof-warm:rgba(255,190,110,.07);--schc-roof-rows:rgba(243,236,220,.07);--schc-roof-snow:rgba(243,236,220,.55);--schc-roof-edge:rgba(201,154,63,.38);--schc-sheen:rgba(243,236,220,.08);
+  --schc-chim-a:#241e19;--schc-chim-b:#120f0c;
+  --schc-glass-0:#100d0a;--schc-glass-1:#0d0a08;--schc-glass-2:#0a0806;
+  --schc-lit-0:rgba(255,222,164,.84);--schc-lit-1:rgba(255,192,112,.6);
+  --schc-lit-o:1;--schc-halo:rgba(255,200,124,.24);--schc-mullion:rgba(18,13,8,.62);
+  --schc-hall-a:#6b4b22;--schc-hall-b:#33230f;--schc-hall-glow:rgba(255,212,152,.86);
+  --schc-hall-floor:#2a1c10;--schc-runner:#5e3c17;--schc-runner-line:rgba(232,205,147,.5);
+  --schc-wood-a:#3f2a13;--schc-wood-b:#211407;--schc-wood-hi:#7a5526;--schc-wood-line:rgba(232,205,147,.42);--schc-wood-edge:rgba(255,220,160,.8);--schc-knob:#e8cd93;
+  --schc-counter:#3d2912;--schc-counter-top:#6a4a22;
+  --schc-lustre:rgba(255,221,160,.98);--schc-bloom-o:1;
+  --schc-spill:rgba(255,192,112,.78);--schc-spill-2:rgba(255,190,104,.36);--schc-spill-o:1;
+  --schc-flake:rgba(243,236,220,.85);
+  --schc-sign-plate:#1a1510}
+
+/* ---- tokens JOUR ---- */
+.schc.schc--jour{
+  --schc-sky-0:#ebe5db;--schc-sky-1:#eee8de;--schc-sky-2:#f0eae0;--schc-sky-3:#f3ede3;--schc-sky-4:#f6f1e8;--schc-sky-5:#f6f0e7;--schc-sky-6:#f4eee3;--schc-sky-7:#f0e9dd;
+  --schc-star-o:0;
+  --schc-haze:rgba(250,247,241,.88);--schc-haze-2:rgba(255,253,248,.5);--schc-haze-foot:rgba(250,247,241,.55);
+  --schc-far-a:rgba(212,204,190,.62);--schc-far-b:rgba(200,191,176,.72);--schc-far2-a:rgba(206,197,182,.7);--schc-far2-b:rgba(192,182,166,.8);--schc-far-win:rgba(255,190,110,0);
+  --schc-hill-a:rgba(226,219,207,.6);--schc-hill-b:rgba(216,208,195,.7);
+  --schc-ground-a:#e3dcce;--schc-ground-b:#ece6da;--schc-snowveil:rgba(255,254,250,.4);
+  --schc-pave:rgba(36,28,16,.06);--schc-pave-2:rgba(138,104,32,.05);
+  --schc-ao:rgba(60,40,10,.4);--schc-ao-door:rgba(60,40,10,0);--schc-cast:rgba(60,40,10,.27);
+  --schc-face-a:#f8f3e9;--schc-face-b:#e9e1d3;--schc-stone:#ece5d7;--schc-face-light:rgba(255,254,250,.5);--schc-face-shade:rgba(60,40,10,.07);
+  --schc-line:rgba(138,104,32,.88);--schc-line-2:rgba(138,104,32,.46);--schc-line-3:rgba(138,104,32,.34);
+  --schc-eave-sh:rgba(60,40,10,.22);
+  --schc-lamp:rgba(255,196,118,0);--schc-lamp-glass:rgba(236,229,216,.9);--schc-lamp-off:rgba(214,206,192,.9);
+  --schc-side-a:#e5ddce;--schc-side-b:#d4cbbb;
+  --schc-roof-a:#f1ece3;--schc-roof-b:#d9d1c3;--schc-roof-warm:rgba(255,190,110,0);--schc-roof-rows:rgba(138,104,32,.05);--schc-roof-snow:rgba(255,254,250,.95);--schc-roof-edge:rgba(138,104,32,.42);--schc-sheen:rgba(255,252,242,.55);
+  --schc-chim-a:#e2dacb;--schc-chim-b:#cdc4b3;
+  --schc-glass-0:#d6d8dc;--schc-glass-1:#acafb5;--schc-glass-2:#8c8f96;
+  --schc-lit-0:rgba(255,218,156,.55);--schc-lit-1:rgba(255,186,104,.35);
+  --schc-lit-o:.18;--schc-halo:rgba(255,196,118,0);--schc-mullion:rgba(60,48,30,.55);
+  --schc-hall-a:#c3a77d;--schc-hall-b:#8c7350;--schc-hall-glow:rgba(255,226,180,.5);
+  --schc-hall-floor:#8a7354;--schc-runner:#7a5932;--schc-runner-line:rgba(255,240,210,.5);
+  --schc-wood-a:#6c4b22;--schc-wood-b:#4a3214;--schc-wood-hi:#8a6630;--schc-wood-line:rgba(255,236,200,.38);--schc-wood-edge:rgba(255,236,200,.85);--schc-knob:#e8cd93;
+  --schc-counter:#6b4a24;--schc-counter-top:#8a6a3a;
+  --schc-lustre:rgba(255,226,180,.7);--schc-bloom-o:.5;
+  --schc-spill:rgba(255,172,84,.8);--schc-spill-2:rgba(255,186,104,.38);--schc-spill-o:.5;
+  --schc-flake:rgba(255,254,250,.9);
+  --schc-sign-plate:#f6f1e8}
+/* repli sans @property (tokens non interpolables) : petit dip d'opacité piloté par setAmbiance() (classe posée 380 ms) */
+.schc.schc--dip{opacity:.9;transition-duration:.3s}
+
+/* ---------- ciel : disque vignetté (le panel de la carte reste visible autour) + étoiles / lune ---------- */
+.schc-sky{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,var(--schc-sky-0) 0%,var(--schc-sky-1) 26%,var(--schc-sky-2) 38%,var(--schc-sky-3) 48%,var(--schc-sky-4) 58%,var(--schc-sky-5) 66%,var(--schc-sky-6) 76%,var(--schc-sky-7) 100%);
+  -webkit-mask-image:radial-gradient(50% 56% at 50% 48%,#000 20%,rgba(0,0,0,.94) 32%,rgba(0,0,0,.82) 44%,rgba(0,0,0,.64) 56%,rgba(0,0,0,.44) 68%,rgba(0,0,0,.26) 78%,rgba(0,0,0,.12) 88%,rgba(0,0,0,.04) 95%,transparent 100%);
+  mask-image:radial-gradient(50% 56% at 50% 48%,#000 20%,rgba(0,0,0,.94) 32%,rgba(0,0,0,.82) 44%,rgba(0,0,0,.64) 56%,rgba(0,0,0,.44) 68%,rgba(0,0,0,.26) 78%,rgba(0,0,0,.12) 88%,rgba(0,0,0,.04) 95%,transparent 100%)}
+.schc-stars{position:absolute;inset:0 0 40% 0;opacity:var(--schc-star-o);pointer-events:none;
+  background:
+    radial-gradient(calc(var(--u)*2.4) calc(var(--u)*2.4) at 18% 24%,rgba(243,236,220,.5),rgba(243,236,220,.16) 55%,transparent 100%),
+    radial-gradient(calc(var(--u)*9) calc(var(--u)*9) at 18% 24%,rgba(243,236,220,.07),transparent 70%),
+    radial-gradient(1.2px 1.2px at 9% 42%,rgba(243,236,220,.6),transparent),
+    radial-gradient(1px 1px at 26% 12%,rgba(243,236,220,.45),transparent),
+    radial-gradient(1.3px 1.3px at 33% 32%,rgba(243,236,220,.55),transparent),
+    radial-gradient(1px 1px at 41% 9%,rgba(243,236,220,.4),transparent),
+    radial-gradient(1.1px 1.1px at 48% 21%,rgba(243,236,220,.5),transparent),
+    radial-gradient(1px 1px at 58% 13%,rgba(243,236,220,.42),transparent),
+    radial-gradient(1.3px 1.3px at 66% 28%,rgba(243,236,220,.58),transparent),
+    radial-gradient(1px 1px at 73% 8%,rgba(243,236,220,.4),transparent),
+    radial-gradient(1.2px 1.2px at 82% 19%,rgba(243,236,220,.55),transparent),
+    radial-gradient(1px 1px at 90% 35%,rgba(243,236,220,.45),transparent),
+    radial-gradient(1px 1px at 53% 37%,rgba(243,236,220,.35),transparent),
+    radial-gradient(1.1px 1.1px at 6% 16%,rgba(243,236,220,.4),transparent),
+    radial-gradient(1px 1px at 94% 11%,rgba(243,236,220,.38),transparent)}
+
+/* ---------- caméra : rotation lente + parallaxe pointeur + dolly d'entrée + respiration ---------- */
+.schc-cam,.schc-par,.schc-dolly,.schc-breath,.schc-world,.schc-bld,.schc-door,.schc-hall,.schc-snow{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d}
+.schc-cam{left:50%;top:80%;will-change:transform;animation:schc-cam 14s cubic-bezier(.45,.05,.55,.95) -7s infinite alternate}
+@keyframes schc-cam{from{transform:rotateY(-4deg)}to{transform:rotateY(4deg)}}
+.schc-par{will-change:transform;transform:rotateY(calc(var(--px,0)*-8deg)) rotateX(calc(var(--py,0)*-4deg))}
+/* dolly : le monde avance vers la caméra (un peu plus qu'avant : l'entrée se rapproche, lecture plus accueillante) */
+.schc--in .schc-dolly,.step3d.in .schc-dolly{animation:schc-dolly 6.2s cubic-bezier(.22,.61,.36,1) 2.6s forwards}
+@keyframes schc-dolly{to{transform:translateZ(calc(var(--u)*8.6))}}
+.schc-breath{animation:schc-breath 12s ease-in-out -5s infinite alternate}
+@keyframes schc-breath{from{transform:translateZ(0)}to{transform:translateZ(calc(var(--u)*1.2))}}
+.schc-world{transform:translate3d(calc(var(--u)*-2.5),0,calc(var(--u)*14)) rotateY(-17deg)}
+
+/* ---------- sol : disque qui s'évanouit avant le cadre, dallage (joints autour du parvis seulement), voile de neige, ombres ---------- */
+/* Plan 120 × 100 u seulement (x −60 → +60, z −62 → +38 : tout ce que le disque laisse voir) : un masque sur un plan 6× plus petit
+   qu'avant = surface de rendu 6× plus légère ; le contenu du plan est STATIQUE (la nappe animée est un plan frère, non masqué),
+   donc sa surface masquée n'est pas redessinée à chaque image. Repères : top = 62u + z ; left = 60u + x. */
+.schc-ground{position:absolute;left:calc(var(--u)*-60);top:calc(var(--u)*-62);width:calc(var(--u)*120);height:calc(var(--u)*100);
+  transform-origin:0 calc(var(--u)*62);transform:rotateX(90deg);
+  background:
+    radial-gradient(calc(var(--u)*84) calc(var(--u)*34) at 50% calc(var(--u)*74),var(--schc-snowveil),transparent 70%),
+    linear-gradient(180deg,var(--schc-ground-b) 0%,var(--schc-ground-b) 28%,var(--schc-ground-a) 83%);
+  -webkit-mask-image:radial-gradient(45% 65% at 50% 70%,#000 26%,rgba(0,0,0,.62) 58%,rgba(0,0,0,.2) 84%,transparent 100%);
+  mask-image:radial-gradient(45% 65% at 50% 70%,#000 26%,rgba(0,0,0,.62) 58%,rgba(0,0,0,.2) 84%,transparent 100%)}
+.schc-ground__pave{position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(90deg,var(--schc-pave) 0 1px,transparent 1px calc(var(--u)*15)),
+    repeating-linear-gradient(180deg,var(--schc-pave-2) 0 1px,transparent 1px calc(var(--u)*15));
+  background-position:calc(var(--u)*7.5) 0,0 calc(var(--u)*2);
+  -webkit-mask-image:radial-gradient(35% 22% at 50% 65%,#000 10%,transparent 100%);mask-image:radial-gradient(35% 22% at 50% 65%,#000 10%,transparent 100%)}
+/* ombre de contact : bande étroite qui épouse la base de la façade (z = 0) … */
+.schc-ground__ao{position:absolute;left:calc(var(--u)*38);top:calc(var(--u)*56);width:calc(var(--u)*44);height:calc(var(--u)*12);
+  background:linear-gradient(180deg,transparent 0%,var(--schc-ao) 50%,transparent 100%);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 40%,var(--schc-ao-door) 50%,#000 60%,#000 88%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 40%,var(--schc-ao-door) 50%,#000 60%,#000 88%,transparent)}
+/* … et le long du pied du pignon droit (x = 20, z 0 → -28) */
+.schc-ground__ao--r{left:calc(var(--u)*78);top:calc(var(--u)*33);width:calc(var(--u)*9);height:calc(var(--u)*31);
+  background:linear-gradient(90deg,transparent 0%,var(--schc-ao) 22%,transparent 100%);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 12%,#000 94%,transparent);mask-image:linear-gradient(180deg,transparent,#000 12%,#000 94%,transparent)}
+/* ombre portée unique : lune / soleil en haut à gauche → part du pied du flanc droit vers la droite-arrière */
+.schc-ground__cast{position:absolute;left:calc(var(--u)*80);top:calc(var(--u)*26);width:calc(var(--u)*36);height:calc(var(--u)*46);
+  background:radial-gradient(88% 54% at 0% 45%,var(--schc-cast),transparent 72%)}
+/* nappe de lumière du hall : plan frère du sol (non masqué, posé 0.12 u au-dessus : jamais coplanaire), part du seuil (z = 0)
+   et s'élargit vers le spectateur (z 0 → +36) ; monte avec la porte puis respire */
+.schc-ground__spill{position:absolute;left:calc(var(--u)*-20);top:0;width:calc(var(--u)*40);height:calc(var(--u)*36);opacity:0;
+  transform-origin:50% 0;transform:translateY(calc(var(--u)*-.12)) rotateX(90deg);
+  background:radial-gradient(50% 100% at 50% 0%,var(--schc-spill-2),transparent 72%)}
+.schc-spill__core{position:absolute;inset:0;background:radial-gradient(25% 64% at 50% 0%,var(--schc-spill),transparent 70%);animation:schc-breathe 9s ease-in-out -3s infinite alternate}
+@keyframes schc-breathe{from{opacity:.55}to{opacity:1}}
+.schc--in .schc-ground__spill,.step3d.in .schc-ground__spill{animation:schc-spill 3.4s cubic-bezier(.22,.61,.36,1) 2.9s forwards}
+@keyframes schc-spill{to{opacity:var(--schc-spill-o)}}
+
+/* ---------- lointain : brume (2 plans, le second dérive), colline, village en 2 rangs de maisons — masqués aux extrémités ---------- */
+/* les plans de brume s'arrêtent à y = 0 (ligne de sol) : aucun plan ne traverse le sol → pas de découpe BSP visible */
+.schc-haze{position:absolute;left:calc(var(--u)*-100);top:calc(var(--u)*-46);width:calc(var(--u)*200);height:calc(var(--u)*46);
+  transform:translateZ(calc(var(--u)*-92));background:linear-gradient(180deg,transparent 0%,var(--schc-haze) 58%,var(--schc-haze) 84%,var(--schc-haze-foot) 100%);
+  -webkit-mask-image:linear-gradient(90deg,transparent 4%,#000 33%,#000 67%,transparent 96%);mask-image:linear-gradient(90deg,transparent 4%,#000 33%,#000 67%,transparent 96%)}
+/* brume avant : pied fondu (aucune arête horizontale au-dessus du sol qui s'évanouit, lisible surtout en jour) */
+.schc-haze--2{transform:translate3d(0,0,calc(var(--u)*-60));background:linear-gradient(180deg,transparent 0%,var(--schc-haze-2) 60%,var(--schc-haze-2) 82%,transparent 100%);
+  animation:schc-drift 18s ease-in-out -6s infinite alternate}
+@keyframes schc-drift{from{transform:translate3d(calc(var(--u)*-3),0,calc(var(--u)*-60))}to{transform:translate3d(calc(var(--u)*3),0,calc(var(--u)*-60))}}
+.schc-hill{position:absolute;left:calc(var(--u)*-130);width:calc(var(--u)*260);top:calc(var(--u)*-11);height:calc(var(--u)*11);transform:translateZ(calc(var(--u)*-86));
+  border-radius:46% 54% 0 0/100% 100% 0 0;background:linear-gradient(180deg,var(--schc-hill-a),var(--schc-hill-b));
+  -webkit-mask-image:linear-gradient(90deg,transparent 16%,#000 36%,#000 64%,transparent 84%);mask-image:linear-gradient(90deg,transparent 16%,#000 36%,#000 64%,transparent 84%)}
+/* village : chaque maison = corps + pignon raide, largeurs variées, gaps ; polygone et fenêtres-points générés par le module (clip-path + background inline) */
+.schc-far{position:absolute;left:calc(var(--u)*-130);width:calc(var(--u)*260);top:calc(var(--u)*-22);height:calc(var(--u)*22);transform:translateZ(calc(var(--u)*-84));
+  background:linear-gradient(180deg,var(--schc-far-a),var(--schc-far-b));
+  -webkit-mask-image:linear-gradient(90deg,transparent 18%,#000 34%,#000 66%,transparent 82%);mask-image:linear-gradient(90deg,transparent 18%,#000 34%,#000 66%,transparent 82%)}
+.schc-far--2{left:calc(var(--u)*-140);width:calc(var(--u)*280);transform:translateZ(calc(var(--u)*-70));background:linear-gradient(180deg,var(--schc-far2-a),var(--schc-far2-b))}
+.schc-far__win{position:absolute;inset:0;opacity:0}
+
+/* ---------- bâtiment : façade en 3 panneaux opaques (jambages + linteau) + colombages SVG, murs, toit, cheminée ---------- */
+.schc-face{position:absolute;left:calc(var(--u)*-20);top:calc(var(--u)*-25);width:calc(var(--u)*40);height:calc(var(--u)*25);backface-visibility:hidden}
+.schc-face__p{position:absolute;top:0;height:100%;overflow:hidden;background-repeat:no-repeat;background-size:calc(var(--u)*40) calc(var(--u)*25);
+  background-image:
+    linear-gradient(180deg,var(--schc-eave-sh) 0%,transparent 9%),
+    linear-gradient(100deg,var(--schc-face-light) 0%,transparent 45%,var(--schc-face-shade) 100%),
+    linear-gradient(180deg,var(--schc-face-a) 0%,var(--schc-face-a) 50%,var(--schc-stone) 50%,var(--schc-face-b) 100%)}
+.schc-face__p--l{left:0;width:39.5%;background-position:0 0}
+.schc-face__p--c{left:39.5%;width:21%;height:62.4%;background-position:calc(var(--u)*-15.8) 0}
+.schc-face__p--r{left:60.5%;width:39.5%;background-position:calc(var(--u)*-24.2) 0}
+/* halo des appliques (dans les jambages, jamais devant la porte) : s'allume avec la cascade */
+.schc-glow{position:absolute;top:calc(var(--u)*8.5);width:calc(var(--u)*12);height:calc(var(--u)*16);opacity:0;
+  background:radial-gradient(50% 50% at 50% 50%,var(--schc-lamp),transparent 70%)}
+.schc-glow--l{left:calc(var(--u)*8.56)}
+.schc-glow--r{left:calc(var(--u)*-4.76)}
+.schc-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;display:block}
+/* or = accent rare : colombages .4, assises .3, chants du volume + encadrement de porte .8 */
+.schc-svg path{fill:none;stroke:var(--schc-line-2);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linecap:square}
+.schc-svg path.edge{stroke:var(--schc-line)}
+.schc-svg path.soft{stroke:var(--schc-line-3)}
+.schc-svg path.thick{stroke-width:1.5}
+
+.schc-side{position:absolute;top:calc(var(--u)*-41.5);width:calc(var(--u)*28);height:calc(var(--u)*41.5);backface-visibility:hidden;
+  clip-path:polygon(0 100%,0 39.76%,50% 0,100% 39.76%,100% 100%);
+  background:linear-gradient(180deg,var(--schc-side-a) 0%,var(--schc-side-a) 60%,var(--schc-side-b) 100%)}
+.schc-side--r{left:calc(var(--u)*20);transform-origin:0 50%;transform:rotateY(90deg)}
+.schc-side--l{left:calc(var(--u)*-48);transform-origin:100% 50%;transform:rotateY(-90deg)}
+
+/* toit : noir satiné en nuit (dégradé + reflet mobile + rangs de tuiles), neige au faîte et à l'égout, reflet chaud des fenêtres vers la façade, chants d'or */
+.schc-roof{position:absolute;left:calc(var(--u)*-21.5);width:calc(var(--u)*43);top:calc(var(--u)*-46.64);height:calc(var(--u)*23.24);
+  transform-origin:50% calc(var(--u)*21.64);overflow:hidden;box-shadow:inset 0 0 0 1px var(--schc-roof-edge);
+  background:
+    linear-gradient(180deg,var(--schc-roof-snow) 0,var(--schc-roof-snow) 1px,transparent 1px),
+    repeating-linear-gradient(180deg,var(--schc-roof-rows) 0 1px,transparent 1px calc(var(--u)*1.9)),
+    linear-gradient(180deg,transparent 90.2%,var(--schc-roof-snow) 90.8%,var(--schc-roof-snow) 92.4%,var(--schc-eave-sh) 92.4%,var(--schc-eave-sh) 100%),
+    linear-gradient(180deg,transparent 52%,var(--schc-roof-warm) 100%),
+    linear-gradient(180deg,var(--schc-roof-a) 0%,var(--schc-roof-b) 92%,var(--schc-roof-b) 100%)}
+/* pan avant : ombre de contact de la cheminée (à son pied, sur la pente) */
+.schc-roof--f{transform:rotateX(40.3deg);
+  background:
+    linear-gradient(180deg,var(--schc-roof-snow) 0,var(--schc-roof-snow) 1px,transparent 1px),
+    repeating-linear-gradient(180deg,var(--schc-roof-rows) 0 1px,transparent 1px calc(var(--u)*1.9)),
+    linear-gradient(180deg,transparent 90.2%,var(--schc-roof-snow) 90.8%,var(--schc-roof-snow) 92.4%,var(--schc-eave-sh) 92.4%,var(--schc-eave-sh) 100%),
+    radial-gradient(calc(var(--u)*5.2) calc(var(--u)*3.4) at 77.5% 51%,var(--schc-eave-sh),transparent 70%),
+    linear-gradient(180deg,transparent 52%,var(--schc-roof-warm) 100%),
+    linear-gradient(180deg,var(--schc-roof-a) 0%,var(--schc-roof-b) 92%,var(--schc-roof-b) 100%)}
+.schc-roof--b{transform:translateZ(calc(var(--u)*-28)) rotateX(-40.3deg)}
+.schc-roof__sheen{position:absolute;inset:0;background:radial-gradient(40% 90% at 50% 50%,var(--schc-sheen),transparent 70%);animation:schc-sheen 16s ease-in-out -5s infinite alternate}
+@keyframes schc-sheen{from{transform:translateX(calc(var(--u)*-9))}to{transform:translateX(calc(var(--u)*9))}}
+/* cheminée : un cran plus claire, chapeau de neige, chants d'or ; son pied entre dans le pan (ombre de contact sur le toit) */
+.schc-chim{position:absolute;left:calc(var(--u)*10.5);width:calc(var(--u)*2.6);top:calc(var(--u)*-38.6);height:calc(var(--u)*7.4);
+  transform:translateZ(calc(var(--u)*-5.4));box-shadow:inset 0 0 0 1px var(--schc-roof-edge);
+  background:linear-gradient(180deg,var(--schc-roof-snow) 0 2px,var(--schc-chim-a) 2px 18%,var(--schc-chim-b) 100%)}
+.schc-chim--s{left:calc(var(--u)*13.1);width:calc(var(--u)*2.2);transform-origin:0 50%;transform:translateZ(calc(var(--u)*-5.4)) rotateY(90deg);box-shadow:none;
+  background:linear-gradient(180deg,var(--schc-roof-snow) 0 2px,var(--schc-chim-b) 2px,var(--schc-chim-b) 100%)}
+
+/* ---------- fenêtres : cadre or .8, vitre, couche « allumée » (cascade d'entrée) dont l'intensité varie très lentement ---------- */
+.schc-win{position:absolute;border:1px solid var(--schc-line);background:linear-gradient(180deg,var(--schc-glass-0) 0%,var(--schc-glass-1) 55%,var(--schc-glass-2) 100%)}
+.schc-win::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent calc(50% - .5px),var(--schc-mullion) calc(50% - .5px),var(--schc-mullion) calc(50% + .5px),transparent calc(50% + .5px)),
+             linear-gradient(180deg,transparent calc(40% - .5px),var(--schc-mullion) calc(40% - .5px),var(--schc-mullion) calc(40% + .5px),transparent calc(40% + .5px))}
+.schc-win--transom::after{background:linear-gradient(90deg,transparent calc(33% - .5px),var(--schc-mullion) calc(33% - .5px),var(--schc-mullion) calc(33% + .5px),transparent calc(33% + .5px)),
+             linear-gradient(90deg,transparent calc(67% - .5px),var(--schc-mullion) calc(67% - .5px),var(--schc-mullion) calc(67% + .5px),transparent calc(67% + .5px))}
+.schc-win__on{position:absolute;inset:0;opacity:0}
+.schc-win__lit{position:absolute;inset:0;background:linear-gradient(180deg,var(--schc-lit-0),var(--schc-lit-1));opacity:calc(var(--schc-lit-o)*var(--lo,1));
+  animation:schc-lit var(--gd,11s) ease-in-out var(--gdl,0s) infinite alternate}
+.schc-win__lit::after{content:"";position:absolute;inset:-100% -80%;background:radial-gradient(50% 50% at 50% 50%,var(--schc-halo),transparent 70%)}
+@keyframes schc-lit{from{opacity:calc(var(--schc-lit-o)*var(--lo,1)*.55)}to{opacity:calc(var(--schc-lit-o)*var(--lo,1))}}
+/* positions sur la façade (en % de la façade 400×250) */
+.schc-win--u1{left:12.5%;top:12%;width:11.5%;height:22.4%}
+.schc-win--u2{left:44.25%;top:12%;width:11.5%;height:22.4%}
+.schc-win--u3{left:76%;top:12%;width:11.5%;height:22.4%}
+.schc-win--g1{left:10%;top:60%;width:16%;height:26%}
+.schc-win--g2{left:74%;top:60%;width:16%;height:26%}
+.schc-win--transom{left:39.5%;top:56%;width:21%;height:6.4%}
+/* positions sur le pignon droit (en % du mur 28×41.5) */
+.schc-win--s1{left:17.9%;top:47%;width:16%;height:13.2%}
+.schc-win--s2{left:57%;top:47%;width:16%;height:13.2%}
+.schc-win--s3{left:37.5%;top:75.9%;width:19.6%;height:15.7%}
+/* appliques de part et d'autre de la porte (verre éteint puis allumé par la cascade) + losange doré du tympan */
+.schc-lamp{position:absolute;top:60.4%;width:2.75%;height:7%;border:1px solid var(--schc-line);border-radius:45% 45% 0 0/30% 30% 0 0;background:var(--schc-lamp-off)}
+.schc-lamp::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--schc-lamp-glass);opacity:0}
+.schc-lamp--l{left:35%}.schc-lamp--r{left:62.25%}
+.schc-mark{position:absolute;left:50%;top:59.2%;width:calc(var(--u)*1.1);height:calc(var(--u)*1.1);transform:translate(-50%,-50%) rotate(45deg);
+  background:linear-gradient(135deg,#e8cd93,#c99a3f);box-shadow:0 0 calc(var(--u)*1.4) rgba(232,205,147,.45)}
+
+/* ---------- cascade d'entrée : appliques + imposte, rez-de-chaussée, étage, pignon, village (délais --wd posés par le module) ---------- */
+.schc--in .schc-win__on,.step3d.in .schc-win__on,
+.schc--in .schc-lamp::before,.step3d.in .schc-lamp::before,
+.schc--in .schc-glow,.step3d.in .schc-glow,
+.schc--in .schc-far__win,.step3d.in .schc-far__win{animation:schc-on .9s cubic-bezier(.22,.61,.36,1) var(--wd,0s) both}
+@keyframes schc-on{from{opacity:0}to{opacity:1}}
+
+/* ---------- enseigne de ferronnerie en potence sur le pignon droit (plan parallèle à la façade, devant le pignon) ---------- */
+.schc-sign{position:absolute;left:calc(var(--u)*20);top:calc(var(--u)*-15.2);width:calc(var(--u)*4.4);height:calc(var(--u)*4.2);transform:translateZ(calc(var(--u)*-3.2))}
+.schc-sign__bar{position:absolute;left:0;top:0;width:calc(var(--u)*3.9);height:1px;background:var(--schc-line)}
+.schc-sign__strut{position:absolute;left:0;top:calc(var(--u)*1.4);width:calc(var(--u)*1.98);height:1px;transform-origin:0 50%;transform:rotate(-45deg);background:var(--schc-line-2)}
+.schc-sign__plate{position:absolute;left:calc(var(--u)*1.2);top:calc(var(--u)*1.1);width:calc(var(--u)*2.5);height:calc(var(--u)*1.8);box-sizing:border-box;
+  border:1px solid var(--schc-line);background:var(--schc-sign-plate);transform-origin:50% calc(var(--u)*-1.1);
+  animation:schc-swing 5.6s ease-in-out -1.3s infinite alternate}
+.schc-sign__plate::before{content:"";position:absolute;left:18%;right:18%;top:calc(var(--u)*-1.1 - 1px);height:calc(var(--u)*1.1);border-left:1px solid var(--schc-line-2);border-right:1px solid var(--schc-line-2)}
+.schc-sign__plate::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--u)*.55);height:calc(var(--u)*.55);transform:translate(-50%,-50%) rotate(45deg);background:linear-gradient(135deg,#e8cd93,#c99a3f)}
+@keyframes schc-swing{from{transform:rotate(-2.4deg)}to{transform:rotate(2.4deg)}}
+
+/* ---------- porte à double battant (charnières sur les jambages, ouverture vers l'intérieur, chant clair côté hall) ---------- */
+.schc-leaf{position:absolute;top:calc(var(--u)*-9.4);width:calc(var(--u)*4.2);height:calc(var(--u)*9.4);box-sizing:border-box;
+  background:linear-gradient(90deg,var(--schc-wood-b),var(--schc-wood-a) 55%,var(--schc-wood-hi));box-shadow:inset 0 0 0 1px var(--schc-wood-line)}
+.schc-leaf--r{background:linear-gradient(270deg,var(--schc-wood-b),var(--schc-wood-a) 55%,var(--schc-wood-hi))}
+.schc-leaf::before{content:"";position:absolute;inset:12% 18% 44%;border:1px solid var(--schc-wood-line)}
+.schc-leaf::after{content:"";position:absolute;top:52%;width:calc(var(--u)*.5);height:calc(var(--u)*.5);border-radius:50%;background:var(--schc-knob)}
+.schc-leaf--l{left:calc(var(--u)*-4.2);transform-origin:0 50%;border-right:1px solid var(--schc-wood-edge)}
+.schc-leaf--l::after{right:14%}
+.schc-leaf--r{left:0;transform-origin:100% 50%;border-left:1px solid var(--schc-wood-edge)}
+.schc-leaf--r::after{left:14%}
+.schc--in .schc-leaf--l,.step3d.in .schc-leaf--l{animation:schc-open-l 3.2s cubic-bezier(.22,.61,.36,1) 2.7s forwards}
+.schc--in .schc-leaf--r,.step3d.in .schc-leaf--r{animation:schc-open-r 3.2s cubic-bezier(.22,.61,.36,1) 2.8s forwards}
+@keyframes schc-open-l{to{transform:rotateY(78deg)}}
+@keyframes schc-open-r{to{transform:rotateY(-62deg)}}
+
+/* ---------- hall éclairé derrière la porte (plans en translateZ négatif) ---------- */
+.schc-hall__back{position:absolute;left:calc(var(--u)*-9);width:calc(var(--u)*18);top:calc(var(--u)*-13);height:calc(var(--u)*13);transform:translateZ(calc(var(--u)*-12));
+  background:
+    radial-gradient(62% 58% at 50% 34%,var(--schc-hall-glow),transparent 70%),
+    linear-gradient(180deg,transparent 58%,var(--schc-runner-line) 58%,var(--schc-runner-line) calc(58% + 1px),transparent calc(58% + 1px)),
+    linear-gradient(180deg,var(--schc-hall-a),var(--schc-hall-b))}
+.schc-hall__back::after{content:"";position:absolute;left:37%;top:24%;width:26%;height:28%;border:1px solid rgba(232,205,147,.45);background:linear-gradient(160deg,rgba(255,230,190,.14),rgba(8,6,4,.18))}
+/* plancher posé 0.12 u AU-DESSUS du sol (jamais coplanaire avec .schc-ground : tri de profondeur sans ambiguïté) */
+.schc-hall__floor{position:absolute;left:calc(var(--u)*-9);width:calc(var(--u)*18);top:calc(var(--u)*-12);height:calc(var(--u)*12);transform-origin:50% 100%;transform:translateY(calc(var(--u)*-.12)) rotateX(90deg);
+  background:
+    radial-gradient(66% 90% at 50% 64%,var(--schc-hall-glow),transparent 72%),
+    linear-gradient(180deg,transparent 34%,var(--schc-hall-glow) 100%),
+    linear-gradient(90deg,var(--schc-hall-floor) 0 31%,var(--schc-runner-line) 31% calc(31% + 1px),var(--schc-runner) calc(31% + 1px) calc(69% - 1px),var(--schc-runner-line) calc(69% - 1px) 69%,var(--schc-hall-floor) 69%)}
+.schc-hall__wall{position:absolute;top:calc(var(--u)*-13);width:calc(var(--u)*12);height:calc(var(--u)*13);background:linear-gradient(90deg,var(--schc-hall-b),var(--schc-hall-a) 55%,var(--schc-hall-b))}
+.schc-hall__wall--l{left:calc(var(--u)*-9);transform-origin:0 50%;transform:rotateY(90deg)}
+.schc-hall__wall--r{left:calc(var(--u)*-3);transform-origin:100% 50%;transform:rotateY(-90deg)}
+/* comptoir d'accueil, lisible à travers la porte depuis la vue 3/4 */
+.schc-hall__counter{position:absolute;left:calc(var(--u)*-1);width:calc(var(--u)*5.5);top:calc(var(--u)*-3);height:calc(var(--u)*3);transform:translateZ(calc(var(--u)*-7.5));
+  background:linear-gradient(180deg,var(--schc-counter),var(--schc-wood-b));box-shadow:inset 0 1px 0 var(--schc-wood-line)}
+.schc-hall__counter-top{position:absolute;left:calc(var(--u)*-1);width:calc(var(--u)*5.5);top:calc(var(--u)*-4.8);height:calc(var(--u)*1.8);transform-origin:50% 100%;
+  transform:translateZ(calc(var(--u)*-7.5)) rotateX(90deg);background:linear-gradient(180deg,var(--schc-counter-top),var(--schc-counter));box-shadow:inset 0 0 0 1px var(--schc-wood-line)}
+.schc-hall__lustre{position:absolute;left:calc(var(--u)*-1.3);width:calc(var(--u)*2.6);top:calc(var(--u)*-8.5);height:calc(var(--u)*1);transform:translateZ(calc(var(--u)*-6));
+  border-radius:50%;border:1px solid var(--schc-knob);background:radial-gradient(50% 50% at 50% 50%,var(--schc-lustre),rgba(255,216,152,.25))}
+.schc-hall__lustre::before{content:"";position:absolute;left:25%;right:25%;top:-70%;height:60%;border-radius:50%;border:1px solid var(--schc-knob);background:radial-gradient(50% 50% at 50% 50%,var(--schc-lustre),rgba(255,216,152,.2))}
+.schc-hall__lustre::after{content:"";position:absolute;left:50%;top:-300%;width:1px;height:240%;background:var(--schc-knob);opacity:.7}
+.schc-hall__bloom{position:absolute;left:calc(var(--u)*-5);width:calc(var(--u)*10);top:calc(var(--u)*-12.2);height:calc(var(--u)*8);transform:translateZ(calc(var(--u)*-6));
+  background:radial-gradient(50% 50% at 50% 52%,var(--schc-lustre),transparent 70%);animation:schc-bloom 11s ease-in-out -4s infinite alternate}
+@keyframes schc-bloom{from{opacity:calc(var(--schc-bloom-o)*.66)}to{opacity:var(--schc-bloom-o)}}
+
+/* ---------- neige discrète (20 flocons : 16 fins au loin / dans le plan, 4 plus proches du spectateur hors façade) ---------- */
+.schc-flake{position:absolute;left:calc(var(--u)*var(--fx,0));top:calc(var(--u)*-62);width:calc(var(--u)*var(--fs,.4));height:calc(var(--u)*var(--fs,.4));border-radius:50%;
+  background:radial-gradient(50% 50% at 50% 50%,var(--schc-flake),transparent 72%);opacity:0;
+  transform:translate3d(0,calc(var(--u)*var(--fy0,0)),calc(var(--u)*var(--fz,0)));
+  animation:schc-fall var(--fd,12s) linear var(--fdl,0s) infinite}
+@keyframes schc-fall{0%{transform:translate3d(0,0,calc(var(--u)*var(--fz,0)));opacity:0}8%{opacity:var(--fo,.4)}88%{opacity:var(--fo,.4)}100%{transform:translate3d(calc(var(--u)*var(--fdx,0)),calc(var(--u)*72),calc(var(--u)*var(--fz,0)));opacity:0}}
+
+/* ---------- gel (stop) / hors écran ---------- */
+.schc--paused *,.schc--paused *::before,.schc--paused *::after{animation-play-state:paused !important}
+
+/* ---------- reduced motion : tout allumé, porte ouverte, lumière posée, dolly fait, pas de neige, aucune boucle ---------- */
+.schc--reduced *,.schc--reduced *::before,.schc--reduced *::after{animation:none !important}
+.schc--reduced .schc-leaf--l{transform:rotateY(78deg)}
+.schc--reduced .schc-leaf--r{transform:rotateY(-62deg)}
+.schc--reduced .schc-ground__spill{opacity:var(--schc-spill-o)}
+.schc--reduced .schc-spill__core{opacity:.8}
+.schc--reduced .schc-dolly{transform:translateZ(calc(var(--u)*8.6))}
+.schc--reduced .schc-win__on,.schc--reduced .schc-lamp::before,.schc--reduced .schc-glow,.schc--reduced .schc-far__win{opacity:1}
+.schc--reduced .schc-flake{opacity:0}
+@media (prefers-reduced-motion:reduce){
+  .schc *,.schc *::before,.schc *::after{animation:none !important}
+  .schc .schc-leaf--l{transform:rotateY(78deg)}
+  .schc .schc-leaf--r{transform:rotateY(-62deg)}
+  .schc .schc-ground__spill{opacity:var(--schc-spill-o)}
+  .schc .schc-spill__core{opacity:.8}
+  .schc .schc-dolly{transform:translateZ(calc(var(--u)*8.6))}
+  .schc .schc-win__on,.schc .schc-lamp::before,.schc .schc-glow,.schc .schc-far__win{opacity:1}
+  .schc .schc-flake{opacity:0}
+}

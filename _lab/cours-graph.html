@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab coursgraph — graphique financier et donnees reelles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/accueil.css">
+<link rel="stylesheet" href="../assets/css/accueil-sections.css">
+<link rel="stylesheet" href="../assets/css/scenes/cours.css">
+<script>(function(){var q=new URLSearchParams(location.search);var a=q.get('ambiance');if(a==='jour'||a==='nuit')document.documentElement.dataset.ambiance=a;})();</script>
+<style>
+  /* Habillage du BANC D'ESSAI uniquement (jamais servi par le site). */
+  html,body{margin:0;background:var(--bg)}
+  .lab-bandeau{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;
+    padding:.6rem clamp(1rem,3vw,2rem);background:var(--panel-2,rgba(28,24,19,.92));border-bottom:1px solid var(--line-soft);
+    font-family:var(--body);font-size:.68rem;letter-spacing:.06em;color:var(--text-2);backdrop-filter:blur(8px)}
+  .lab-bandeau strong{font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink)}
+  .lab-bandeau .lab-avert{color:var(--text-3);max-width:46ch;line-height:1.4}
+  .lab-simule{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .6rem;border:1px solid var(--line);border-radius:2px;
+    color:var(--gold-ink);text-transform:uppercase;letter-spacing:.16em;font-size:.6rem}
+  .lab-simule[hidden]{display:none}
+  .lab-mesures{font-size:.6rem;letter-spacing:.1em;color:var(--text-3);font-variant-numeric:tabular-nums}
+  .lab-btns{display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto}
+  .lab-btns button{font-family:var(--body);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;padding:.42rem .7rem;
+    border:1px solid var(--line-soft);border-radius:2px;background:none;color:var(--text-3);cursor:pointer}
+  .lab-btns button:hover{color:var(--text);border-color:var(--line)}
+  #cours{padding-top:clamp(1.6rem,4vh,3rem)}
+  @media (max-width:760px){
+    .lab-bandeau{gap:.5rem;padding:.5rem .9rem}
+    .lab-bandeau .lab-avert{display:none}
+    .lab-btns{margin-left:0}
+    .lab-btns button{padding:.34rem .5rem;font-size:.56rem;letter-spacing:.1em}
+  }
+</style>
+</head>
+<body>
+
+<div class="lab-bandeau">
+  <strong>Banc d'essai · lot coursgraph</strong>
+  <span class="lab-simule" id="labSimule" hidden>Données simulées</span>
+  <span class="lab-avert">Chaîne complète : page → /api/metaux/* → proxy → amont. En laboratoire l'amont est le simulateur : les chiffres affichés ne sont PAS un cours réel.</span>
+  <span class="lab-mesures" id="labMesures">—</span>
+  <span class="lab-btns" id="labBtns"></span>
+</div>
+
+<section class="sec in" id="cours" aria-labelledby="cours-title" data-reveal>
+  <div class="gold">
+    <div class="sec__head">
+      <p class="kicker rv" style="--i:0">Le cours des métaux</p>
+      <h2 class="sec__title rv" id="cours-title" style="--i:1">Suivez l'évolution du marché, en direct.</h2>
+    </div>
+    <div class="rv" style="--i:2" id="hote"></div>
+  </div>
+</section>
+
+<script type="module">
+import { initCours } from '../assets/js/scenes/cours-init.js';
+
+const q = new URLSearchParams(location.search);
+const reduced = q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const mesures = {
+  t0: performance.now(),
+  premierGraphique: null,      /* ms entre le montage et la 1re bougie dessinee */
+  premierPrix: null,
+  bougies: 0,
+  requetes: 0
+};
+const journal = [];
+
+const api = initCours(document.getElementById('hote'), {
+  base: q.get('base') || '/api/metaux',
+  reduced,
+  moteur: q.get('moteur') !== '0',
+  auto: q.get('auto') !== '0',
+  intervallePrix: Number(q.get('intervalle')) || 30000,
+  onSimulation() { document.getElementById('labSimule').hidden = false; },
+  onJournal(quoi, detail) {
+    journal.push({ t: Math.round(performance.now() - mesures.t0), quoi, detail });
+    if (quoi === 'prix' && mesures.premierPrix === null && detail && detail.metaux) {
+      mesures.premierPrix = Math.round(performance.now() - mesures.t0);
+    }
+  }
+});
+
+/* ------------------------------------------------- surveillance du banc */
+const cxDe = () => document.querySelector('.cx');
+function surveiller() {
+  const cx = cxDe();
+  const vue = cx ? cx.getAttribute('data-vue') || '' : '';
+  const b = api.moteur ? api.moteur.bougies : 0;
+  mesures.bougies = b;
+  document.body.dataset.vue = vue;
+  document.body.dataset.bougies = String(b);
+  if (mesures.premierGraphique === null && b > 0) {
+    mesures.premierGraphique = Math.round(performance.now() - mesures.t0);
+  }
+  const stable = b > 0 || vue === 'sans-cle' || vue === 'indisponible' || vue === 'vide' || vue === 'moteur';
+  if (stable && document.body.dataset.ready !== '1') document.body.dataset.ready = '1';
+  const bouts = [];
+  if (mesures.premierPrix !== null) bouts.push('prix ' + mesures.premierPrix + ' ms');
+  if (mesures.premierGraphique !== null) bouts.push('graphique ' + mesures.premierGraphique + ' ms');
+  if (b) bouts.push(b + ' bougies');
+  if (api.moteur) { const r = api.moteur.rejets; const n = r.horodatage + r.prixManquant + r.doublon; if (n) bouts.push(n + ' écartées'); }
+  document.getElementById('labMesures').textContent = bouts.join(' · ') || '—';
+}
+setInterval(surveiller, 90);
+surveiller();
+
+/* ------------------------------------------------------ mesure de fps */
+let fpsActif = false, fpsFrames = 0, fpsT0 = 0;
+function boucleFps() { if (!fpsActif) return; fpsFrames++; requestAnimationFrame(boucleFps); }
+
+/* --------------------------------------------------- boutons du banc */
+const btns = document.getElementById('labBtns');
+function bouton(texte, action) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = texte;
+  b.addEventListener('click', action);
+  btns.appendChild(b);
+  return b;
+}
+bouton('jour / nuit', () => {
+  const m = document.documentElement.dataset.ambiance === 'jour' ? 'nuit' : 'jour';
+  document.documentElement.dataset.ambiance = m;      /* l'observateur de cours-init suit tout seul */
+});
+bouton('recharger l\'historique', () => api.rafraichirHistorique(true));
+bouton('rafraîchir les prix', () => api.rafraichirPrix());
+bouton('vider le cache', () => api.viderCache());
+bouton('ajuster', () => { if (api.moteur) api.moteur.ajuster(); });
+
+/* ---------------------------------------------------------- outillage */
+window.__lab = {
+  api, mesures, journal,
+  get ui() { return api.ui; },
+  get moteur() { return api.moteur; },
+  setAmbiance(m) { document.documentElement.dataset.ambiance = m; },
+  metal(symbole) {
+    const b = document.querySelector('.cx-metal[data-symbole="' + symbole + '"]');
+    if (b) b.click();
+    return !!b;
+  },
+  periode(tf) {
+    const b = document.querySelector('.cx-periode[data-tf="' + tf + '"]');
+    if (b) b.click();
+    return !!b;
+  },
+  periodes() { return Array.from(document.querySelectorAll('.cx-periode')).map(b => b.dataset.tf); },
+  vue() { const cx = cxDe(); return cx ? cx.getAttribute('data-vue') : null; },
+  bougies() { return api.moteur ? api.moteur.bougies : 0; },
+  rejets() { return api.moteur ? api.moteur.rejets : null; },
+  lecture() {
+    const l = document.querySelector('.cx-lecture');
+    return l && !l.hidden ? l.textContent : null;
+  },
+  debordement() {
+    const r = document.documentElement, cx = cxDe();
+    return { page: r.scrollWidth - r.clientWidth, cx: cx ? cx.scrollWidth - cx.clientWidth : 0 };
+  },
+  poids() {
+    const e = performance.getEntriesByType('resource');
+    const somme = (f) => e.filter(f).reduce((a, x) => a + (x.transferSize || x.encodedBodySize || 0), 0);
+    return {
+      total: somme(() => true),
+      moteur: somme(x => /lightweight-charts/.test(x.name)),
+      scripts: somme(x => x.initiatorType === 'script' || /\.m?js(\?|$)/.test(x.name)),
+      api: somme(x => /\/api\/metaux\//.test(x.name)),
+      requetesApi: e.filter(x => /\/api\/metaux\//.test(x.name)).length
+    };
+  },
+  fpsDebut() { fpsFrames = 0; fpsActif = true; fpsT0 = performance.now(); requestAnimationFrame(boucleFps); },
+  fpsFin() {
+    fpsActif = false;
+    const ms = performance.now() - fpsT0;
+    return { frames: fpsFrames, ms: Math.round(ms), fps: ms > 0 ? Math.round((fpsFrames / ms) * 1000) : 0 };
+  }
+};
+</script>
+</body>
+</html>

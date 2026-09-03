@@ -1,0 +1,378 @@
+/* ============================================================================
+   HERO · SCÈNE HORLOGÈRE
+   ----------------------------------------------------------------------------
+   Quatre couches strictement superposées, toutes filles du plateau, donc
+   solidaires de la parallaxe :
+
+     1. les deux vidéos, nuit et jour, en fondu croisé ;
+     2. la poussière d'or, dessinée en temps réel dans un canevas ;
+     3. les aiguilles, en SVG, à l'heure de Paris ;
+     4. le voile d'introduction, qui s'efface au premier chargement.
+
+   Le canevas et le SVG sont positionnés par le script sur le rectangle
+   qu'occupe RÉELLEMENT l'image de la vidéo une fois recadrée en « cover ».
+   C'est ce qui garantit que les aiguilles restent dans le cadran et que la
+   poussière s'allume dans le faisceau, à n'importe quelle taille de fenêtre.
+
+   Deux mises en page, choisies sur le FORMAT et non sur la largeur :
+
+     · format large  — la scène occupe tout le fond, le texte se pose dessus ;
+     · format étroit — la scène devient un bandeau 16/9 en haut, le texte passe
+       dessous. Sur un téléphone, un recadrage « cover » plein écran ne
+       laisserait voir qu'un quart de la largeur de la scène : ni les lingots
+       ni le faisceau ne survivraient, et la montre elle-même se retrouverait
+       sous le dégradé de lisibilité.
+   ========================================================================== */
+
+.hm { position: absolute; inset: -2.5%; overflow: hidden; }
+
+/* Le lustre doré du hero d'origine se pose en « screen » sur toute la scène.
+   Sur une photographie de studio noir, il remonte les noirs de 1 à 7 sur 255 :
+   mesuré, c'est exactement ce qui donnait au fond son voile grisâtre. Le plan
+   apporte déjà sa propre lumière et sa propre poussière — on éteint le lustre
+   et on retrouve le noir de la prise de vue. */
+.hero__sheen { display: none; }
+
+/* ---------- les deux vidéos ---------- */
+.hm__v {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 72% 50%;
+  opacity: 0;
+  /* Le fondu est la seule chose qui change à la bascule : les deux vidéos sont
+     à la même position temporelle et parfaitement calées géométriquement, donc
+     rien ne bouge. Une transition sur l'opacité seule ne peut pas produire de
+     flash — contrairement à un remplacement de source. */
+  transition: opacity var(--hf-duree, 400ms) linear;
+  will-change: opacity;
+  background: var(--bg);
+}
+.hm__v.is-on { opacity: 1; }
+
+/* ---------- poussière et aiguilles ---------- */
+.hm__pous, .hm__aig {
+  position: absolute; pointer-events: none;
+  /* le script leur donne left / top / width / height : ils épousent le
+     rectangle de l'image, pas celui de l'élément */
+  opacity: 0; transition: opacity .6s ease;
+}
+.hm__pous.is-on, .hm__aig.is-on { opacity: 1; }
+.hm__aig { overflow: visible; }
+
+/* ---------- voile d'introduction ---------- */
+/* Le voile est frère du plateau, pas son fils : il ne subit donc pas la
+   parallaxe, et il reste SOUS le dégradé de lisibilité, qui doit continuer à
+   dégager le texte pendant toute l'introduction. */
+.hero__fade { z-index: 1; }
+.hm__voile {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: var(--hm-noir, #050503); opacity: 0;
+  /* En format large, le texte du hero se pose SUR la scène. Un voile plein
+     rendrait le titre illisible pendant toute l'introduction en ambiance Jour,
+     où l'encre est sombre. Le voile est donc dégradé : il n'assombrit que le
+     côté où la scène est réellement visible, et laisse le côté du texte
+     intact. */
+  -webkit-mask-image: var(--hm-masque, none);
+          mask-image: var(--hm-masque, none);
+}
+:root[data-ambiance="jour"] .hm__voile { --hm-noir: #141009; }
+
+/* Pendant l'introduction, l'exposition de la scène est remontée par étapes.
+   On agit sur un filtre plutôt que sur une simple opacité : une image
+   simplement transparente laisse voir le fond et paraît délavée, alors qu'une
+   image sous-exposée garde ses noirs et se révèle comme une vraie montée de
+   lumière. */
+.hero__bg.is-intro .hm__v {
+  filter: brightness(var(--hm-expo,1)) saturate(var(--hm-sat,1)) contrast(var(--hm-con,1));
+  transition: opacity .5s ease, filter 1.05s cubic-bezier(.33,.7,.3,1);
+}
+.hero__bg.is-intro .hm__voile { opacity: var(--hm-voile,0); transition: opacity 1.05s cubic-bezier(.33,.7,.3,1); }
+
+/* Le faisceau de l'introduction : une bande orientée sur l'axe réellement
+   mesuré dans l'image — normale (−0,410 ; 0,912), soit un axe à −155,8° — qui
+   monte pendant que l'exposition s'établit. Elle disparaît ensuite
+   complètement : la lumière définitive est celle de la vidéo. */
+.hm__rai {
+  position: absolute; inset: -30%; z-index: 2; pointer-events: none;
+  background: linear-gradient(155.8deg,
+    rgba(255,238,198,0) 34%, rgba(255,238,198,.16) 47%,
+    rgba(255,238,198,.16) 53%, rgba(255,238,198,0) 66%);
+  mix-blend-mode: screen; opacity: 0;
+  transition: opacity 1.5s ease;
+}
+:root[data-ambiance="jour"] .hm__rai { mix-blend-mode: soft-light; }
+.hm__rai.is-on { opacity: 1; }
+
+/* ---------- bouton SON ---------- */
+.hm__son {
+  position: absolute; z-index: 3; right: clamp(1.2rem,5vw,5rem); bottom: 84px;
+  display: inline-flex; align-items: center; gap: .55rem;
+  padding: .5rem .9rem .5rem .7rem;
+  background: rgba(12,10,8,.52); color: var(--or, #c99a3f);
+  border: 1px solid rgba(201,154,63,.34); border-radius: 999px;
+  font: 500 .68rem/1 var(--sans, inherit); letter-spacing: .14em; text-transform: uppercase;
+  cursor: pointer; backdrop-filter: blur(6px);
+  transition: background .25s, border-color .25s, color .25s, opacity .5s;
+}
+.hm__son:hover { background: rgba(20,17,12,.72); border-color: rgba(201,154,63,.6); }
+.hm__son:focus-visible { outline: 2px solid var(--or, #c99a3f); outline-offset: 3px; }
+:root[data-ambiance="jour"] .hm__son {
+  background: rgba(250,246,238,.62); color: #6b4d17; border-color: rgba(107,77,23,.28);
+}
+:root[data-ambiance="jour"] .hm__son:hover { background: rgba(255,252,246,.82); }
+
+/* l'onde : trois barres qui respirent quand le son est actif, figées sinon */
+.hm__onde { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; }
+.hm__onde i { display: block; width: 2px; height: 4px; background: currentColor; border-radius: 1px; }
+.hm__son.is-on .hm__onde i { animation: hm-onde 1s ease-in-out infinite; }
+.hm__son.is-on .hm__onde i:nth-child(2) { animation-delay: .16s; }
+.hm__son.is-on .hm__onde i:nth-child(3) { animation-delay: .33s; }
+@keyframes hm-onde { 0%,100% { height: 3px } 50% { height: 11px } }
+
+/* ---------- format large : le plan est montré ENTIER ----------
+   CADRAGE. Le plan a été composé comme une photographie : la montre occupe le
+   tiers droit, les lingots reculent à gauche, le faisceau descend du coin
+   supérieur gauche, et tout le reste est du noir. Ces proportions sont l'œuvre
+   elle-même ; les recadrer, c'est la refaire.
+
+   Un « cover » plein cadre en était la négation : l'en-tête mange 276 px des
+   900 d'un écran courant, il ne restait donc qu'une bande de 624 px de haut,
+   presque deux fois et demie plus large que haute. Le navigateur agrandissait
+   le plan pour la remplir, et ne montrait plus que sa tranche centrale : la
+   montre paraissait deux fois trop près, l'origine du faisceau passait
+   au-dessus du cadre, et la table grise occupait tout — d'où l'impression de
+   fond gris, alors que le plan lui-même a un noir à 1/255.
+
+   On pose donc le plan ENTIER dans la hauteur disponible sous l'en-tête, calé
+   à droite. Rien n'est recadré : la composition affichée est exactement celle
+   du master. La colonne libre à gauche est celle du texte, et le dégradé de
+   lisibilité s'arrête précisément au bord du plan. */
+@media (min-aspect-ratio: 13/10) {
+  /* plus de débord de 2,5 % : le cadrage est désormais explicite, et le léger
+     agrandissement de la parallaxe suffit à couvrir ses propres déplacements */
+  .hm { inset: 0; }
+  .hm__v {
+    left: auto; right: 0; bottom: auto;
+    top: var(--hd-h);
+    height: calc(100svh - var(--hd-h));
+    width: auto; aspect-ratio: 16 / 9;
+    object-position: 50% 50%;
+  }
+  /* Le plan est un peu moins large que le hero : le dégradé de lisibilité doit
+     donc couvrir franchement jusqu'à son bord gauche, sinon une couture
+     apparaît. Le script mesure ce bord et le pose dans --hm-bord ; la valeur de
+     repli couvre le cas le plus défavorable des définitions courantes. */
+  /* Tous les arrêts sont RELATIFS au bord du plan, jamais en pourcentage fixe :
+     ce bord se déplace de 20 % à 32 % de la largeur selon la définition, et un
+     arrêt fixe finirait par passer devant lui. Deux arrêts qui se croisent, en
+     CSS, se confondent : on obtiendrait une arête franche au milieu du hero. */
+  /* NUIT : epinglee sur le noir litteral. Peinte avec var(--bg), elle
+     virait a l'ivoire A L'INSTANT du clic, avant que la scene n'ait bouge. */
+  .hero__fade {
+    background:
+      linear-gradient(90deg, var(--hf-nuit) 0%, var(--hf-nuit) var(--hm-bord, 26%),
+                      transparent calc(var(--hm-bord, 26%) + 22%)),
+      linear-gradient(180deg, var(--hf-nuit) 0%, transparent 22%, transparent 74%, var(--hf-nuit) 100%);
+  }
+  /* IL EXISTE DEUX AUTRES REGLES DE JOUR, dans accueil.css, ecrites
+     :root[data-ambiance="jour"] .hero__fade — soit une specificite (0,2,0),
+     superieure a la regle simple ci-dessus. Elles gagnaient donc en jour, avec
+     var(--bg), et sautaient en une image. Les neutraliser demande la MEME
+     specificite : on ne peut pas epingler une couche sans regarder TOUTES
+     celles qui la visent, y compris dans un autre fichier. */
+  :root[data-ambiance="jour"] .hero__fade {
+    background:
+      linear-gradient(90deg, var(--hf-nuit) 0%, var(--hf-nuit) var(--hm-bord, 26%),
+                      transparent calc(var(--hm-bord, 26%) + 22%)),
+      linear-gradient(180deg, var(--hf-nuit) 0%, transparent 22%, transparent 74%, var(--hf-nuit) 100%);
+  }
+  /* JOUR : la MEME chose, sur sa propre couche, revelee en opacite. */
+  .hero__fade::after {
+    background:
+      linear-gradient(90deg, var(--hf-jour) 0%, var(--hf-jour) var(--hm-bord, 26%),
+                      rgba(244,239,230,.5) calc(var(--hm-bord, 26%) + 9%),
+                      rgba(244,239,230,0) calc(var(--hm-bord, 26%) + 27%)),
+      linear-gradient(180deg, rgba(244,239,230,.5) 0%, transparent 14%, transparent 86%, var(--hf-jour) 100%);
+  }
+  /* le voile épargne le tiers gauche, celui du texte */
+  .hm__voile { --hm-masque: linear-gradient(90deg, transparent 0%, transparent 22%, #000 56%); }
+}
+
+/* ---------- format étroit : bandeau en haut, texte dessous ----------
+   La scène garde son format 16/9 exact : rien n'est recadré, donc les lingots,
+   le faisceau et la montre restent tous les trois dans le cadre. */
+@media (max-aspect-ratio: 13/10) {
+  .hero { justify-content: flex-start; padding-top: 0; }
+  /* Le bandeau commence SOUS l'en-tête. Callé en haut de page, l'en-tête lui
+     mangeait ses 88 premiers pixels et tranchait la montre en deux.
+     Son format n'est pas 16/9 mais plus panoramique : il retire le ciel vide
+     du haut du plan et le bas du socle, ce qui ramène l'air au-dessus de la
+     montre de 16 % à 6 % — la respiration demandée — sans rien rogner de sa
+     largeur, donc sans perdre les lingots. */
+  .hero__bg { inset: var(--hd-h) 0 auto 0; height: auto; aspect-ratio: 16 / 6.95; }
+  .hm { inset: 0; }
+  .hm__v { object-position: 50% 52%; }
+  /* le dégradé ne sert plus à dégager le texte, seulement à fondre le bas du
+     bandeau dans la page */
+  .hero__fade {
+    background: linear-gradient(180deg,
+      var(--hf-nuit) 0%, rgba(0,0,0,0) 16%, rgba(0,0,0,0) 72%, var(--hf-nuit) 100%);
+  }
+  :root[data-ambiance="jour"] .hero__fade {
+    background: linear-gradient(180deg,
+      var(--hf-nuit) 0%, rgba(0,0,0,0) 16%, rgba(0,0,0,0) 72%, var(--hf-nuit) 100%);
+  }
+  .hero__fade::after {
+    background: linear-gradient(180deg,
+      var(--hf-jour) 0%, rgba(0,0,0,0) 16%, rgba(0,0,0,0) 72%, var(--hf-jour) 100%);
+  }
+  .hero__sheen { display: none; }
+  /* en-tête + bandeau (43,4375vw = 6,95/16) + la place du bouton SON */
+  .hero__inner {
+    margin-top: calc(var(--hd-h) + 43.4375vw + 3.3rem);
+    max-width: none;
+  }
+  /* Le bouton passe SOUS le bandeau, du côté gauche : posé dessus il couvrait
+     le bracelet, et c'est la montre qu'on vient regarder. */
+  .hm__son {
+    top: calc(var(--hd-h) + 43.4375vw + .55rem); bottom: auto;
+    left: clamp(1.2rem, 5vw, 5rem); right: auto;
+  }
+}
+
+/* ---------- mouvement réduit ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .hm__v, .hm__pous, .hm__aig, .hm__voile, .hm__rai { transition-duration: .01ms; }
+  .hm__son.is-on .hm__onde i { animation: none; height: 7px; }
+}
+
+/* ---------- cadrage figé ----------
+   La parallaxe de l'accueil écrit `translate3d(...) scale(1.03)` sur le plateau
+   à la première souris, avec une transition d'une seconde deux : au chargement
+   le hero partait donc de rien et zoomait doucement de 3 %. C'est le petit zoom
+   qu'on voyait revenir à chaque rechargement.
+
+   Elle avait un second effet, plus grave et invisible : ces 3 % décalaient le
+   cadrage calculé au pixel — sommet du boîtier à 5 % sous l'en-tête, socle au
+   bas de la fenêtre — que rien ne rattrapait ensuite.
+
+   On neutralise donc la transformation sur ce plateau. Le `!important` est ici
+   nécessaire et assumé : il doit l'emporter sur le style en ligne que le script
+   d'accueil pose, script auquel on ne touche pas. */
+.hero__plate.hm {
+  transform: none !important;
+  transition: none !important;
+  will-change: auto;
+}
+
+
+/* ============================================================================
+   LA BASCULE JOUR / NUIT — CORRECTION DU VOILE BLANC
+   ----------------------------------------------------------------------------
+   CE QUI A ETE MESURE, avant de toucher a quoi que ce soit :
+
+     couche                     comportement          part du voile
+     en-tete, degrade           SAUTE en 2 ms         58,9 points
+     .hero__fade                SAUTE en 2 ms         27,5 points
+     fond de page               interpole en 428 ms
+     les deux videos            pas encore parties a 800 ms
+
+   Le fondu croise des videos n'etait donc PAS la cause : pendant plusieurs
+   centaines de millisecondes, tout le cadre de la page etait deja en plein
+   jour autour d'une scene restee entierement de nuit. C'est cet ecart —
+   pas un melange — que l'oeil lisait comme une surexposition.
+
+   DEUX RAISONS TECHNIQUES, cumulees :
+     · un un fond en degrade n'interpole pas des que les deux
+       regles n'ont pas la meme structure d'arrets ; la mesure montre qu'ici
+       il ne s'interpolait pas du tout, meme a structure egale ;
+     · ces degrades sont peints avec var(--bg), qui bascule dans la meme
+       image que l'attribut d'ambiance.
+
+   LA CORRECTION, pour chaque couche : on EPINGLE chaque ambiance sur ses
+   propres couleurs litterales, et on croise deux couches en OPACITE. Une
+   opacite interpole toujours, quelle que soit la structure du degrade. Les
+   deux etats au repos sont rigoureusement inchanges.
+
+   ET UNE SECONDE CAUSE, dans la scene elle-meme : le fondu croise laissait
+   voir (1-a)(1-b) du fond de page — jusqu'a 24,9 % — a travers les deux
+   videos. Ce fond etant l'ivoire du mode jour (239) alors que le plan de
+   jour n'est qu'a 160, le milieu du fondu etait plus lumineux que le jour
+   final : +8,6 points mesures. Voir hero-montre.js : l'entrant passe
+   desormais AU-DESSUS et le sortant reste opaque dessous, ce qui rend le
+   depassement impossible par construction.
+   ========================================================================== */
+
+:root {
+  /* L'horloge est posee sur la RACINE, pas sur .hero : l'en-tete n'est pas un
+     descendant du hero, il ne pouvait donc pas lire la variable et retombait
+     sur sa valeur de repli. Deux horloges au lieu d'une, invisible tant qu'on
+     ne les etire pas. */
+  --hf-duree: 400ms;
+}
+
+.hero {
+  /* Les deux fonds, EPINGLES : ils ne suivent pas l'ambiance, ce sont eux
+     qui la font. C'est toute la difference entre une couleur qui bascule et
+     une couche qui se fond. */
+  --hf-nuit: #0b0a08;
+  --hf-jour: #f4efe6;
+  /* L'HORLOGE UNIQUE de la bascule. Tout ce qui change dans le hero — les
+     deux plans, le degrade de lisibilite, l'en-tete — part et arrive
+     ensemble. Une transition courte : au-dela, l'oeil a le temps de lire
+     l'etat intermediaire comme une image, et une image mixte n'existe pas
+     dans la realite d'un eclairage. Elle est posee sur :root, ci-dessus. */
+}
+
+.hero__fade { position: absolute; inset: 0; }
+.hero__fade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--hf-duree) linear;
+}
+:root[data-ambiance="jour"] .hero__fade::after { opacity: 1; }
+
+/* Le fond de la balise video ne doit JAMAIS etre clair : si une image n'est
+   pas encore decodee, c'est lui qu'on voit, et var(--bg) valait l'ivoire du
+   mode jour — un rectangle blanc en plein fondu. Le sortant reste opaque
+   dessous de toute facon : ce fond n'a plus qu'a ne pas nuire. */
+.hm__v { background: #0b0a08; }
+
+/* Le plan de jour est descendu d'un cran. Mesure : la scene de jour tenait
+   160 de luminance moyenne pour un fond de page a 239 — la montre partait
+   vers le blanc et les lingots perdaient leur grain. On baisse l'exposition
+   et on rend la saturation, ce qui remet l'or dans l'or au lieu de le
+   laisser filer vers le jaune pale. Le filtre est porte en permanence par
+   le plan de jour : il ne change donc RIEN pendant la bascule, et ne peut
+   pas introduire de palier lumineux. */
+#hmJour { filter: brightness(.80) saturate(1.16) contrast(1.08); }
+
+/* ---------- l'en-tete ----------
+   Il pese 28 % de la hauteur du hero et il sautait en une image : c'est le
+   plus gros contributeur du voile. Son degrade de nuit reste sur l'element,
+   celui de jour passe sur une couche en dessous du contenu (z-index -1,
+   dans le contexte d'empilement que .hd cree deja par son z-index 50) et se
+   revele en opacite, sur la meme horloge que le hero.
+   Aucune regle de mise en page n'est touchee. */
+.hd::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(120deg, rgba(244,239,230,.965) 0%, rgba(239,232,219,.965) 52%, rgba(244,239,230,.965) 100%);
+  opacity: 0;
+  transition: opacity var(--hf-duree, 400ms) linear;
+}
+:root[data-ambiance="jour"] .hd::before { opacity: 1; }
+/* on neutralise la bascule instantanee d'origine : la nuit reste peinte sur
+   l'element, le jour vit desormais sur la couche ci-dessus. */
+:root[data-ambiance="jour"] .hd {
+  background-image: linear-gradient(120deg, rgba(11,10,8,.955) 0%, rgba(18,16,12,.955) 52%, rgba(10,9,8,.955) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --hf-duree: 1ms; }
+}

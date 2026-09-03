@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab carteui — coquille DOM de la carte 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/accueil.css">
+<link rel="stylesheet" href="../assets/css/accueil-sections.css">
+<link rel="stylesheet" href="../assets/css/scenes/carte3d.css">
+<script>(function(){var q=new URLSearchParams(location.search);var a=q.get('ambiance');if(a==='jour'||a==='nuit')document.documentElement.dataset.ambiance=a;})();</script>
+<style>
+  /* ---- habillage du banc d essai (jamais livre) ---- */
+  html,body{margin:0;background:var(--bg)}
+  body{font-family:var(--body);color:var(--text);min-height:260vh}    /* page longue : on verifie la restauration du scroll */
+  .lab-head{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem;padding:1rem clamp(1rem,4vw,3rem);border-bottom:1px solid var(--line-soft)}
+  .lab-head h1{font-family:var(--display);font-weight:400;font-size:1.15rem;margin:0 auto 0 0;letter-spacing:.02em}
+  .lab-b{font-family:var(--body);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);background:none;border:1px solid var(--line-soft);border-radius:999px;padding:.5rem .8rem;cursor:pointer}
+  .lab-b:hover{border-color:var(--gold);color:var(--text)}
+  .lab-demo{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:#171207;background:linear-gradient(180deg,#e2bd6b,#c99a3f);padding:.42rem .7rem;border-radius:2px}
+  .lab-sec{padding:clamp(2rem,6vh,4rem) clamp(1rem,4vw,3rem)}
+  .lab-kicker{font-size:.7rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-ink);margin:0 0 .5rem}
+  .lab-t{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,3vw,2.6rem);margin:0 0 1.6rem;line-height:1.06}
+  .lab-host{position:relative;width:min(1180px,94vw);margin:0 auto;aspect-ratio:16/10;border-radius:8px;
+    background:var(--map-bg);border:1px solid var(--panel-line);box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden}
+  .lab-tail{margin:3rem auto;width:min(1180px,94vw);color:var(--text-3);font-size:.82rem;line-height:1.7}
+  #rendezvous{margin-top:60vh;padding:3rem clamp(1rem,4vw,3rem);border-top:1px solid var(--line-soft)}
+
+  /* ---- moteur SIMULE : plan France en perspective + pins ---- */
+  .sim{position:absolute;inset:0;perspective:1250px;perspective-origin:50% 50%;overflow:hidden}
+  .sim__plate{position:absolute;left:50%;top:50%;transform-origin:50% 50%;will-change:transform}
+  .sim__svg{display:block;width:100%;height:100%;overflow:visible;
+    filter:drop-shadow(0 26px 30px rgba(0,0,0,.42))}
+  html[data-ambiance="jour"] .sim__svg{filter:drop-shadow(0 20px 26px rgba(58,44,20,.18))}
+  .sim__r{fill:var(--map-land-a);stroke:var(--map-stroke);stroke-width:1.1;stroke-linejoin:round}
+  .sim__r:nth-child(even){fill:var(--map-land-b)}
+  .sim__pins{position:absolute;inset:0;pointer-events:none}
+  .sim__pin{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+  .sim__pin i{position:absolute;left:0;top:0;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;
+    background:radial-gradient(circle at 34% 30%,var(--gold-bright),var(--gold) 62%,rgba(140,100,30,.9));
+    box-shadow:0 0 10px rgba(201,154,63,.55),0 2px 5px rgba(0,0,0,.5);transform:scale(var(--ps,1));transition:transform .3s cubic-bezier(.22,.61,.36,1)}
+  .sim__pin b{position:absolute;left:0;top:0;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+    border:1px solid rgba(201,154,63,.45);opacity:0;transform:scale(.5);transition:opacity .35s,transform .45s cubic-bezier(.22,.61,.36,1)}
+  .sim__pin.is-hot b{opacity:1;transform:scale(1)}
+  .sim__pin.is-hot i{transform:scale(1.5)}
+  .sim__pin--bleu i{background:radial-gradient(circle at 34% 30%,#cfe2ff,var(--blue) 62%,#2f5fa8);box-shadow:0 0 10px rgba(110,168,255,.5),0 2px 5px rgba(0,0,0,.5)}
+  .sim__pin--gris i{background:radial-gradient(circle at 34% 30%,#cdc6ba,#8a847a 66%,#5d574e);box-shadow:0 2px 5px rgba(0,0,0,.45)}
+  .sim__pin--siege i{background:none;border:1.6px solid var(--gold-bright);border-radius:1px;transform:rotate(45deg) scale(var(--ps,1));width:8px;height:8px;margin:-4px 0 0 -4px;box-shadow:0 0 9px rgba(232,205,147,.5)}
+  .sim__pin--siege.is-hot i{transform:rotate(45deg) scale(1.45)}
+</style>
+</head>
+<body>
+<header class="lab-head">
+  <h1>lab · carteui — coquille DOM, étiquettes, panneaux</h1>
+  <span class="lab-demo" id="demoBadge" hidden>Jeu de démonstration</span>
+  <button class="lab-b" id="bAmb">Jour / Nuit</button>
+  <button class="lab-b" id="bOpen">Ouvrir</button>
+  <button class="lab-b" id="bSpin">Rotation on/off</button>
+  <button class="lab-b" id="bFb">Repli sans WebGL</button>
+</header>
+
+<section class="lab-sec">
+  <p class="lab-kicker">Prochaines étapes</p>
+  <h2 class="lab-t">Nos journées d'expertise en France</h2>
+  <div class="lab-host" id="carte"></div>
+  <p class="lab-tail">Banc d'essai : le « moteur » est simulé (plan France en perspective, caméra virtuelle qui tourne).
+    Il ne sert qu'à fournir à la coquille des positions écran animées, comme le fera le moteur Three.js.</p>
+</section>
+
+<section id="rendezvous"><h2 class="lab-t">Prendre rendez-vous</h2><p class="lab-tail">Ancre de destination du CTA.</p></section>
+
+<script src="../assets/js/journees-data.js"></script>
+<script type="module">
+import { REGIONS, FRANCE_VIEWBOX, project } from '../assets/js/france-geo.js';
+import { createCarteUI } from '../assets/js/scenes/carte3d-ui.js';
+
+const q = new URLSearchParams(location.search);
+const reduced = q.get('reduced') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const forceMobile = q.get('mobile') === '1' ? true : (q.get('mobile') === '0' ? false : undefined);
+const useDemo = q.get('demo') === '1';
+const host = document.getElementById('carte');
+const [, , VW, VH] = FRANCE_VIEWBOX;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+/* ---------------------------------------------------------------
+   DONNEES : verite du site (journees-data.js) + jeu de DEMONSTRATION
+   (injecte par le script de capture, jamais servi par le site)
+   --------------------------------------------------------------- */
+const demo = useDemo ? (window.COMPAGNIE_OR_JOURNEES_DEMO || []) : [];
+if (useDemo) document.getElementById('demoBadge').hidden = demo.length === 0;
+const journees = (window.COMPAGNIE_OR_JOURNEES || []).concat(demo);
+const siege = window.COMPAGNIE_OR_SIEGE;
+
+const items = [];
+if (siege) items.push({
+  id: 'siege', kind: 'siege', ville: siege.ville, label: siege.label,
+  adresse: '8 rue Etienne Richerand, 69003 Lyon', lat: siege.lat, lon: siege.lon, priority: 4
+});
+journees.forEach((j, i) => items.push({
+  id: 'j' + i, ville: j.ville, departement: j.departement, region: j.region,
+  lat: j.lat, lon: j.lon, date: j.date, lieu: j.lieu, creneaux: j.creneaux, statut: j.statut, priority: 0
+}));
+const byId = id => items.find(i => i.id === id);
+for (const it of items) { const p = project(it.lat, it.lon); it.u = p[0]; it.v = p[1]; }
+
+/* ---------------------------------------------------------------
+   COQUILLE
+   ORDRE D INTEGRATION : creer -> s abonner (onIntent) -> mount().
+   mount() emet le premier intent 'stage' : sans abonnement prealable,
+   le moteur ne saurait pas ou deposer son canvas dans l etat ferme.
+   --------------------------------------------------------------- */
+const ui = createCarteUI(host, { reduced, mobile: forceMobile });
+
+/* ---------------------------------------------------------------
+   MOTEUR SIMULE
+   --------------------------------------------------------------- */
+const sim = document.createElement('div'); sim.className = 'sim';
+const plate = document.createElement('div'); plate.className = 'sim__plate'; sim.appendChild(plate);
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.setAttribute('viewBox', '0 0 ' + VW + ' ' + VH); svg.setAttribute('class', 'sim__svg');
+svg.setAttribute('aria-hidden', 'true');
+for (const r of REGIONS) { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', r.d); p.setAttribute('class', 'sim__r'); svg.appendChild(p); }
+plate.appendChild(svg);
+const pinsLayer = document.createElement('div'); pinsLayer.className = 'sim__pins'; sim.appendChild(pinsLayer);
+for (const it of items) {
+  const n = document.createElement('div');
+  n.className = 'sim__pin' + (it.kind === 'siege' ? ' sim__pin--siege' : it.statut === 'en-cours' ? ' sim__pin--bleu' : it.statut === 'complet' ? ' sim__pin--gris' : '');
+  n.appendChild(document.createElement('b')); n.appendChild(document.createElement('i'));
+  pinsLayer.appendChild(n); it.node = n;
+}
+
+const cam = { a: .30, b: 0, z: .84, tx: 0, ty: 0 };                    // courant
+const tgt = { a: .30, b: 0, z: .84, tx: 0, ty: 0 };                    // cible
+const P = 1250;
+let spin = q.get('spin') !== '0', t0 = performance.now(), raf = 0, stage = null, focusId = null;
+let W = 0, H = 0, scale = 1, sw = 0, sh = 0;
+let cost = 0, frames = 0, skipUI = false;                             // cout moyen de setLabels (ms)
+
+function resize() {
+  const box = (stage || host).getBoundingClientRect();
+  sw = box.width; sh = box.height;
+  scale = Math.min(sw / VW, sh / VH);
+  W = VW * scale; H = VH * scale;
+  plate.style.width = W + 'px'; plate.style.height = H + 'px';
+  plate.style.marginLeft = (-W / 2) + 'px'; plate.style.marginTop = (-H / 2) + 'px';
+}
+new ResizeObserver(resize).observe(host);
+
+/* projection identique a la transform CSS : T . Rx . Ry . S puis division perspective */
+function projectPoint(u, v, c) {
+  const px = (u * scale - W / 2) * c.z, py = (v * scale - H / 2) * c.z;
+  const cb = Math.cos(c.b), sb = Math.sin(c.b);
+  const x1 = px * cb, z1 = -px * sb, y1 = py;
+  const ca = Math.cos(c.a), sa = Math.sin(c.a);
+  const y2 = y1 * ca - z1 * sa, z2 = y1 * sa + z1 * ca;
+  const k = P / (P - z2);
+  return { x: sw / 2 + (x1 + c.tx) * k, y: sh / 2 + (y2 + c.ty) * k, z: z2, k };
+}
+function camFocus(it) {                                               /* cible de recadrage sur une ville */
+  const c = { a: tgt.a, b: tgt.b, z: tgt.z, tx: 0, ty: 0 };
+  const p = projectPoint(it.u, it.v, c);
+  const wantX = sw * (ui.stats().mobile ? .5 : .40), wantY = sh * (ui.stats().mobile ? .34 : .48);
+  tgt.tx = (wantX - sw / 2) / p.k - (p.x - sw / 2) / p.k;
+  tgt.ty = (wantY - sh / 2) / p.k - (p.y - sh / 2) / p.k;
+}
+
+function frame(now) {
+  raf = 0;
+  const t = (now - t0) / 1000;
+  if (spin && !reduced) {
+    const open = ui.state !== 'closed';
+    if (!focusId) { tgt.b = Math.sin(t * 0.17) * (open ? 0.22 : 0.10); tgt.a = (open ? 0.36 : 0.30) + Math.sin(t * 0.11) * 0.045; }
+  }
+  const k = reduced ? 1 : 0.085;
+  for (const key of ['a', 'b', 'z', 'tx', 'ty']) cam[key] += (tgt[key] - cam[key]) * k;
+  if (focusId) { const it = byId(focusId); if (it) camFocus(it); }
+
+  plate.style.transform = 'translate3d(' + cam.tx.toFixed(2) + 'px,' + cam.ty.toFixed(2) + 'px,0) rotateX(' + cam.a.toFixed(4) + 'rad) rotateY(' + cam.b.toFixed(4) + 'rad) scale(' + cam.z.toFixed(4) + ')';
+
+  let zmin = 1e9, zmax = -1e9;
+  for (const it of items) { const p = projectPoint(it.u, it.v, cam); it.p = p; if (p.z < zmin) zmin = p.z; if (p.z > zmax) zmax = p.z; }
+  const span = Math.max(1, zmax - zmin);
+  for (const it of items) {
+    const p = it.p;
+    it.x = p.x; it.y = p.y;
+    it.depth = clamp(1 - (p.z - zmin) / span, 0, 1);                  /* 0 = au plus pres */
+    it.node.style.transform = 'translate3d(' + p.x.toFixed(1) + 'px,' + p.y.toFixed(1) + 'px,0)';
+    it.node.style.setProperty('--ps', (1 - it.depth * 0.22).toFixed(3));
+    it.node.style.opacity = focusId && focusId !== it.id ? '.32' : '1';
+  }
+  const c0 = performance.now();
+  if (!skipUI) ui.setLabels(items);                                   /* skipUI : mesure du cout propre a la coquille */
+  cost += performance.now() - c0; frames++;
+  raf = requestAnimationFrame(frame);
+}
+const kick = () => { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); };
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (raf) cancelAnimationFrame(raf); raf = 0; } else kick(); });
+
+/* ---- pointeur : survol, clic, rotation, zoom ---- */
+function nearest(cx, cy) {
+  let best = null, bd = 22 * 22;
+  for (const it of items) { const dx = it.x - cx, dy = it.y - cy, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = it; } }
+  return best;
+}
+sim.addEventListener('pointermove', ev => {
+  const r = sim.getBoundingClientRect(), cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+  if (drag) { tgt.b = clamp(drag.b + (cx - drag.x) * 0.0022, -0.44, 0.44); tgt.a = clamp(drag.a - (cy - drag.y) * 0.0016, 0.16, 0.62); return; }
+  if (ui.state === 'closed') return;
+  const it = nearest(cx, cy);
+  for (const o of items) o.node.classList.toggle('is-hot', !!it && o.id === it.id);
+  ui.setHoverCard(it || null, it ? { x: it.x, y: it.y } : null);
+});
+sim.addEventListener('pointerleave', () => { for (const o of items) o.node.classList.remove('is-hot'); ui.setHoverCard(null); });
+let drag = null;
+sim.addEventListener('pointerdown', ev => {
+  if (ui.state === 'closed') return;
+  const r = sim.getBoundingClientRect();
+  drag = { x: ev.clientX - r.left, y: ev.clientY - r.top, a: tgt.a, b: tgt.b, t: performance.now() };
+  spin = false; try { sim.setPointerCapture(ev.pointerId); } catch (e) { }
+});
+sim.addEventListener('pointerup', ev => {
+  const r = sim.getBoundingClientRect(), cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+  const quick = drag && performance.now() - drag.t < 320 && Math.abs(cx - drag.x) < 6 && Math.abs(cy - drag.y) < 6;
+  drag = null;
+  if (!quick || ui.state === 'closed') return;
+  const it = nearest(cx, cy);
+  if (it) { ui.openPanel(it); ui.setState('focus'); focusCity(it.id); }
+});
+sim.addEventListener('wheel', ev => { if (ui.state === 'closed') return; ev.preventDefault(); tgt.z = clamp(tgt.z * (ev.deltaY > 0 ? 0.92 : 1.08), 0.7, 2.2); }, { passive: false });
+
+function focusCity(id) { focusId = id; tgt.z = 1.55; const it = byId(id); if (it) camFocus(it); }
+function resetView() { focusId = null; tgt.z = 1.0; tgt.tx = 0; tgt.ty = 0; }
+
+/* ---- intentions de la coquille ---- */
+ui.onIntent(i => {
+  if (i.type === 'stage') { stage = i.el; i.el.appendChild(sim); resize(); }
+  else if (i.type === 'open') { resize(); tgt.z = 1.0; tgt.a = 0.36; setTimeout(() => { if (ui.state === 'opening') ui.setState('open'); }, reduced ? 0 : 620); }
+  else if (i.type === 'close') { resetView(); tgt.z = 0.84; tgt.a = 0.30; tgt.b = 0; spin = q.get('spin') !== '0'; for (const o of items) o.node.classList.remove('is-hot'); resize(); }
+  else if (i.type === 'reset') { resetView(); }
+  else if (i.type === 'focus') { focusCity(i.id); }
+  else if (i.type === 'hover') { const it = i.id ? byId(i.id) : null; for (const o of items) o.node.classList.toggle('is-hot', !!it && o.id === it.id); ui.setHoverCard(it, it ? { x: it.x, y: it.y } : null); }
+});
+
+/* ---- la coquille entre en scene (emet 'stage' vers le moteur simule) ---- */
+ui.mount();
+ui.setEmptyState(journees.length === 0);
+
+/* ---- commandes du banc ---- */
+document.getElementById('bAmb').addEventListener('click', () => {
+  const m = document.documentElement.dataset.ambiance === 'jour' ? 'nuit' : 'jour';
+  document.documentElement.dataset.ambiance = m; ui.setAmbiance(m);
+});
+let fbOn = false;
+const openNow = () => host.querySelector('.c3d__hit').click();
+const closeNow = () => { const b = document.querySelector('.c3d-btn--close'); if (b) b.click(); };
+document.getElementById('bOpen').addEventListener('click', () => { if (ui.state === 'closed') openNow(); else closeNow(); });
+document.getElementById('bSpin').addEventListener('click', () => { spin = !spin; });
+document.getElementById('bFb').addEventListener('click', () => { fbOn = !fbOn; ui.setFallback(fbOn); });
+
+window.addEventListener('resize', resize, { passive: true });
+resize(); kick();
+if (q.get('state') === 'open') { host.querySelector('.c3d__hit').click(); }
+if (q.get('fallback') === '1') { fbOn = true; ui.setFallback(true); }
+
+/* ---------------------------------------------------------------
+   CONTROLE OBJECTIF DU DECLUTTER (pour le script de capture)
+   overlaps() : nombre de paires d etiquettes visibles qui se recouvrent,
+   nombre d etiquettes hors scene, nombre d etiquettes posees sur une zone d interface.
+   --------------------------------------------------------------- */
+function boxes() {
+  const out = [];
+  document.querySelectorAll('.c3d-label.is-on:not(.is-mute)').forEach(n => {
+    const b = n.querySelector('.c3d-label__box').getBoundingClientRect();
+    if (b.width) out.push({ id: n.dataset.id, x: b.left, y: b.top, X: b.right, Y: b.bottom });
+  });
+  return out;
+}
+function overlaps() {
+  const bs = boxes();
+  const fs = document.querySelector('.c3d-fs').getBoundingClientRect();
+  const zones = [];
+  ['.c3d-fs__title', '.c3d-fs__tools', '.c3d-key', '.c3d-panel.is-on', '.c3d-list.is-on', '.c3d-empty.is-on', '.c3d-card.is-on', '.c3d-sheet.is-on']
+    .forEach(sel => document.querySelectorAll(sel).forEach(n => { const b = n.getBoundingClientRect(); if (b.width && b.height) zones.push(b); }));
+  let pairs = 0, out = 0, onUI = 0;
+  for (let i = 0; i < bs.length; i++) {
+    const a = bs[i];
+    if (a.x < fs.left - 1 || a.y < fs.top - 1 || a.X > fs.right + 1 || a.Y > fs.bottom + 1) out++;
+    for (const z of zones) if (a.x < z.right - 2 && a.X > z.left + 2 && a.y < z.bottom - 2 && a.Y > z.top + 2) { onUI++; break; }
+    for (let j = i + 1; j < bs.length; j++) {
+      const b = bs[j];
+      if (a.x < b.X && a.X > b.x && a.y < b.Y && a.Y > b.y) pairs++;
+    }
+  }
+  return { visibles: bs.length, paires_qui_se_recouvrent: pairs, hors_scene: out, sur_interface: onUI };
+}
+
+/* ---- API du banc pour le script de capture ---- */
+window.__ui = ui;
+window.__lab = {
+  ui, items, sim,
+  get spin() { return spin; }, set spin(v) { spin = v; },
+  open() { openNow(); },
+  close() { closeNow(); },
+  hover(id) { const it = byId(id); if (it) ui.setHoverCard(it, { x: it.x, y: it.y }); for (const o of items) o.node.classList.toggle('is-hot', !!it && o.id === it.id); },
+  select(id) { const it = byId(id); if (!it) return; ui.openPanel(it); ui.setState('focus'); focusCity(id); },
+  reset() { ui.closePanel(); ui.setState('open'); resetView(); },
+  fallback(on) { fbOn = !!on; ui.setFallback(fbOn); },
+  ambiance(m) { document.documentElement.dataset.ambiance = m; ui.setAmbiance(m); },
+  idOf(ville) { const it = items.find(i => i.ville === ville); return it ? it.id : null; },
+  stats() { return ui.stats(); },
+  overlaps,
+  costReset() { cost = 0; frames = 0; },
+  set skipUI(v) { skipUI = !!v; }, get skipUI() { return skipUI; },
+  cost() { return { frames, ms_par_frame: frames ? Math.round(cost / frames * 1000) / 1000 : 0 }; },
+  cam
+};
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

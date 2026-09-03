@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="fr" data-ambiance="nuit">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lab geo3d — geometrie 3D du territoire</title>
+<script type="importmap">{"imports":{"three":"../assets/vendor/three.module.min.js","three/addons/":"../assets/vendor/addons/"}}</script>
+<style>
+  :root{ --bg:#0b0d14; --bg2:#131a2b; --gold:#c99a3f; --gold-bright:#e8cd93; --text:#f3ecdc; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font:400 12px/1.5 ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;overflow:hidden}
+  #wrap{position:fixed;inset:0;background:radial-gradient(120% 100% at 50% 38%, #131a2b 0%, #0b0d14 72%)}
+  canvas{display:block;position:absolute;inset:0;width:100%;height:100%}
+  #gl{z-index:1} #ov{z-index:2;pointer-events:none}
+  #hud{position:absolute;z-index:3;left:18px;top:16px;padding:12px 14px;border:1px solid rgba(201,154,63,.28);
+    background:rgba(11,13,20,.72);border-radius:2px;letter-spacing:.02em;max-width:340px}
+  #hud b{color:var(--gold-bright);font-weight:500;letter-spacing:.12em;text-transform:uppercase;font-size:10px;display:block;margin-bottom:6px}
+  #hud i{font-style:normal;color:var(--gold)}
+  #hud .r{display:flex;justify-content:space-between;gap:18px}
+  #leg{position:absolute;z-index:3;right:18px;bottom:16px;padding:10px 12px;border:1px solid rgba(201,154,63,.2);
+    background:rgba(11,13,20,.7);border-radius:2px;color:rgba(243,236,220,.7)}
+  #leg s{text-decoration:none;display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:7px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="gl"></canvas>
+  <canvas id="ov"></canvas>
+  <div id="hud"><b>lab geo3d</b><div id="hudbody">…</div></div>
+  <div id="leg"></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import * as G from '../assets/js/france-geo3d.js';
+import { REGIONS as SVG_REGIONS } from '../assets/js/france-geo.js';   // reference SVG du site (lecture seule)
+
+const q = new URLSearchParams(location.search);
+const MODE = q.get('mode') || 'solid';            // solid | wire | overlay | relief | coupe
+const TILT = q.get('tilt') === '1';
+const TINT = q.get('tint') === '1';               // relief en fausses couleurs (controle geographique)
+const CRETES = q.get('cretes') === '1';           // superpose les lignes de crete declarees
+const RES = +(q.get('res') || 380);               // resolution du maillage de relief (budget carte3d)
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const RELIEF_LIKE = MODE === 'relief' || MODE === 'coupe';
+
+const glc = document.getElementById('gl'), ovc = document.getElementById('ov');
+const W = innerWidth, H = innerHeight, ASPECT = W / H;
+
+const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true, alpha: true });
+renderer.setPixelRatio(DPR); renderer.setSize(W, H, false);
+const scene = new THREE.Scene();
+
+// --- camera : vue de dessus stricte (ou legerement inclinee avec ?tilt=1)
+// ?focus=<zone> : loupe sur un detail du littoral / des frontieres / d'un massif
+const FOCUS = {                                   // [lat, lon, demi-hauteur en unites monde]
+  bretagne: [48.30, -3.20, 0.17], corse: [42.15, 9.05, 0.21], cotedazur: [43.35, 6.30, 0.15],
+  pyrenees: [42.80, 0.60, 0.17], nord: [50.25, 2.55, 0.15], gironde: [45.60, -1.05, 0.19],
+  alsace: [48.40, 7.25, 0.17], rhone: [44.60, 5.05, 0.17],
+  alpes: [45.30, 6.40, 0.24], massifcentral: [45.10, 3.10, 0.26], jura: [46.60, 6.10, 0.20],
+};
+const F = FOCUS[q.get('focus')] || null;
+const CTR = F ? G.projectWorld(F[0], F[1]) : [0, 0];
+const HH = F ? F[2] : 1.06, HW = HH * ASPECT;     // demi-hauteur / demi-largeur du frustum ortho
+const cam = new THREE.OrthographicCamera(-HW, HW, HH, -HH, 0.01, 40);
+cam.up.set(0, 0, -1);
+cam.position.set(CTR[0], 8, -CTR[1] + (TILT ? HH * 2.1 : 0.0001));
+cam.lookAt(CTR[0], 0, -CTR[1]);
+cam.updateProjectionMatrix(); cam.updateMatrixWorld(true);
+// monde (x est, y nord) -> pixels ecran (vue de dessus stricte)
+const K = (H / 2) / HH;
+const toScreen = (x, y) => [W / 2 + (x - CTR[0]) * K, H / 2 - (y - CTR[1]) * K];
+
+/* ---------------------------------------------------------------- geometrie */
+function shapeOf(poly) {
+  const s = new THREE.Shape(poly.outer.pts.map(p => new THREE.Vector2(p[0], p[1])));
+  for (const h of poly.holes) s.holes.push(new THREE.Path(h.pts.map(p => new THREE.Vector2(p[0], p[1]))));
+  return s;
+}
+const GOLD = new THREE.Color('#c99a3f'), GOLDB = new THREE.Color('#e8cd93');
+const group = new THREE.Group(); scene.add(group);
+let triangles = 0, meshes = 0, reliefStats = '', hmax = 0, EXAG = 0;
+
+if (!RELIEF_LIKE) REGION_MESHES(); else RELIEF_MESH();
+
+function REGION_MESHES() {
+  // une teinte legerement differente par region : on doit voir la decoupe sans folklore
+  G.REGIONS.forEach((reg, i) => {
+    const shapes = reg.polygons.map(shapeOf);
+    const geo = new THREE.ExtrudeGeometry(shapes, { depth: 0.028, bevelEnabled: false, curveSegments: 1, steps: 1 });
+    geo.rotateX(-Math.PI / 2);                      // plan XZ, nord vers -Z, extrusion vers le haut
+    triangles += geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3;
+    meshes++;
+    const col = new THREE.Color().setHSL(0.62 - 0.02 * Math.sin(i * 2.1), 0.22 + 0.06 * ((i * 5) % 3) / 3, 0.13 + 0.045 * ((i * 7) % 5) / 4);
+    const mat = MODE === 'wire'
+      ? new THREE.MeshBasicMaterial({ color: GOLD, wireframe: true, transparent: true, opacity: 0.55 })
+      : new THREE.MeshStandardMaterial({ color: col, roughness: 0.82, metalness: 0.06 });
+    group.add(new THREE.Mesh(geo, mat));
+  });
+  addLines(0.0295, 0.0293, 0.95, 0.34);
+  scene.add(new THREE.AmbientLight(0xa9b6d6, 1.15));
+  const key = new THREE.DirectionalLight(0xffe9c4, 1.35); key.position.set(-1.4, 2.2, -1.1); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x6f86c0, 0.5); rim.position.set(1.6, 0.9, 1.4); scene.add(rim);
+}
+
+function addLines(yOut, yBord, oOut, oBord, follow) {
+  const yy = p => follow ? G.sampleRelief(p[0], p[1]) + 0.0012 : 0;
+  for (const line of G.OUTLINE) {
+    const pos = [];
+    for (let i = 0; i <= line.length; i++) { const p = line[i % line.length]; pos.push(p[0], (follow ? yy(p) : yOut), -p[1]); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    group.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: GOLDB, transparent: true, opacity: oOut })));
+  }
+  if (oBord <= 0) return;
+  for (const line of G.BORDERS) {
+    const pos = [];
+    for (const p of line) pos.push(p[0], (follow ? yy(p) : yBord), -p[1]);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    group.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: oBord })));
+  }
+}
+
+/* ---- mode relief : surface reelle deplacee par sampleRelief, lumiere rasante ---- */
+function RELIEF_MESH() {
+  // masque terre par rasterisation 2D des anneaux (rapide et exact au pixel)
+  const MW = 700, MH = Math.round(MW * G.RELIEF.ratio);
+  const mc = document.createElement('canvas'); mc.width = MW; mc.height = MH;
+  const mx = mc.getContext('2d', { willReadFrequently: true });
+  const sx = MW / 2.04, x0 = -1.02, y1 = G.RELIEF.ratio + 0.02;
+  const mp = (x, y) => [(x - x0) * sx, (y1 - y) * sx];
+  mx.fillStyle = '#fff'; mx.beginPath();
+  for (const reg of G.REGIONS) for (const poly of reg.polygons) {
+    for (const ring of [poly.outer, ...poly.holes]) {
+      ring.pts.forEach((p, i) => { const s = mp(p[0], p[1]); i ? mx.lineTo(s[0], s[1]) : mx.moveTo(s[0], s[1]); });
+      mx.closePath();
+    }
+  }
+  mx.fill('evenodd');
+  const px = mx.getImageData(0, 0, MW, MH).data;
+  const land = (x, y) => { const s = mp(x, y), i = (Math.round(s[1]) * MW + Math.round(s[0])) * 4 + 3; return i >= 0 && i < px.length && px[i] > 100; };
+
+  // la grille cuite une fois : c'est ce que fera le moteur (8 x plus rapide que l'analytique par sommet)
+  const grid = G.buildReliefGrid(768);
+  const NX = RES, NY = Math.round(NX * G.RELIEF.ratio);
+  const gx0 = -1.02, gy0 = -G.RELIEF.ratio - 0.02, dx = 2.04 / NX, dy = (2 * G.RELIEF.ratio + 0.04) / NY;
+  // Clipping par SOMMET, pas par cellule : un sommet en mer redescend a 0, et une cellule est
+  // conservee des qu'un seul de ses quatre coins est a terre. Le littoral se termine donc par une
+  // pente douce vers le niveau zero au lieu de l'escalier de cellules entieres.
+  const pos = [], idx = [], map = new Int32Array((NX + 1) * (NY + 1)).fill(-1);
+  const terre = new Uint8Array((NX + 1) * (NY + 1));
+  for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+    const x = gx0 + i * dx, y = gy0 + j * dy, k = j * (NX + 1) + i;
+    const t = land(x, y); terre[k] = t ? 1 : 0;
+    const h = t ? G.sampleReliefGrid(grid, x, y) : 0; if (h > hmax) hmax = h;
+    map[k] = pos.length / 3;
+    pos.push(x, h, -y);
+  }
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+    const k = j * (NX + 1) + i, k1 = (j + 1) * (NX + 1) + i;
+    if (!(terre[k] | terre[k + 1] | terre[k1] | terre[k1 + 1])) continue;
+    idx.push(map[k], map[k + 1], map[k1], map[k + 1], map[k1 + 1], map[k1]);   // trigo vu de dessus
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  triangles += idx.length / 3; meshes++;
+  // Couleurs de sommet : la teinte du territoire a terre, la couleur du fond en mer — la cellule
+  // de debord au littoral se fond dans la nuit au lieu de dessiner un liset clair autour des cotes.
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.04, vertexColors: true });
+  {
+    const col = [], mer = new THREE.Color('#0e1120'), terreCol = new THREE.Color('#3d465f'), t = new THREE.Color();
+    const c0 = new THREE.Color('#151b2c'), c1 = new THREE.Color('#c99a3f'), c2 = new THREE.Color('#f3ecdc');
+    for (let v = 0, i = 0; i < pos.length; i += 3, v++) {
+      if (!terre[v]) { col.push(mer.r, mer.g, mer.b); continue; }
+      if (!TINT) { col.push(terreCol.r, terreCol.g, terreCol.b); continue; }
+      const u = Math.min(1, pos[i + 1] / G.RELIEF.max);   // fausses couleurs : les massifs au bon endroit
+      t.copy(u < 0.55 ? c0.clone().lerp(c1, u / 0.55) : c1.clone().lerp(c2, (u - 0.55) / 0.45));
+      col.push(t.r, t.g, t.b);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  }
+  group.add(new THREE.Mesh(geo, mat));
+  // exageration verticale = hauteur affichee du plus haut sommet / son altitude reelle
+  EXAG = hmax * G.RELIEF.kmPerUnit * 1000 / G.RELIEF.altRef;
+  reliefStats = `max ${(hmax * 1000).toFixed(1)}e-3 u = ${(hmax / 2 * 100).toFixed(2)} % de la largeur · exageration verticale x${EXAG.toFixed(1)}`;
+  addLines(0, 0, 0.8, 0, true);
+
+  // lumiere RASANTE du nord-ouest : c'est elle qui doit reveler le relief sans jamais l'ecraser.
+  // L'hemispherique tient le versant a l'ombre au-dessus du noir : jamais de #000 dans la charte.
+  scene.add(new THREE.HemisphereLight(0x9db0da, 0x1a2030, 0.78));
+  const key = new THREE.DirectionalLight(0xffe9c8, 1.75); key.position.set(-1.75, 0.60, -1.15); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x7189c6, 0.62); fill.position.set(1.5, 1.1, 1.2); scene.add(fill);
+}
+
+/* ---------------------------------------------------------------- overlay 2D */
+const VILLES = [
+  { nom: 'Lyon', lat: 45.7640, lon: 4.8357, siege: true },
+  { nom: 'Strasbourg', lat: 48.5734, lon: 7.7521 },
+];
+// coupes : le relief se juge aussi de profil (exageration verticale affichee)
+const COUPES = [
+  { nom: 'Bordeaux → Nice', a: [44.84, -0.58], b: [43.70, 7.27] },
+  { nom: 'Brest → Strasbourg', a: [48.39, -4.49], b: [48.57, 7.75] },
+  { nom: 'Perpignan → Lille', a: [42.70, 2.90], b: [50.63, 3.06] },
+];
+const ovx = ovc.getContext('2d');
+function drawOverlay() {
+  ovc.width = W * DPR; ovc.height = H * DPR; ovc.style.width = W + 'px'; ovc.style.height = H + 'px';
+  ovx.setTransform(DPR, 0, 0, DPR, 0, 0); ovx.clearRect(0, 0, W, H);
+  ovx.font = '500 12px ui-sans-serif,system-ui,sans-serif'; ovx.textBaseline = 'middle';
+
+  if (MODE === 'overlay') {
+    // trace de reference : les memes regions telles que le site les dessine en SVG (france-geo.js)
+    ovx.strokeStyle = 'rgba(255,64,160,.85)'; ovx.lineWidth = 1;
+    for (const r of SVG_REGIONS) {
+      for (const sub of r.d.split('M').slice(1)) {
+        const pts = sub.replace(/Z$/, '').split('L').map(s => s.split(',').map(Number));
+        ovx.beginPath();
+        pts.forEach((p, i) => { const w = G.toWorld(p), s = toScreen(w[0], w[1]); i ? ovx.lineTo(s[0], s[1]) : ovx.moveTo(s[0], s[1]); });
+        ovx.closePath(); ovx.stroke();
+      }
+    }
+  }
+
+  if (CRETES) {   // les lignes de crete declarees, pour verifier que le champ suit bien la geographie
+    for (const m of G.RELIEF.massifs) {
+      ovx.strokeStyle = m.t === 'c' ? 'rgba(255,120,60,.85)' : 'rgba(90,190,255,.45)';
+      ovx.lineWidth = m.t === 'c' ? 1.4 : 1;
+      ovx.beginPath();
+      m.p.forEach((a, i) => { const s = toScreen(a.x, a.y); i ? ovx.lineTo(s[0], s[1]) : ovx.moveTo(s[0], s[1]); });
+      ovx.stroke();
+    }
+  }
+
+  if (MODE === 'coupe') drawCoupes();
+
+  for (const v of VILLES) {
+    const w = G.projectWorld(v.lat, v.lon), s = toScreen(w[0], w[1]);
+    ovx.strokeStyle = 'rgba(232,205,147,.9)'; ovx.lineWidth = 1;     // reticule fin, pas un marqueur GPS
+    ovx.beginPath(); ovx.moveTo(s[0] - 13, s[1]); ovx.lineTo(s[0] - 4, s[1]);
+    ovx.moveTo(s[0] + 4, s[1]); ovx.lineTo(s[0] + 13, s[1]);
+    ovx.moveTo(s[0], s[1] - 13); ovx.lineTo(s[0], s[1] - 4);
+    ovx.moveTo(s[0], s[1] + 4); ovx.lineTo(s[0], s[1] + 13); ovx.stroke();
+    ovx.beginPath();
+    if (v.siege) { ovx.moveTo(s[0], s[1] - 4.2); ovx.lineTo(s[0] + 4.2, s[1]); ovx.lineTo(s[0], s[1] + 4.2); ovx.lineTo(s[0] - 4.2, s[1]); ovx.closePath(); }
+    else ovx.arc(s[0], s[1], 3.2, 0, 6.2832);
+    ovx.fillStyle = '#e8cd93'; ovx.fill();
+    ovx.fillStyle = 'rgba(243,236,220,.92)';
+    ovx.fillText(`${v.nom}  ${w[0].toFixed(4)}, ${w[1].toFixed(4)}`, s[0] + 18, s[1] + 0.5);
+  }
+}
+
+/* ---- profils d'altitude : la preuve que le relief est subtil ET geographiquement juste ---- */
+function drawCoupes() {
+  const N = 700, PH = 104, GAP = 34, PAD = 30;
+  const PW = Math.min(760, W * 0.52);                       // les profils ne mangent pas la carte
+  const x0 = PAD, x1 = x0 + PW;
+  const top = H - (PH + GAP) * COUPES.length - 14;
+  ovx.fillStyle = 'rgba(9,11,17,.90)'; ovx.strokeStyle = 'rgba(201,154,63,.20)'; ovx.lineWidth = 1;
+  ovx.beginPath(); ovx.rect(x0 - 16, top - 30, PW + 32, (PH + GAP) * COUPES.length + 30); ovx.fill(); ovx.stroke();
+  ovx.fillStyle = 'rgba(232,205,147,.85)'; ovx.font = '500 10px ui-sans-serif,system-ui,sans-serif';
+  ovx.fillText("PROFILS D'ALTITUDE  —  echelle verticale commune, 100 % = " + G.RELIEF.altRef + " m", x0 - 6, top - 18);
+  ovx.font = '500 12px ui-sans-serif,system-ui,sans-serif';
+  COUPES.forEach((C, ci) => {
+    const A = G.projectWorld(C.a[0], C.a[1]), B = G.projectWorld(C.b[0], C.b[1]);
+    const y0 = top + ci * (PH + GAP) + 16;
+    // trace de la coupe sur la carte
+    ovx.strokeStyle = 'rgba(232,205,147,.42)'; ovx.setLineDash([4, 5]); ovx.lineWidth = 1;
+    const sa = toScreen(A[0], A[1]), sb = toScreen(B[0], B[1]);
+    ovx.beginPath(); ovx.moveTo(sa[0], sa[1]); ovx.lineTo(sb[0], sb[1]); ovx.stroke(); ovx.setLineDash([]);
+    // courbe
+    ovx.beginPath();
+    let hM = 0, hMx = 0;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, x = A[0] + (B[0] - A[0]) * t, y = A[1] + (B[1] - A[1]) * t;
+      const h = G.sampleRelief(x, y); if (h > hM) { hM = h; hMx = t; }
+      const px2 = x0 + PW * t, py = y0 + PH - (h / G.RELIEF.max) * PH;
+      i ? ovx.lineTo(px2, py) : ovx.moveTo(px2, py);
+    }
+    ovx.strokeStyle = '#e8cd93'; ovx.lineWidth = 1.3; ovx.stroke();
+    ovx.lineTo(x1, y0 + PH); ovx.lineTo(x0, y0 + PH); ovx.closePath();
+    ovx.fillStyle = 'rgba(201,154,63,.14)'; ovx.fill();
+    // reperes : 100 % (Mont Blanc) et le sol
+    ovx.strokeStyle = 'rgba(243,236,220,.14)'; ovx.lineWidth = 1;
+    ovx.beginPath(); ovx.moveTo(x0, y0); ovx.lineTo(x1, y0); ovx.moveTo(x0, y0 + PH); ovx.lineTo(x1, y0 + PH); ovx.stroke();
+    // exageration verticale DU TRACE : (px par metre) / (px par metre a l'horizontale)
+    const kmL = Math.hypot(B[0] - A[0], B[1] - A[1]) * G.RELIEF.kmPerUnit;
+    const vPxParKm = PH / (G.RELIEF.altRef / 1000), hPxParKm = PW / kmL;
+    ovx.fillStyle = 'rgba(243,236,220,.82)';
+    ovx.fillText(`${C.nom}  ·  ${Math.round(kmL)} km  ·  point haut ${Math.round(hM / G.RELIEF.max * 100)} % (~${Math.round(hM / G.RELIEF.max * G.RELIEF.altRef)} m) a ${Math.round(hMx * 100)} %  ·  trace exagere x${Math.round(vPxParKm / hPxParKm)}`, x0, y0 - 7);
+  });
+}
+
+/* ---------------------------------------------------------------- rendu + HUD */
+renderer.render(scene, cam);
+drawOverlay();
+
+const pts = G.REGIONS.reduce((s, r) => s + r.rings.reduce((t, x) => t + x.pts.length, 0), 0);
+const holes = G.REGIONS.reduce((s, r) => s + r.rings.filter(x => x.hole).length, 0);
+document.getElementById('hudbody').innerHTML = [
+  `<div class="r"><span>mode</span><i>${MODE}${TILT ? ' + tilt' : ''}${F ? ' · ' + q.get('focus') : ''}</i></div>`,
+  `<div class="r"><span>triangles</span><i>${Math.round(triangles).toLocaleString('fr-FR')}</i></div>`,
+  `<div class="r"><span>meshes / draw</span><i>${meshes}</i></div>`,
+  `<div class="r"><span>regions / polygones</span><i>${G.REGIONS.length} / ${G.REGIONS.reduce((s, r) => s + r.polygons.length, 0)}</i></div>`,
+  `<div class="r"><span>anneaux (dont trous)</span><i>${G.REGIONS.reduce((s, r) => s + r.rings.length, 0)} (${holes})</i></div>`,
+  `<div class="r"><span>points de contour</span><i>${pts}</i></div>`,
+  `<div class="r"><span>contour / frontieres</span><i>${G.OUTLINE.length} / ${G.BORDERS.length}</i></div>`,
+  `<div class="r"><span>massifs / ancres</span><i>${G.RELIEF.massifs.length} / ${G.RELIEF.anchors.length}</i></div>`,
+  `<div class="r"><span>module</span><i id="poids">…</i></div>`,
+  reliefStats ? `<div class="r"><span>relief</span><i>${reliefStats}</i></div>` : '',
+].join('');
+fetch('../assets/js/france-geo3d.js').then(r => r.arrayBuffer()).then(b => {
+  document.getElementById('poids').textContent = (b.byteLength / 1024).toFixed(1).replace('.', ',') + ' Ko';
+}).catch(() => { document.getElementById('poids').textContent = 'n/c'; });
+document.getElementById('leg').innerHTML = MODE === 'overlay'
+  ? '<div><s style="background:#ff40a0"></s>trace SVG du site (france-geo.js)</div><div><s style="background:#e8cd93"></s>maillage 3D (france-geo3d.js)</div>'
+  : CRETES ? '<div><s style="background:#ff783c"></s>lignes de crete</div><div><s style="background:#5abeff;opacity:.6"></s>socles</div>'
+    : '<div><s style="background:#e8cd93"></s>contour exterieur</div><div><s style="background:#c99a3f;opacity:.5"></s>frontieres internes (dedoublonnees)</div>';
+
+window.__r = renderer; window.__cam = cam; window.__scene = scene;
+window.__geo3d = {
+  triangles: Math.round(triangles), regions: G.REGIONS.length, points: pts,
+  outline: G.OUTLINE.length, borders: G.BORDERS.length,
+  massifs: G.RELIEF.massifs.length, ancres: G.RELIEF.anchors.length,
+  hmax: +hmax.toFixed(5), toScreen, G
+};
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · LE MARCHÉ DES MÉTAUX   (#cours)
+   ----------------------------------------------------------------------------
+   Relevé de la section avant intervention : QUATRE CELLULES entièrement
+   bordées, des rayons de 2, 50 et 999 px cohabitant, un sélecteur de période
+   en pilule à état plein, un graphique en boîte avec sa grille en damier et
+   son axe de prix, et sept cellules de statistiques. C'est, trait pour trait,
+   le vocabulaire d'un terminal de marché — et c'est désormais le seul endroit
+   de la page qui parle encore cette langue.
+
+   AUCUNE DONNÉE N'EST TOUCHÉE ICI : ni un prix, ni une bougie, ni un
+   horodatage, ni une ligne de la logique d'API. Ce fichier ne contient que de
+   la mise en forme. On change la façon dont les chiffres sont posés, jamais
+   les chiffres.
+
+   Le principe est celui déjà tenu partout ailleurs sur cette page : des index
+   et des filets, jamais des cellules.
+   ========================================================================== */
+
+/* ── 1 · les quatre métaux deviennent un index ─────────────────────────
+   Même écriture que l'index des régions et que celui des douze familles : le
+   nom en petites capitales, celui qu'on regarde en or, souligné d'un filet.
+   Le symbole boursier (XAU, XAG) sort du rail — il répète le nom pour qui le
+   connaît et ne dit rien à qui l'ignore. Il reste sous le grand prix, là où
+   il renseigne vraiment. */
+#cours .cx-metaux__wrap {
+  border: 0;
+  background: none;
+  overflow: visible;
+}
+#cours .cx-metaux {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 clamp(1.7rem, 3.4vw, 3.2rem);
+  grid-template-columns: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 16%, transparent);
+}
+#cours .cx-metal {
+  flex: 0 0 auto;
+  border-right: 0;
+  background: none;
+  padding: .55rem 0 .85rem;
+  text-align: left;
+}
+#cours .cx-metal[aria-selected="true"] { background: none; }
+#cours .cx-metal__nom {
+  font-family: var(--body);
+  font-size: .68rem;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text, #f3ecdc) 44%, transparent);
+  transition: color .38s ease;
+}
+#cours .cx-metal:hover .cx-metal__nom { color: var(--text); }
+#cours .cx-metal[aria-selected="true"] .cx-metal__nom { color: var(--gold-ink); }
+#cours .cx-metal__sym { display: none; }
+#cours .cx-metal__prix {
+  margin-top: .34rem;
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: .01em;
+  color: color-mix(in srgb, var(--text, #f3ecdc) 50%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+#cours .cx-metal[aria-selected="true"] .cx-metal__prix { color: var(--text); }
+#cours .cx-metal__trait { height: 1px; bottom: -1px; }
+
+/* ── 2 · le prix devient la pièce exposée ──────────────────────────────
+   Il partageait sa taille avec le titre de section — 54 px chacun, mesurés.
+   Or c'est LUI l'information : le titre annonce, le prix est ce qu'on vient
+   lire. On lui donne l'échelle qui le dit. */
+#cours .cx-prix__val {
+  font-size: clamp(2.6rem, 1.4rem + 3.6vw, 4.6rem);
+  font-weight: 300;
+  letter-spacing: -.018em;
+  line-height: .95;
+}
+#cours .cx-prix__nom { font-size: 1.5rem; }
+#cours .cx-tete { align-items: start; gap: clamp(1.6rem, 3.4vw, 3.4rem); }
+
+/* ── 3 · le gramme : un montant, pas un encadré ────────────────────────
+   La même signature que la colonne de contact en fin de page — un filet
+   vertical qui porte l'information, au lieu d'une boîte qui l'enferme. */
+#cours .cx-24k {
+  border: 0;
+  background: none;
+  border-left: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 26%, transparent);
+  padding: .2rem 0 .2rem clamp(1.1rem, 2.2vw, 1.8rem);
+  align-content: start;
+}
+#cours .cx-24k::before { display: none; }
+
+/* ── 4 · les périodes deviennent une graduation ────────────────────────
+   Exactement le cadran des vitesses de la galerie : une ligne de base, un
+   trait par valeur, plus long et doré pour celle qu'on a retenue. La pilule à
+   pastille pleine était le seul objet « appuyé » de toute la page — et sur un
+   site d'horlogerie, une échelle de durées appelle une graduation. */
+#cours .cx-periodes {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: .62rem 0 0;
+  gap: clamp(.85rem, 1.8vw, 1.5rem);
+}
+#cours .cx-periodes::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--gold, #c99a3f) 20%, transparent);
+}
+#cours .cx-periode {
+  position: relative;
+  background: none;
+  border-radius: 0;
+  padding: .34rem 0 .1rem;
+  font-variant-numeric: tabular-nums;
+}
+#cours .cx-periode::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: -.62rem;
+  width: 1px; height: 4px;
+  background: currentColor;
+  opacity: .42;
+  transform: translateX(-50%);
+  transition: height .4s cubic-bezier(.22, .61, .36, 1), opacity .4s ease;
+}
+#cours .cx-periode:hover::before { opacity: .8; }
+#cours .cx-periode[aria-checked="true"] {
+  background: none;
+  color: var(--gold-ink);
+}
+#cours .cx-periode[aria-checked="true"]::before { height: 10px; opacity: 1; }
+html[data-ambiance="jour"] #cours .cx-periode[aria-checked="true"] {
+  background: none;
+  color: #6b4f14;
+}
+
+/* ── 5 · le graphique quitte sa boîte ──────────────────────────────────
+   Le cadre et la grille en damier appartiennent au poste de trading. On garde
+   les bougies — ce sont les données réelles, elles ne bougent pas — et on
+   leur retire le décor. La grille ne disparaît pas tout à fait : très en
+   retrait, elle reste lisible pour qui cherche un niveau. */
+#cours .cx-chart {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  border-top: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 14%, transparent);
+}
+/* LA GRILLE VISIBLE N'EST PAS CELLE DU CSS. Le moteur du graphique pose
+   lui-même `data-grille="off"` en se montant — la grille décorative en CSS est
+   donc déjà éteinte, et agir dessus ne produirait rien. Celle qu'on voit est
+   dessinée par le moteur, qui en lit la couleur dans le jeton `--cx-grille`.
+   C'est donc le JETON qu'il faut baisser : une seule valeur, aucune ligne de
+   la logique du graphique touchée. */
+#cours .cx { --cx-grille: rgba(243, 236, 220, .028); }
+html[data-ambiance="jour"] #cours .cx { --cx-grille: rgba(60, 48, 26, .045); }
+
+/* ── 6 · les statistiques perdent leurs cellules ───────────────────────
+   Sept cases séparées par des traits verticaux, c'est un tableau. Les mêmes
+   sept valeurs posées sur une seule ligne de base, c'est une légende — et
+   c'est ce qu'elles sont. */
+#cours .cx-stat {
+  border-right: 0;
+  padding-left: 0;
+  padding-right: clamp(1rem, 2vw, 1.8rem);
+}
+#cours .cx-stats { border-bottom: 0; }
+
+/* ── 7 · format étroit ─────────────────────────────────────────────────
+   Le rail des métaux se replie, la graduation garde son pas. */
+@media (max-width: 760px) {
+  #cours .cx-metaux { gap: 0 1.2rem; }
+  #cours .cx-metal__prix { font-size: .9rem; }
+  #cours .cx-24k {
+    border-left: 0;
+    border-top: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 26%, transparent);
+    padding: 1rem 0 0;
+    margin-top: 1.2rem;
+  }
+  #cours .cx-periodes { flex-wrap: wrap; row-gap: .4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cours .cx-periode::before { transition: none; }
+}

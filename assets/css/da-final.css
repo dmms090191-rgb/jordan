@@ -1,0 +1,101 @@
+/* ============================================================================
+   DIRECTION ARTISTIQUE · LE COURS, LES QUESTIONS, LE PIED DE PAGE
+   ----------------------------------------------------------------------------
+   Trois zones, trois problèmes différents — et un seul principe : la page parle
+   désormais en FILETS. Tout ce qui reste dessiné en boîtes arrondies se lit
+   comme un morceau d'interface collé dans un document.
+
+   Le cours des métaux est le seul endroit où des cadres se justifient : c'est
+   un tableau de bord, il se consulte, il ne se lit pas. On ne le démonte donc
+   pas — on l'accorde. Les angles se redressent, les cadres s'allègent, et la
+   section retrouve l'alignement du reste.
+
+   Aucune valeur, aucun prix, aucune logique d'API n'est touchée ici : ce
+   fichier ne contient que de la mise en forme.
+   ========================================================================== */
+
+/* ── 1 · LE COURS DES MÉTAUX ───────────────────────────────────────────
+   Le module dessinait ses blocs avec un rayon de 3 px. Trois pixels ne se
+   voient pas isolément — ils se voient quand ils sont les SEULS de la page. */
+#cours .cx {
+  --cx-r: 0;
+  /* le trait des cadres passe de la ligne d'or franche au filet : il continue
+     de séparer, il cesse de découper. */
+  --cx-line: color-mix(in srgb, var(--panel-line, rgba(201, 154, 63, .22)) 62%, transparent);
+}
+
+/* l'en-tête retrouve l'alignement gauche de la page, et son échelle mineure :
+   on ne monumentalise pas un relevé de marché. */
+#cours .sec__head {
+  max-width: 40rem;
+  margin-inline: 0;
+  text-align: left;
+  margin-bottom: clamp(1.6rem, 3.4vh, 2.6rem);
+}
+#cours .gold {
+  max-width: min(1240px, 94vw);
+  margin-inline: auto;
+}
+
+/* ── 2 · LES QUESTIONS ─────────────────────────────────────────────────
+   Toute la mise en forme de la FAQ a DÉMÉNAGÉ dans da-faq.css, à la faveur
+   d'une refonte complète : la composition en deux colonnes qui vivait ici
+   laissait 521 px de vide à gauche et ne donnait aux questions que 58 % de
+   la largeur disponible. On ne garde pas ici des règles qui contrediraient
+   celles de la refonte — une feuille qui se corrige elle-même à deux
+   endroits finit toujours par mentir quelque part. */
+/* ── 3 · LE PIED DE PAGE ───────────────────────────────────────────────
+   Il portait deux lignes de texte poussées aux deux bords — et le lien de
+   droite passait SOUS le bouton Jour / Nuit, qui flotte au même endroit.
+   On ramène tout à gauche, sous le poinçon : le bord droit reste libre pour
+   ce qui flotte, et la page se termine sur sa marque plutôt que sur un vide. */
+.ft {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  column-gap: clamp(1rem, 2.4vw, 1.6rem);
+  row-gap: .35rem;
+  padding-block: clamp(1.8rem, 4vh, 2.8rem);
+}
+.ft__marque {
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  opacity: .85;
+  transition: opacity .35s ease;
+}
+.ft__marque:hover { opacity: 1; }
+.ft__poincon {
+  width: clamp(30px, 3vw, 38px);
+  height: auto;
+  display: block;
+}
+.ft__legal {
+  grid-column: 2;
+  align-self: end;
+}
+.ft__exp {
+  grid-column: 2;
+  align-self: start;
+  justify-self: start;
+  /* le bord droit appartient au bouton flottant Jour / Nuit : on ne va pas
+     l'y chercher. */
+  margin-right: 0;
+}
+
+@media (max-width: 700px) {
+  .ft {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: .9rem;
+  }
+  .ft__legal { font-size: .68rem; }
+}
+
+/* ── 4 · mouvement réduit ──────────────────────────────────────────────
+   Les filets qui se dessinent portent une information d'état : ils restent,
+   ils cessent seulement de s'animer. */
+@media (prefers-reduced-motion: reduce) {
+}
