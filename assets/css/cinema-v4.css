@@ -1443,3 +1443,415 @@ html.noir-bref #cinema { filter: brightness(.03); }
   .v4-chapitre__titre { font-size: 1rem; letter-spacing: .08em; }
   .v4-chapitre__textes p { font-size: .86rem; line-height: 1.55; }
 }
+
+/* ==========================================================================
+   SMARTPHONE · LA CONSOLE DU FILM
+   ==========================================================================
+
+   RELEVÉ. Sous le film, cinq rangées flottaient l'une sous l'autre, chacune
+   posée à sa propre distance : la barre de temps, les commandes, le son et
+   l'ambiance côte à côte, l'onglet de chapitre, l'invitation à tourner
+   l'appareil. Cinq objets indépendants, cinq hauteurs, deux menus déroulants
+   pour des choses qui n'avaient rien à faire choisir — et le temps du film
+   n'était écrit nulle part : `.cine-bar__temps` disparaît sous 860 px.
+
+   Ce bloc en fait UNE console, en trois rangées d'un même rythme :
+
+     1 · la barre de temps, et à sa droite  01:32 / 04:45
+     2 · précédent · lecture · suivant · vitesse · son · jour-nuit
+     3 · le chapitre courant — une indication, plus un menu
+
+   Rien au-delà de 900 px : le desktop validé n'est pas touché.
+   ========================================================================== */
+
+@media (max-width: 900px) and (orientation: portrait) {
+
+  /* l'origine commune des trois rangées : le bas du film */
+  :root { --v4-cons: calc(var(--v4-sous) + .7rem); }
+
+  /* ── 1 · la barre de temps, et le temps écrit ────────────────────────
+     Le compteur revient : sans lui on ne savait ni combien dure le film ni où
+     l'on en était. Il sort de la barre de commandes — où il était masqué — et
+     se pose au bout de la ligne de temps, en chiffres à chasse fixe pour que
+     la largeur ne danse pas à chaque seconde. */
+  .cine-timeline {
+    top: var(--v4-cons);
+    bottom: auto; left: 1rem; right: auto; translate: 0;
+    width: calc(100% - 2rem - 5.6rem);
+    height: 26px; margin: 0;
+  }
+  .cine-bar__temps {
+    display: flex; align-items: center; gap: .22em;
+    position: fixed; z-index: 46;
+    top: var(--v4-cons); height: 26px;
+    right: 1rem; left: auto;
+    font-family: var(--body); font-size: .68rem; letter-spacing: .04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2, rgba(243, 236, 220, .74));
+  }
+  .cine-bar__temps b { font-weight: 400; color: var(--gold-bright, #e8cd93); }
+  .cine-bar__temps span { opacity: .38; }
+  .cine-bar__temps i { font-style: normal; opacity: .62; }
+
+  /* ── 2 · la rangée des commandes ─────────────────────────────────────
+     Six commandes, une seule hauteur, un seul rythme. La barre porte le
+     transport et la vitesse et s'étale à gauche ; le son et l'ambiance
+     tiennent le bord droit, à la même hauteur au pixel. */
+  .cine-bar {
+    top: calc(var(--v4-cons) + 2.5rem);
+    /* `translate: 0` reste un transform : la barre devenait le bloc conteneur
+       des elements en `position: fixed`, et le compteur de temps s'y accrochait
+       — mesure : 524 px trop bas. `none` la rend transparente a ses voisins. */
+    /* AU-DESSUS DE LA BARRE DE TEMPS. Les deux etaient a z-index 50, et la
+       barre de temps vient apres dans le document : elle gagnait. Le menu de
+       vitesse, enfant de cette barre-ci, ne pouvait donc pas passer devant —
+       mesure : l'option ×8 etait injoignable, le clic partait sur la barre de
+       temps. */
+    z-index: 70;
+    bottom: auto; left: 1rem; right: auto; translate: none;
+    width: auto; height: 46px;
+    gap: clamp(.1rem, 1.6vw, .5rem); padding: 0;
+    background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none;
+    box-shadow: none;
+  }
+  /* MEME JETON POUR TOUTE LA RANGEE. Les fleches etaient nues quand la
+     lecture, la vitesse, le son et l ambiance portaient un anneau : cinq
+     pastilles et deux chevrons flottants ne font pas une console. Elles
+     prennent le meme anneau, un ton plus discret — la lecture reste la
+     commande principale par sa taille et son or. */
+  .cine-bar__btn {
+    width: clamp(38px, 11vw, 42px); height: clamp(38px, 11vw, 42px);
+    border: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 22%, transparent);
+    border-radius: 50%;
+    background: rgba(11, 10, 8, .4);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .cine-bar__btn:disabled { opacity: .3; }
+  .cine-bar__btn svg { width: clamp(18px, 5.4vw, 21px); height: clamp(18px, 5.4vw, 21px); }
+  .cine-bar__btn--lect {
+    width: clamp(42px, 12vw, 46px); height: clamp(42px, 12vw, 46px);
+    border: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 46%, transparent);
+    border-radius: 50%;
+    background: rgba(11, 10, 8, .5);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .cine-bar__btn--lect svg { width: 20px; height: 20px; }
+  .cine-bar__sep, .cine-bar__vitesses, .cine-bar__prog, .cine-bar__vitmob { display: none; }
+
+  /* le son et l'ambiance rejoignent la rangée, calés à droite */
+  #sound {
+    top: calc(var(--v4-cons) + 2.5rem);
+    bottom: auto; left: auto; right: calc(1rem + 4.4rem);
+    height: 46px; min-width: 44px;
+  }
+  #ab-toggle {
+    top: calc(var(--v4-cons) + 2.5rem);
+    bottom: auto; right: 1rem; left: auto;
+  }
+  /* L'AMBIANCE NE MONTRE QUE L'AUTRE. Deux moitiés « Jour | Nuit » demandent
+     86 px : à 320 la rangée débordait. On n'affiche que l'option qu'on peut
+     choisir — appuyer dessus bascule, ce qui est exactement son geste. */
+  #ab-toggle { padding: 2px; }
+  #ab-toggle button.is-active { display: none; }
+  #ab-toggle button { min-height: 40px; padding: 0 .75rem; font-size: .6rem; }
+
+  /* ── 3 · le chapitre courant, une indication ─────────────────────────── */
+  .v4-mob {
+    display: flex; justify-content: center;
+    top: calc(var(--v4-cons) + 6.1rem);
+    left: 1rem; right: 1rem;
+    /* UNE INDICATION N'ATTRAPE RIEN. Elle reste une boite pleine largeur, et
+       en plein ecran elle recouvrait le bouton de sortie : le clic partait
+       dessus. Rien a y cliquer, donc rien a intercepter. */
+    pointer-events: none;
+  }
+  .v4-mob__chap {
+    display: block; margin: 0; padding: 0;
+    border: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+    min-height: 0; text-align: center; cursor: default;
+    color: color-mix(in srgb, var(--gold-bright, #e8cd93) 76%, transparent);
+    font-family: var(--body); font-size: .6rem; letter-spacing: .2em;
+    text-transform: uppercase; line-height: 1.9;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%;
+  }
+  .v4-mob__chev, .v4-mob__nav { display: none; }
+
+  /* l'invitation à tourner l'appareil suit la console */
+  .v4-rot { top: calc(var(--v4-cons) + 8.4rem); }
+
+  /* le panneau de texte part du bas de la console, pas du bas des commandes */
+  .v4-chapitre { top: calc(var(--v4-cons) + 9.5rem); }
+}
+
+/* sous 700 px de haut, la console mange la place du texte : on la lui rend */
+@media (max-width: 900px) and (orientation: portrait) and (max-height: 700px) {
+  .v4-chapitre { top: calc(var(--v4-sous) + .7rem); }
+}
+
+/* ==========================================================================
+   LA VITESSE — UN MENU, PAS UN BOUTON QUI DÉFILE
+   ========================================================================== */
+.cine-vit { display: none; position: relative; }
+.cine-vit__b {
+  display: inline-flex; align-items: center; justify-content: center; gap: .28rem;
+  min-width: clamp(42px, 13vw, 52px); height: 44px; padding: 0 clamp(.3rem, 1.4vw, .5rem);
+  border: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 30%, transparent);
+  border-radius: 22px;
+  background: rgba(11, 10, 8, .5);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  color: var(--gold-bright, #e8cd93);
+  font-family: var(--body); font-size: .74rem; letter-spacing: .04em;
+  font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: border-color .3s ease, color .3s ease;
+}
+.cine-vit__b:hover { border-color: color-mix(in srgb, var(--gold, #c99a3f) 55%, transparent); }
+.cine-vit__b:focus-visible { outline: 2px solid var(--gold-bright, #e8cd93); outline-offset: 2px; }
+.cine-vit__chev {
+  width: 6px; height: 6px; flex: none;
+  border-right: 1px solid currentColor; border-bottom: 1px solid currentColor;
+  rotate: 45deg; translate: 0 -2px;
+  transition: rotate .3s cubic-bezier(.22, 1, .36, 1), translate .3s cubic-bezier(.22, 1, .36, 1);
+}
+.cine-vit.est-ouvert .cine-vit__chev { rotate: -135deg; translate: 0 2px; }
+
+/* le menu s'ouvre VERS LE HAUT : sous la console il n'y a plus de place, et
+   un menu qui pousse la page ferait bouger le film */
+.cine-vit__menu {
+  position: absolute; z-index: 60;
+  left: 50%; translate: -50% 0;
+  bottom: calc(100% + .5rem);
+  margin: 0; padding: .3rem; list-style: none;
+  min-width: 78px;
+  border: 1px solid var(--line, rgba(201, 154, 63, .28));
+  border-radius: 14px;
+  background: rgba(8, 7, 5, .94);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .5);
+}
+.cine-vit__menu[hidden] { display: none; }
+.cine-vit__menu li { margin: 0; }
+.cine-vit__menu button {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 40px; padding: 0 .7rem;
+  border: 0; border-radius: 10px; background: none; cursor: pointer;
+  color: rgba(238, 229, 210, .74);
+  font-family: var(--body); font-size: .76rem; letter-spacing: .05em;
+  font-variant-numeric: tabular-nums;
+  transition: background .24s ease, color .24s ease;
+}
+.cine-vit__menu button:hover { background: rgba(201, 154, 63, .1); color: var(--gold-bright, #e8cd93); }
+.cine-vit__menu button:focus-visible { outline: 2px solid var(--gold-bright, #e8cd93); outline-offset: -2px; }
+.cine-vit__menu button.is-on {
+  color: var(--gold-bright, #e8cd93);
+  background: rgba(201, 154, 63, .14);
+}
+
+/* ==========================================================================
+   DANS L'IMAGE — PLEIN ÉCRAN, ET « REVOIR L'EXPÉRIENCE »
+   ========================================================================== */
+.cine-plein {
+  position: absolute; z-index: 24;
+  right: clamp(.6rem, 2vw, 1.1rem); bottom: clamp(.6rem, 2vw, 1.1rem);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; padding: 0;
+  border: 1px solid rgba(201, 154, 63, .3); border-radius: 50%;
+  background: rgba(8, 7, 5, .46);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  color: var(--gold-bright, #e8cd93); cursor: pointer;
+  opacity: .78; transition: opacity .3s ease, border-color .3s ease;
+}
+.cine-plein:hover { opacity: 1; border-color: rgba(201, 154, 63, .58); }
+.cine-plein:focus-visible { outline: 2px solid var(--gold-bright, #e8cd93); outline-offset: 3px; }
+.cine-plein svg { width: 18px; height: 18px; }
+.cine-plein__out { display: none; }
+html.cine-plein-on .cine-plein__in { display: none; }
+html.cine-plein-on .cine-plein__out { display: block; }
+
+/* ---- REVOIR L'EXPÉRIENCE : le seul geste qui reste, posé dans l'image ---- */
+.cine-revoir {
+  position: absolute; z-index: 26;
+  /* PAS AU CENTRE : la carte de fin y ecrit deja « L'expertise, ou que vous
+     soyez » et son bouton de contact. Centre, le bouton se posait dessus.
+     Il prend le tiers haut de l'image, qui est libre. */
+  left: 50%; top: 13%; translate: -50% 0;
+  display: none; align-items: center; gap: .7rem;
+  min-height: 52px; padding: 0 1.5rem 0 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--gold, #c99a3f) 52%, transparent);
+  border-radius: 30px;
+  background: rgba(8, 7, 5, .74);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05); backdrop-filter: blur(14px) saturate(1.05);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(232, 205, 147, .12);
+  color: var(--gold-bright, #e8cd93); cursor: pointer;
+  font-family: var(--body); font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
+  transition: border-color .35s ease, transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+html.film-fini .cine-revoir { display: inline-flex; }
+.cine-revoir:hover { border-color: var(--gold, #c99a3f); }
+.cine-revoir:focus-visible { outline: 2px solid var(--gold-bright, #e8cd93); outline-offset: 4px; }
+.cine-revoir__ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; flex: none;
+}
+.cine-revoir__ico svg { width: 20px; height: 20px; }
+@media (max-width: 400px) {
+  .cine-revoir { min-height: 48px; padding: 0 1.1rem 0 .85rem; font-size: .62rem; letter-spacing: .16em; gap: .5rem; }
+}
+
+/* ==========================================================================
+   LE PLEIN ÉCRAN — MÊME MISE EN PAGE, QUELLE QUE SOIT L'ORIENTATION
+   --------------------------------------------------------------------------
+   La classe est posée par le script, que le navigateur ait accordé le vrai
+   plein écran ou non : iOS le refuse, et le plein cadre CSS doit donner la
+   même chose. On ne dépend donc jamais de `:fullscreen`.
+   ========================================================================== */
+html.cine-plein-on .hd,
+html.cine-plein-on .nav,
+html.cine-plein-on .v4-nav,
+html.cine-plein-on .v4-rot { display: none !important; }
+
+html.cine-plein-on #cinema {
+  position: fixed; inset: 0;
+  top: 0; bottom: 0; left: 0; right: 0;
+  width: 100%; height: 100%;
+  z-index: 200;
+  /* `overflow: hidden` fait de la scene un CONTENEUR DE DEFILEMENT : en
+     paysage, le passage en plein ecran la faisait defiler de 158 px et tout
+     ce qu'elle contient — les deux videos et le bouton de sortie — montait
+     d'autant, le bouton se retrouvant hors de l'ecran a y = -147. `clip`
+     decoupe exactement pareil, mais ne peut pas defiler. */
+  overflow: clip;
+}
+/* CONTAIN, jamais COVER : de fines bandes valent mieux qu'une image amputée */
+html.cine-plein-on #cinema video { object-fit: contain; object-position: center; }
+
+/* les commandes redeviennent une incrustation basse, sur l'image */
+html.cine-plein-on .cine-timeline {
+  position: fixed; z-index: 210;
+  top: auto; bottom: calc(4.3rem + env(safe-area-inset-bottom, 0px));
+  left: calc(1rem + env(safe-area-inset-left, 0px));
+  right: auto; translate: 0;
+  width: calc(100% - 2rem - 5.6rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  height: 26px; margin: 0;
+}
+html.cine-plein-on .cine-bar__temps {
+  position: fixed; z-index: 210;
+  display: flex; align-items: center;
+  top: auto; bottom: calc(4.3rem + env(safe-area-inset-bottom, 0px)); height: 26px;
+  right: calc(1rem + env(safe-area-inset-right, 0px)); left: auto;
+}
+html.cine-plein-on .cine-bar {
+  position: fixed; z-index: 210;
+  top: auto; bottom: calc(.8rem + env(safe-area-inset-bottom, 0px));
+  left: calc(1rem + env(safe-area-inset-left, 0px)); right: auto; translate: none;
+  width: auto; height: 46px;
+  z-index: 216;           /* le menu de vitesse doit passer devant la barre de temps */
+}
+html.cine-plein-on #sound {
+  position: fixed; z-index: 210;
+  top: auto; bottom: calc(.8rem + env(safe-area-inset-bottom, 0px));
+  left: auto; right: calc(1rem + 4.4rem + env(safe-area-inset-right, 0px));
+  height: 46px; display: inline-flex;
+}
+html.cine-plein-on #ab-toggle {
+  position: fixed; z-index: 210;
+  top: auto; bottom: calc(.8rem + env(safe-area-inset-bottom, 0px));
+  left: auto; right: calc(1rem + env(safe-area-inset-right, 0px));
+  padding: 2px;
+}
+/* MEME PASTILLE COMPACTE QU'EN PORTRAIT. Les deux moities « Jour | Nuit »
+   demandent 129 px : en paysage plein ecran, le bouton du son passait dessous
+   — mesure : 44 px de recouvrement. On ne montre que l'option a choisir. */
+html.cine-plein-on #ab-toggle button.is-active { display: none; }
+html.cine-plein-on #ab-toggle button { min-height: 40px; padding: 0 .75rem; font-size: .6rem; }
+/* le chapitre passe en haut, discret, pour ne pas encombrer le bas */
+html.cine-plein-on .v4-mob {
+  position: fixed; z-index: 210;
+  display: flex; justify-content: flex-start;
+  top: calc(1rem + env(safe-area-inset-top, 0px));
+  left: calc(1.1rem + env(safe-area-inset-left, 0px));
+  /* on lui laisse le coin haut-droit : c'est la sortie du plein ecran */
+  right: calc(4.6rem + env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+html.cine-plein-on .v4-mob__chap { text-align: left; }
+html.cine-plein-on .cine-plein { z-index: 212; bottom: auto; top: calc(.7rem + env(safe-area-inset-top, 0px)); }
+html.cine-plein-on .cine-revoir { z-index: 214; }
+
+/* le plein cadre de secours (iOS) : le vrai plein écran est refusé, on prend
+   la fenêtre entière et on empêche la page de défiler derrière */
+html.cine-plein-faux, html.cine-plein-faux body { overflow: hidden; height: 100%; }
+
+/* ==========================================================================
+   PAYSAGE — la console basse existait déjà ; on y ajoute les nouveautés
+   ========================================================================== */
+@media (max-height: 560px) and (orientation: landscape) {
+  .cine-vit { display: inline-flex; }
+  .cine-bar { z-index: 70; }   /* le menu de vitesse passe devant la barre de temps */
+  .cine-bar__temps {
+    display: flex; align-items: center; gap: .22em;
+    position: fixed; z-index: 46;
+    bottom: calc(4.8rem + env(safe-area-inset-bottom, 0px)); top: auto; height: 28px;
+    right: calc(.9rem + env(safe-area-inset-right, 0px)); left: auto;
+    font-family: var(--body); font-size: .66rem; font-variant-numeric: tabular-nums;
+    color: var(--text-2, rgba(243, 236, 220, .74));
+  }
+  .cine-bar__temps b { font-weight: 400; color: var(--gold-bright, #e8cd93); }
+  .cine-bar__temps span { opacity: .38; }
+  .cine-bar__temps i { font-style: normal; opacity: .62; }
+  .cine-timeline { width: min(560px, 58vw); }
+}
+
+/* la vitesse en menu n'existe que sur petit écran : le desktop garde sa
+   rangée de quatre boutons, qui est validée */
+@media (max-width: 900px) and (orientation: portrait) { .cine-vit { display: inline-flex; } }
+html.cine-plein-on .cine-vit { display: inline-flex; }
+
+/* ── le voile de lecture du plein écran ────────────────────────────────
+   Les pastilles ont leur propre verre fumé, mais la barre de temps et le
+   compteur se posent nus sur l'image : sur un plan clair — le comptoir de
+   l'hôtel, la neige — « 04:47 » devenait illisible. Deux dégradés, en haut
+   et en bas, exactement comme sur un lecteur vidéo : ils assoient les
+   incrustations sans jamais fabriquer de bande visible. */
+html.cine-plein-on #cinema::before,
+html.cine-plein-on #cinema::after {
+  content: ""; position: absolute; left: 0; right: 0;
+  pointer-events: none; z-index: 4;
+}
+html.cine-plein-on #cinema::before {
+  top: 0; height: 22%;
+  background: linear-gradient(to bottom, rgba(4, 3, 2, .72), rgba(4, 3, 2, .3) 45%, transparent);
+}
+html.cine-plein-on #cinema::after {
+  bottom: 0; height: 38%;
+  background: linear-gradient(to top, rgba(4, 3, 2, .84), rgba(4, 3, 2, .44) 42%, transparent);
+}
+html.cine-plein-on .cine-bar__temps,
+html.cine-plein-on .v4-mob__chap { text-shadow: 0 1px 12px rgba(4, 3, 2, .9); }
+
+/* le compteur prend la même pastille que les autres commandes : un dégradé ne
+   suffit pas sous « 04:47 » posé sur un comptoir en bois clair */
+html.cine-plein-on .cine-bar__temps {
+  padding: 0 .62rem; border-radius: 14px;
+  background: rgba(8, 7, 5, .52);
+  -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+  border: 1px solid rgba(201, 154, 63, .16);
+}
+html.cine-plein-on .cine-bar__temps i { opacity: .82; }
+
+/* IL N'EXISTE QUE SUR PETIT ECRAN. Pose aussi sur le grand, il recouvrait le
+   bouton du son de 17 px — et le desktop, valide, n'a rien demande : on y
+   regarde le film dans une fenetre qu'on agrandit deja soi-meme. */
+.cine-plein { display: none; }
+@media (max-width: 900px) and (orientation: portrait) { .cine-plein { display: inline-flex; } }
+@media (max-height: 560px) and (orientation: landscape) { .cine-plein { display: inline-flex; } }
+html.cine-plein-on .cine-plein { display: inline-flex; }
+
+
+/* MEME PERIMETRE QUE LE PLEIN ECRAN : cette passe est mobile, et le desktop
+   valide n'est pas touche. Il n'y reste pas bloque pour autant — a la fin, le
+   bouton Lecture relance le film depuis le debut (setLecture, etat « fin »). */
+html.film-fini .cine-revoir { display: none; }
+@media (max-width: 900px) and (orientation: portrait) { html.film-fini .cine-revoir { display: inline-flex; } }
+@media (max-height: 560px) and (orientation: landscape) { html.film-fini .cine-revoir { display: inline-flex; } }
+html.cine-plein-on.film-fini .cine-revoir { display: inline-flex; }

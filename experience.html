@@ -148,6 +148,22 @@
     <p>Molette, flèches ou Lecture — un geste lance un chapitre. Huit chapitres, un seul voyage.</p>
     <p class="v4-accueil__duree">Durée totale : <b id="v4-duree-totale">—</b></p>
   </div>
+
+  <!-- PLEIN ÉCRAN, DANS L'IMAGE — comme sur un lecteur vidéo. Il demande le
+       vrai plein écran du navigateur quand il existe, et se rabat sur un
+       plein cadre CSS quand iOS le refuse (voir cinema-v4.js). -->
+  <button class="cine-plein" id="cine-plein" type="button" aria-label="Passer en plein écran" aria-pressed="false">
+    <svg class="cine-plein__in" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M20 9V4h-5M15 20h5v-5M4 15v5h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="cine-plein__out" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h5V4M20 9h-5V4M20 15h-5v5M4 15h5v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+  <!-- FIN DU FILM — le seul geste qui reste à faire, posé DANS l'image. -->
+  <button class="cine-revoir" id="cine-revoir" type="button" hidden>
+    <span class="cine-revoir__ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 3.5V8h-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <span class="cine-revoir__t">Revoir l'expérience</span>
+  </button>
 </div>
 
 <div class="cine-bar" id="cine-bar" role="group" aria-label="Commandes du film">
@@ -171,9 +187,22 @@
     <button type="button" data-v="8" aria-pressed="false">×8</button>
   </div>
   <!-- Sur smartphone, quatre boutons de vitesse côte à côte donnent des cibles
-       de 30 px. Un seul bouton affiche la vitesse courante et fait défiler
-       ×1 → ×2 → ×4 → ×8 → ×1 au toucher. Masqué partout ailleurs. -->
-  <button class="cine-bar__vitmob" id="cine-vitmob" type="button" aria-label="Vitesse de lecture">×4</button>
+       de 30 px. Un seul bouton porte la vitesse courante et ouvre un menu.
+       Il remplace le bouton qui faisait défiler ×1 → ×2 → ×4 → ×8 au toucher :
+       on ne devinait pas ce qu'il y avait derrière, et atteindre ×1 depuis ×2
+       demandait trois appuis. Masqué partout ailleurs. -->
+  <div class="cine-vit" id="cine-vit">
+    <button class="cine-vit__b" id="cine-vit-b" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Vitesse de lecture, ×4">
+      <span class="cine-vit__v" id="cine-vit-v">×4</span>
+      <span class="cine-vit__chev" aria-hidden="true"></span>
+    </button>
+    <ul class="cine-vit__menu" id="cine-vit-menu" role="listbox" aria-label="Vitesse de lecture" hidden>
+      <li><button type="button" role="option" data-v="1" aria-selected="false">×1</button></li>
+      <li><button type="button" role="option" data-v="2" aria-selected="false">×2</button></li>
+      <li><button type="button" role="option" data-v="4" aria-selected="true" class="is-on">×4</button></li>
+      <li><button type="button" role="option" data-v="8" aria-selected="false">×8</button></li>
+    </ul>
+  </div>
   <span class="cine-bar__sep" aria-hidden="true"></span>
   <span class="cine-bar__prog"><b id="cine-prog-n">01</b><span>/</span><i id="cine-prog-t">08</i><em>Chapitres</em></span>
   <span class="cine-bar__sep" aria-hidden="true"></span>
@@ -189,14 +218,14 @@
      le desktop validé n'est pas touché. Elles remplacent, sur mobile, ce qui y
      était soit illisible soit absent — le panneau de texte permanent posé sur
      l'image, et la liste des chapitres purement et simplement masquée. -->
+<!-- LE CHAPITRE COURANT — une INDICATION, et rien d'autre. C'était un onglet
+     qui dépliait le texte du chapitre, et un second bouton ouvrait la liste :
+     deux menus de plus sous un film qu'on regarde. Le chapitre change tout
+     seul avec le film ; il n'y a donc rien à y choisir. -->
 <div class="v4-mob" id="v4-mob">
-  <button class="v4-mob__chap" id="v4-mob-chap" type="button" aria-expanded="false" aria-controls="v4-voile">
+  <p class="v4-mob__chap" id="v4-mob-chap" aria-live="polite">
     <span class="v4-mob__chap-t" id="v4-mob-chap-t">Chapitre 01</span>
-    <span class="v4-mob__chev" aria-hidden="true"></span>
-  </button>
-  <button class="v4-mob__nav" id="v4-mob-nav" type="button" aria-expanded="false" aria-controls="rail">
-    <b id="v4-mob-nav-n">01</b><span>/</span><i id="v4-mob-nav-t">05</i>
-  </button>
+  </p>
 </div>
 
 <!-- Invitation à tourner l'appareil : discrète, jamais bloquante. -->

@@ -1817,7 +1817,12 @@ addEventListener('DOMContentLoaded', () => {
        maintenant, donc c'est maintenant qu'on sait si le texte deborde */
     majDeborde();
   };
-  if (mobChap) mobChap.addEventListener('click', () => ouvrir('texte', !de.classList.contains('v4-mob-texte')));
+  /* LE CHAPITRE N'OUVRE PLUS RIEN. C'etait un onglet qui depliait le texte, et
+     un second bouton la liste des chapitres : deux menus de plus sous un film
+     qu'on regarde, alors que le chapitre change tout seul avec le film. La
+     zone est desormais une simple indication (voir experience.html), et
+     ouvrir() reste en place pour le seul plein ecran du desktop. */
+  if (mobChap && mobChap.tagName === 'BUTTON') mobChap.addEventListener('click', () => ouvrir('texte', !de.classList.contains('v4-mob-texte')));
   if (mobNav) mobNav.addEventListener('click', () => ouvrir('chapitres', !de.classList.contains('v4-mob-chapitres')));
   /* choisir un chapitre dans la liste la referme : sinon elle resterait posee
      sur le film qu'on vient de demander a voir */
@@ -1838,20 +1843,125 @@ addEventListener('DOMContentLoaded', () => {
   const majAncien = cin.majChapitreActif.bind(cin);
   cin.majChapitreActif = T => { const av = cin.chActif; majAncien(T); if (cin.chActif !== av) majMob(); };
 
-  /* ---- LA VITESSE AU DOIGT ----
-     Quatre boutons cote a cote donnent des cibles de 30 px sur telephone. Un
-     seul bouton affiche la vitesse courante et fait defiler x1, x2, x4, x8. */
-  const vitMob = $('#cine-vitmob');
-  if (vitMob) {
-    const PAS = [1, 2, 4, 8];
-    const majVit = () => { vitMob.textContent = '×' + cin.vitesse; };
+  /* ---- LA VITESSE : UN MENU ----------------------------------------------
+     Le bouton faisait defiler x1 -> x2 -> x4 -> x8 a chaque appui : on ne
+     devinait pas ce qu'il y avait derriere, et revenir a x1 depuis x2
+     demandait trois appuis a l'aveugle. Il ouvre maintenant les quatre
+     vitesses, celle en cours marquee. Le desktop garde sa rangee de quatre
+     boutons : les deux commandes ecrivent dans le MEME setVitesse. */
+  const vitBoite = $('#cine-vit'), vitB = $('#cine-vit-b'), vitMenu = $('#cine-vit-menu'), vitV = $('#cine-vit-v');
+  if (vitBoite && vitB && vitMenu) {
+    const options = Array.prototype.slice.call(vitMenu.querySelectorAll('[data-v]'));
+    const fermerVit = () => {
+      if (vitMenu.hidden) return;
+      vitMenu.hidden = true;
+      vitBoite.classList.remove('est-ouvert');
+      vitB.setAttribute('aria-expanded', 'false');
+    };
+    const ouvrirVit = () => {
+      vitMenu.hidden = false;
+      vitBoite.classList.add('est-ouvert');
+      vitB.setAttribute('aria-expanded', 'true');
+      const on = vitMenu.querySelector('.is-on');
+      if (on) on.focus({ preventScroll: true });
+    };
+    const majVit = () => {
+      const x = cin.vitesse;
+      if (vitV) vitV.textContent = '×' + x;
+      vitB.setAttribute('aria-label', 'Vitesse de lecture, ×' + x);
+      for (const o of options) {
+        const on = +o.dataset.v === x;
+        o.classList.toggle('is-on', on);
+        o.setAttribute('aria-selected', on ? 'true' : 'false');
+      }
+    };
     majVit();
-    vitMob.addEventListener('click', () => {
-      cin.setVitesse(PAS[(PAS.indexOf(cin.vitesse) + 1) % PAS.length]);
-      majVit();
-    });
+    vitB.addEventListener('click', () => { vitMenu.hidden ? ouvrirVit() : fermerVit(); });
+    for (const o of options) o.addEventListener('click', () => { cin.setVitesse(+o.dataset.v); fermerVit(); vitB.focus({ preventScroll: true }); });
+    /* un menu ouvert se referme des qu'on regarde ailleurs */
+    document.addEventListener('pointerdown', e => { if (!vitBoite.contains(e.target)) fermerVit(); }, true);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !vitMenu.hidden) { e.stopPropagation(); fermerVit(); vitB.focus({ preventScroll: true }); } }, true);
     const setAncien = cin.setVitesse.bind(cin);
     cin.setVitesse = x => { setAncien(x); majVit(); };
+  }
+
+  /* ---- REVOIR L'EXPERIENCE ------------------------------------------------
+     A la fin, le film restait sur sa derniere image sans rien proposer. Le
+     bouton se pose DANS l'ecran et rend un film neuf : on repasse par
+     allerTemps(0), le seek global — le meme chemin que la barre de temps —
+     plutot que de remettre a la main les compteurs, la video, le chapitre et
+     les scenes de code. Un etat oublie, c'est un film qui repart de travers. */
+  const btnRevoir = $('#cine-revoir');
+  if (btnRevoir) {
+    btnRevoir.addEventListener('click', () => {
+      document.documentElement.classList.remove('film-fini');
+      cin.etat = 'attente';
+      cin.chIdx = 0; cin.segIdx = -1;
+      cin.tlVise = null; cin.tlLisse = 0;
+      cin.allerTemps(0);
+      cin.setLecture(true);
+    });
+  }
+
+  /* ---- LE PLEIN ECRAN, DANS L'IMAGE --------------------------------------
+     On demande le plein ecran sur la RACINE et non sur la scene : le son et
+     l'ambiance vivent hors de <main>, et un plein ecran de la scene seule les
+     aurait laisses dehors. Le verrouillage en paysage n'est qu'un bonus : il
+     n'est accorde que par certains navigateurs, et seulement en plein ecran.
+     iOS refuse les deux — on se rabat alors sur un plein cadre en CSS, qui
+     donne exactement la meme mise en page. Dans tous les cas, la classe
+     `cine-plein-on` est la seule chose que la feuille de style regarde.
+     Rien n'est touche au film : ni le temps, ni le chapitre, ni la vitesse,
+     ni le son — on ne fait que changer la taille du cadre. */
+  const btnPlein = $('#cine-plein');
+  if (btnPlein) {
+    const dePlein = document.documentElement;
+    const estPlein = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const majPlein = () => {
+      const on = dePlein.classList.contains('cine-plein-on');
+      btnPlein.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btnPlein.setAttribute('aria-label', on ? 'Quitter le plein écran' : 'Passer en plein écran');
+    };
+    const verrouiller = async () => {
+      try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); }
+      catch (e) { /* refuse : iOS, ordinateur de bureau, fenetre non verrouillable */ }
+    };
+    const entrer = async () => {
+      dePlein.classList.add('cine-plein-on');
+      majPlein();
+      try {
+        if (dePlein.requestFullscreen) await dePlein.requestFullscreen({ navigationUI: 'hide' });
+        else if (dePlein.webkitRequestFullscreen) dePlein.webkitRequestFullscreen();
+        else dePlein.classList.add('cine-plein-faux');
+      } catch (e) { dePlein.classList.add('cine-plein-faux'); }
+      verrouiller();
+    };
+    const sortir = async () => {
+      try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+      try {
+        if (document.exitFullscreen && document.fullscreenElement) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen && document.webkitFullscreenElement) document.webkitExitFullscreen();
+      } catch (e) {}
+      dePlein.classList.remove('cine-plein-on', 'cine-plein-faux');
+      majPlein();
+    };
+    btnPlein.addEventListener('click', () => {
+      dePlein.classList.contains('cine-plein-on') ? sortir() : entrer();
+    });
+    /* sortie par le systeme — Echap, geste de retour, bouton du navigateur */
+    const surChangementPlein = () => {
+      if (!estPlein() && !dePlein.classList.contains('cine-plein-faux')) {
+        dePlein.classList.remove('cine-plein-on');
+        majPlein();
+      }
+    };
+    document.addEventListener('fullscreenchange', surChangementPlein);
+    document.addEventListener('webkitfullscreenchange', surChangementPlein);
+    /* Echap ferme le plein cadre de secours, que le navigateur ne connait pas */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && dePlein.classList.contains('cine-plein-faux')) { e.preventDefault(); sortir(); }
+    });
+    majPlein();
   }
 
   /* ---- LE REPLI DE LA BARRE ----------------------------------------------
