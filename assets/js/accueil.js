@@ -114,9 +114,13 @@
       menu.hidden = !open;
       burger.setAttribute('aria-expanded', open);
       document.body.style.overflow = open ? 'hidden' : '';
+      /* la bascule Jour / Nuit est un element global, pose sur la fenetre : sans
+         ce temoin, la feuille de style ne peut pas savoir qu'un menu la
+         recouvre, et le bouton restait dans son coin, flottant sur le menu. */
+      document.documentElement.classList.toggle('mmenu-ouvert', open);
     });
     menu.addEventListener('click', function (e) {
-      if (e.target.closest('a[href]')) { menu.hidden = true; burger.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; }
+      if (e.target.closest('a[href]')) { menu.hidden = true; burger.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; document.documentElement.classList.remove('mmenu-ouvert'); }
     });
   }
 })();

@@ -320,3 +320,121 @@ a{color:inherit;text-decoration:none}
 /* Ancres : le header etant fixe et haut, on decale la cible de defilement
    pour qu aucun titre de section ne se retrouve masque derriere la barre. */
 #etapes,#domaines,#cours,#journees,#faq,#rendezvous{scroll-margin-top:calc(var(--hd-h) + 18px)}
+
+/* ============================================================================
+   LE MENU MOBILE — plus fin, plus serré, plus joaillerie
+   ----------------------------------------------------------------------------
+   RELEVÉ de l'existant, identique aux cinq formats : titres à 27,2 px, lignes
+   de 52 px, filets pleins en crème à 12 %, boutons de 48 et 61 px. Six lignes
+   à 52 px font 312 px de menu pour six mots — c'était un gros menu texte, pas
+   une carte. Et à 320×568 le contenu mesurait 627 px pour 568 : il fallait
+   défiler pour atteindre « Prendre rendez-vous ».
+
+   Rien ne change des intitulés ni de la navigation : seulement l'échelle, le
+   rythme et le trait.
+   ========================================================================== */
+
+.mmenu {
+  padding-top: calc(var(--hd-h) + 14px);
+  padding-bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px));
+  /* UNE COMPOSITION, PAS UNE PILE. Le menu resserré laissait 600 px de vide
+     sous les boutons, qui restaient collés à la liste. La navigation tient le
+     haut, les deux actions descendent au bas du panneau, et la bascule Jour /
+     Nuit ferme la page juste dessous : le vide passe entre les deux groupes,
+     là où il sépare, au lieu de traîner en fin de course. */
+  display: flex;
+  flex-direction: column;
+}
+.mmenu nav { flex: 0 0 auto; }
+.mmenu__ctas { margin-top: auto; flex: 0 0 auto; }
+.mmenu nav { gap: 0; }
+
+/* ── les entrées ──────────────────────────────────────────────────────
+   Le corps descend de 27,2 à ~19 px et la ligne de 52 à 38 : on lit la même
+   chose en un tiers de place, et la colonne cesse d'écraser la page. */
+.mmenu nav a {
+  position: relative;
+  display: block;
+  padding: .58rem 0 .58rem 1.05rem;
+  border-bottom: 0;                       /* le filet est redessiné plus bas */
+  /* le plancher de 1rem l emportait a toutes les largeurs : 3,4vw ne fait que
+     13,3 px a 390. On vise 18 px la, 16,3 a 320, 19,2 a 430. */
+  font-size: clamp(1.02rem, 4.6vw, 1.2rem);
+  font-weight: 400;
+  letter-spacing: .015em;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+  transition: color .32s ease, padding-left .32s cubic-bezier(.22, 1, .36, 1);
+}
+
+/* LE FILET N'EST PLUS UN TRAIT PLEIN. Un crème à 12 % sur toute la largeur
+   dessine six barres qui pèsent autant que les mots. Ici, un cheveu d'or qui
+   part du bord et s'éteint avant la fin : il sépare sans souligner. */
+.mmenu nav a::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--gold) 30%, transparent),
+    color-mix(in srgb, var(--gold) 9%, transparent) 38%,
+    transparent 86%);
+}
+.mmenu nav a:last-child::after { opacity: .5; }
+
+/* LA PAGE COURANTE PORTE UN LOSANGE, pas une couleur de plus. C'est le même
+   signe que les numéros du parcours et les intertitres de la carte : la
+   marque de la maison, à 4 px. */
+.mmenu nav a::before {
+  content: "";
+  position: absolute; left: .1rem; top: 50%;
+  width: 4px; height: 4px; margin-top: -2px;
+  background: linear-gradient(135deg, var(--gold-bright, #e8cd93), var(--gold, #c99a3f));
+  rotate: 45deg;
+  opacity: 0; scale: .4;
+  transition: opacity .3s ease, scale .35s cubic-bezier(.22, 1, .36, 1);
+}
+.mmenu nav a[aria-current] { color: var(--gold-bright, #e8cd93); }
+.mmenu nav a[aria-current]::before { opacity: 1; scale: 1; }
+.mmenu nav a:hover,
+.mmenu nav a:focus-visible { color: var(--gold-bright, #e8cd93); padding-left: 1.25rem; }
+.mmenu nav a:hover::before,
+.mmenu nav a:focus-visible::before { opacity: .8; scale: 1; }
+.mmenu nav a small { font-size: .55rem; letter-spacing: .22em; }
+
+/* ── les deux boutons du bas ──────────────────────────────────────────
+   48 et 61 px de haut pour deux mots : ils pesaient plus que le menu. Même
+   hauteur pour les deux, filets plus fins, lettres plus espacées et plus
+   petites — la ligne d'or reste, la masse s'en va. */
+.mmenu__ctas { gap: .6rem; padding-top: 1.35rem; }
+.mmenu__ctas .btn--rdv {
+  min-height: 44px; padding: 0 1.3rem;
+  font-size: .62rem; letter-spacing: .24em;
+  border-color: color-mix(in srgb, var(--gold) 34%, transparent);
+  border-radius: 24px;
+  color: color-mix(in srgb, var(--text) 88%, transparent);
+}
+.mmenu__ctas .btn--rdv:hover { border-color: color-mix(in srgb, var(--gold) 62%, transparent); color: var(--gold-bright, #e8cd93); }
+.mmenu__ctas .btn-exp {
+  --exp-pastille: 1.85rem;
+  min-height: 44px; padding: .28rem 1.3rem .28rem .28rem;
+  border-radius: 24px;
+}
+.mmenu__ctas .btn-exp__label { font-size: .62rem; letter-spacing: .24em; }
+
+/* ── la bascule Jour / Nuit devient le pied du menu ───────────────────
+   Elle est posée sur la FENÊTRE, pas dans le menu : elle flottait donc dans
+   le coin bas-droit, par-dessus lui, sans lien avec rien. Tant que le menu
+   est ouvert, elle vient se centrer sous les deux boutons, resserrée, et
+   reprend sa place dès qu'il se referme. */
+html.mmenu-ouvert #ab-toggle {
+  z-index: 60;
+  left: 50%; right: auto;
+  translate: -50% 0;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  padding: 3px;
+  border-color: color-mix(in srgb, var(--gold) 30%, transparent);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+}
+html.mmenu-ouvert #ab-toggle button {
+  min-height: 34px; padding: 0 .95rem;
+  font-size: .56rem; letter-spacing: .2em;
+}
