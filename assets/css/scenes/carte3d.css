@@ -16,8 +16,11 @@
 /* =========================================================================
    1. JETONS LOCAUX
    ========================================================================= */
+/* .c3d-mod — la modale des villes vit dans <body>, hors de .c3d : sans elle
+   dans cette liste, aucun de ces jetons ne lui parviendrait. */
 .c3d,
-.c3d-fs {
+.c3d-fs,
+.c3d-mod {
   --c3d-ease: cubic-bezier(.22, .61, .36, 1);
   --c3d-display: var(--display, 'Cormorant Garamond', Georgia, serif);
   --c3d-body: var(--body, 'Jost', system-ui, sans-serif);
@@ -64,7 +67,8 @@
 }
 
 html[data-ambiance="jour"] .c3d,
-html[data-ambiance="jour"] .c3d-fs {
+html[data-ambiance="jour"] .c3d-fs,
+html[data-ambiance="jour"] .c3d-mod {
   --c3d-solid: rgba(253, 250, 244, .95);
   --c3d-solid-2: rgba(248, 243, 234, .96);
   --c3d-solid-f: rgb(252, 249, 243);

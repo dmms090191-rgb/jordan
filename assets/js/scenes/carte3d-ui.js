@@ -161,6 +161,20 @@ export function createCarteUI(host, options) {
 
   /* outils discrets, poses sur le coin haut-droit de la carte — DANS la zone carte, jamais flottants */
   const tools = el('div', NS + '__tools', mapCol);
+
+  /* LE BOUTON QUI OUVRE LA LISTE. Les cent onze communes ne sont plus deroulees
+     sous la carte : la page ne porte plus que la carte et ce bouton, et la
+     liste vit dans un dialogue qu on ouvre quand on la cherche. Son libelle
+     reste ecrit meme en petit ecran, contrairement aux deux autres outils :
+     c est la porte d entree, une icone seule ne la nommerait pas. */
+  const btnVilles = el('button', NS + '-btn ' + NS + '-btn--villes', tools);
+  btnVilles.type = 'button';
+  btnVilles.appendChild(svgIcon('M8 1.9c-2.2 0-4 1.8-4 4 0 3 4 8.2 4 8.2s4-5.2 4-8.2c0-2.2-1.8-4-4-4Zm0 5.6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Z'));
+  el('span', NS + '-btn__label ' + NS + '-btn__label--fort', btnVilles, 'Villes');
+  btnVilles.setAttribute('aria-label', 'Choisir une ville');
+  btnVilles.setAttribute('aria-haspopup', 'dialog');
+  btnVilles.setAttribute('aria-expanded', 'false');
+
   const btnReset = el('button', NS + '-btn ' + NS + '-btn--reset', tools);
   btnReset.type = 'button';
   btnReset.appendChild(svgIcon('M13.4 8a5.4 5.4 0 1 1-1.7-3.9M13.3 2.4v2.6h-2.6'));
@@ -263,6 +277,32 @@ export function createCarteUI(host, options) {
   btnClose.setAttribute('aria-label', 'Réduire la carte');
 
   const hint = el('p', NS + '-hint', fs);
+
+  /* =====================================================================
+     LA MODALE DES VILLES — le troisieme contenant de la liste
+     ---------------------------------------------------------------------
+     La liste des cent onze communes n est plus deroulee sous la carte : la
+     page ne montre que la carte et le bouton « Villes ». Le dialogue reprend
+     EXACTEMENT le meme noeud de liste que le plein ecran et le repli — meme
+     recherche, meme filtrage en direct, meme clavier, meme selection. Il n y
+     a donc pas une deuxieme liste a tenir d accord avec la premiere : il y a
+     un seul composant, et un contenant de plus.
+
+     Il vit dans <body>, comme le plein ecran : pose dans la section, un
+     `overflow` ou un `filter` d ancetre le decouperait ou le clouerait.
+     ===================================================================== */
+  const modale = el('div', NS + '-mod');
+  modale.setAttribute('role', 'dialog');
+  modale.setAttribute('aria-modal', 'true');
+  modale.setAttribute('aria-label', 'Les villes où nous nous déplaçons');
+  modale.tabIndex = -1;
+  const modVoile = el('div', NS + '-mod__voile', modale);
+  const modBoite = el('div', NS + '-mod__boite', modale);
+  const modFermer = el('button', NS + '-btn ' + NS + '-btn--icon ' + NS + '-mod__x', modBoite);
+  modFermer.type = 'button';
+  modFermer.appendChild(svgIcon('M3.6 3.6 12.4 12.4M12.4 3.6 3.6 12.4'));
+  modFermer.setAttribute('aria-label', 'Fermer la liste des villes');
+  const modCorps = el('div', NS + '-mod__corps', modBoite);
 
   /* =====================================================================
      LA LISTE — un seul exemplaire, deplace d un contenant a l autre
@@ -617,6 +657,11 @@ export function createCarteUI(host, options) {
   function chooseCity(it) {
     if (!it) return;
     setActive(it.id);
+    /* LA MODALE S EFFACE AVANT LE MOUVEMENT. Choisir une ville, c est demander
+       a VOIR la carte : la garder ouverte pendant que la camera remonte a la
+       France entiere puis redescend, ce serait cacher exactement ce qu on
+       vient de demander. On la ferme d abord, le voyage se joue ensuite. */
+    if (modOuverte) fermerModale(true);
     emit({ type: 'focus', id: it.id, item: it });      /* meme animation dans la page qu en grand */
   }
   function requestReset() {
@@ -673,7 +718,9 @@ export function createCarteUI(host, options) {
       const kids = document.body.children;
       for (let i = 0; i < kids.length; i++) {
         const n = kids[i];
-        if (n === fs || n.contains(fs)) continue;
+        /* le plein ecran ET la modale des villes restent joignables : ce sont
+           les deux seuls calques qui peuvent etre au-dessus de la page */
+        if (n === fs || n.contains(fs) || n === modale || n.contains(modale)) continue;
         if (!n.inert) { n.inert = true; inerted.push(n); }
       }
     } else { while (inerted.length) inerted.pop().inert = false; }
@@ -715,9 +762,81 @@ export function createCarteUI(host, options) {
     else if (!ev.shiftKey && (act === last || !fs.contains(act))) { ev.preventDefault(); first.focus(); }
   }
 
+  /* =====================================================================
+     OUVRIR ET FERMER LA MODALE DES VILLES
+     ---------------------------------------------------------------------
+     Meme discipline que le plein ecran : la page passe `inert`, le
+     defilement est verrouille sans secousse, le focus entre dans le champ de
+     recherche — on peut donc taper le nom d une ville sans rien viser — et
+     revient au bouton a la fermeture. Echap, le voile et la croix ferment.
+     ===================================================================== */
+  let modOuverte = false, modOpener = null;
+
+  function focusablesMod() {
+    return Array.prototype.filter.call(modale.querySelectorAll(FOCUSABLE), n => {
+      if (n.hidden || n.closest('[hidden]') || n.closest('[inert]')) return false;
+      const r = n.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    });
+  }
+  function onModKey(ev) {
+    if (!modOuverte || destroyed) return;
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); fermerModale(true); return; }
+    if (ev.key !== 'Tab') return;
+    const list = focusablesMod();
+    if (!list.length) { ev.preventDefault(); modale.focus(); return; }
+    const first = list[0], last = list[list.length - 1];
+    const act = document.activeElement;
+    if (ev.shiftKey && (act === first || !modale.contains(act))) { ev.preventDefault(); last.focus(); }
+    else if (!ev.shiftKey && (act === last || !modale.contains(act))) { ev.preventDefault(); first.focus(); }
+  }
+  function ouvrirModale() {
+    if (modOuverte || destroyed || fallback || place === 'full') return;
+    modOuverte = true;
+    const act = document.activeElement;
+    modOpener = act && act !== document.body && typeof act.focus === 'function' ? act : btnVilles;
+    lockScroll();
+    modale.classList.add('is-live');
+    setInert(true);
+    btnVilles.setAttribute('aria-expanded', 'true');
+    document.addEventListener('keydown', onModKey, true);
+    /* ON OUVRE TOUJOURS SUR LA LISTE COMPLETE. La recherche precedente restait
+       ecrite dans le champ : apres avoir choisi Brest, rouvrir la modale ne
+       montrait plus qu une seule commune, et il fallait effacer soi-meme pour
+       revoir les cent onze. Le dialogue s ouvre donc net. */
+    if (listUI.find.value) { listUI.find.value = ''; onFiltre(); }
+    /* la recherche prend le focus : on ouvre et on tape, sans viser le champ */
+    requestAnimationFrame(() => {
+      if (!modOuverte) return;
+      listUI.find.focus({ preventScroll: true });
+      /* et la ville deja choisie, s il y en a une, est amenee sous les yeux */
+      const b = selId != null ? listUI.rows.get(selId) : null;
+      if (b) scrollRowIntoView(b, true);
+    });
+  }
+  function fermerModale(rendreFocus) {
+    if (!modOuverte) return;
+    modOuverte = false;
+    modale.classList.remove('is-live');
+    setInert(false);
+    unlockScroll();
+    btnVilles.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('keydown', onModKey, true);
+    if (rendreFocus) {
+      const back = modOpener && document.contains(modOpener) ? modOpener : btnVilles;
+      if (back && back.focus) back.focus({ preventScroll: true });
+    }
+    modOpener = null;
+  }
+  btnVilles.addEventListener('click', () => { modOuverte ? fermerModale(true) : ouvrirModale(); });
+  modFermer.addEventListener('click', () => fermerModale(true));
+  modVoile.addEventListener('click', () => fermerModale(true));
+
   let hintTimer = 0, introTimer = 0;
-  /* LA LISTE ET L ETIQUETTE SUIVENT LA SCENE — un seul exemplaire de chaque, reparente. */
-  function homeList() { return fallback ? fbCol : (place === 'full' ? fs : sideCol); }
+  /* LA LISTE ET L ETIQUETTE SUIVENT LA SCENE — un seul exemplaire de chaque, reparente.
+     Dans la page, son foyer est desormais le corps de la modale : la colonne
+     `sideCol` de la grille reste vide, et la page ne montre plus de liste. */
+  function homeList() { return fallback ? fbCol : (place === 'full' ? fs : modCorps); }
   function homeLabels() { return place === 'full' ? fs : mapCol; }
 
   function applyPlace(next) {
@@ -732,6 +851,9 @@ export function createCarteUI(host, options) {
     btnFull.setAttribute('aria-expanded', p === 'full' ? 'true' : 'false');
 
     if (p === 'full') {
+      /* un seul calque a la fois : la liste ne peut pas etre dans deux
+         contenants, et deux verrous de defilement se marcheraient dessus */
+      if (modOuverte) fermerModale(false);
       /* a qui rendre le focus a la reduction : l element reellement actif, jamais <body> */
       const act = document.activeElement;
       opener = act && act !== document.body && typeof act.focus === 'function' ? act : btnFull;
@@ -752,6 +874,7 @@ export function createCarteUI(host, options) {
       fs.classList.remove('is-live');
       markHover(null);
       document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('keydown', onModKey, true);
       setInert(false);
       clearTimeout(hintTimer); clearTimeout(introTimer);
       nettoyerIndice();
@@ -842,6 +965,7 @@ export function createCarteUI(host, options) {
     if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     host.appendChild(root);
     document.body.appendChild(fs);        // presente des le montage (invisible) : mesurable
+    document.body.appendChild(modale);    // idem : dans <body>, hors de tout `overflow` d ancetre
     reparent(listUI.wrap, homeList());
     reparent(labelsLayer, mapCol);
     setAmbiance(ambiance);
@@ -875,7 +999,8 @@ export function createCarteUI(host, options) {
         villes: cities.length,
         regions: new Set(cities.map(c => c.region)).size,
         lignes: listUI.rows.size,
-        liste_dans: listUI.wrap.parentNode === sideCol ? 'page' : (listUI.wrap.parentNode === fs ? 'plein-ecran' : 'repli'),
+        liste_dans: listUI.wrap.parentNode === modCorps ? 'modale' : (listUI.wrap.parentNode === fs ? 'plein-ecran' : (listUI.wrap.parentNode === sideCol ? 'page' : 'repli')),
+        modale_ouverte: modOuverte,
         etiquette: labelOn ? labelId : null,
         active: selId, place, mobile, ambiance, fallback
       };
@@ -883,6 +1008,7 @@ export function createCarteUI(host, options) {
     destroy() {
       if (destroyed) return;
       if (place === 'full') applyPlace('page');
+      fermerModale(false);
       destroyed = true;
       clearTimeout(hintTimer); clearTimeout(introTimer);
       nettoyerIndice();
@@ -894,9 +1020,9 @@ export function createCarteUI(host, options) {
       setInert(false); unlockScroll();
       listeners.length = 0;
       listUI.wrap.remove(); labelsLayer.remove();
-      root.remove(); fs.remove();
+      root.remove(); fs.remove(); modale.remove();
     },
-    _dbg: { root, fs, grid, headCol, mapCol, sideCol, labelsLayer, label, listUI, fbVisual, btnFull, btnReset, get seq() { return listUI.seq; } }
+    _dbg: { root, fs, modale, modCorps, grid, headCol, mapCol, sideCol, labelsLayer, label, listUI, fbVisual, btnFull, btnReset, btnVilles, get seq() { return listUI.seq; }, get modOuverte() { return modOuverte; } }
   };
 
   return api;

@@ -481,3 +481,179 @@
 @media (max-width: 480px) {
   .c3d[data-place="page"] .c3d__side .c3d-grp__ul { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA MODALE DES VILLES
+   ══════════════════════════════════════════════════════════════════════
+   Cent onze communes déroulées sous la carte, c'était un mur : à 390 px la
+   liste mesurait 5 772 px de contenu pour 439 px de fenêtre, et sur desktop
+   elle occupait 690 px sous la France. La page ne porte plus que la carte et
+   un bouton ; la liste vit dans un dialogue qu'on ouvre quand on la cherche.
+
+   Ce n'est pas une seconde liste : c'est LE MÊME nœud que le plein écran et
+   que le repli sans WebGL, simplement reparenté. La recherche, le filtrage en
+   direct, le clavier et la sélection sont donc, au sens strict, les mêmes.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* la page ne garde que la carte : la colonne qui portait la liste n'a plus
+   rien à porter */
+.c3d__side:empty { display: none; }
+
+.c3d-mod {
+  position: fixed; inset: 0; z-index: 320;
+  display: grid; place-items: center;
+  padding: clamp(.9rem, 4vw, 3rem);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .34s var(--c3d-ease), visibility 0s linear .34s;
+}
+.c3d-mod.is-live {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity .34s var(--c3d-ease);
+}
+.c3d-mod__voile {
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--c3d-scrim) 74%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.04);
+  backdrop-filter: blur(10px) saturate(1.04);
+}
+
+/* ── la boîte ──────────────────────────────────────────────────────────
+   Un objet de lecture, pas un panneau d'interface : filet d'or d'un pixel,
+   verre profond, et un liseré chaud en haut qui reprend celui de la liste. */
+.c3d-mod__boite {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  width: min(660px, 100%);
+  max-height: min(78svh, 660px);
+  padding: clamp(1.25rem, 2.6vw, 1.9rem) clamp(1.1rem, 2.4vw, 1.7rem) clamp(1rem, 2.2vw, 1.5rem);
+  border: 1px solid var(--c3d-line);
+  border-radius: 16px;
+  background: var(--c3d-solid);
+  box-shadow: var(--c3d-lift), var(--c3d-rim);
+  -webkit-backdrop-filter: var(--c3d-glass);
+  backdrop-filter: var(--c3d-glass);
+  transform: translate3d(0, 16px, 0) scale(.99);
+  transition: transform .42s var(--c3d-ease);
+}
+.c3d-mod.is-live .c3d-mod__boite { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .c3d-mod, .c3d-mod__boite { transition-duration: .01ms; }
+  .c3d-mod__boite { transform: none; }
+}
+
+.c3d-mod__x {
+  position: absolute; top: .7rem; right: .7rem; z-index: 2;
+  width: 38px; height: 38px; min-height: 38px; padding: 0;
+  border-radius: 50%;
+}
+.c3d-mod__corps { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+
+/* ── la liste, dans ce contenant-ci ────────────────────────────────────
+   Elle perd le filet supérieur qu'elle portait dans la colonne de page : ici
+   c'est la boîte qui a un bord, un second trait ferait doublon. */
+.c3d-mod__corps > .c3d-list { flex: 1 1 auto; min-height: 0; width: 100%; }
+.c3d-mod__corps > .c3d-list::before { display: none; }
+
+/* la tête devient le titre du dialogue : « VILLES » et le compte, sur une
+   ligne, avec la place du bouton de fermeture à droite */
+.c3d-mod .c3d-list__head {
+  align-items: baseline; gap: .8rem;
+  padding: 0 3rem 0 0;
+  margin-bottom: .2rem;
+}
+.c3d-mod .c3d-list__t {
+  margin: 0; padding: 0; border: 0;
+  font-size: .66rem; letter-spacing: .32em;
+  color: var(--c3d-bright);
+}
+.c3d-mod .c3d-list__compte { font-size: .6rem; }
+
+/* ── la recherche : la première chose sous le titre, et la plus large ──
+   Le champ prend une vraie boîte ici — dans la page c'était une ligne
+   d'écriture sous le texte ; dans un dialogue, la cible doit se voir. */
+.c3d-mod .c3d-filtres {
+  margin: .9rem 0 .2rem;
+  max-width: none;
+}
+.c3d-mod .c3d-find {
+  flex: 1 1 auto; width: 100%;
+  min-height: 46px;
+  padding: .55rem .9rem;
+  border: 1px solid var(--c3d-line);
+  border-bottom-color: var(--c3d-line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c3d-solid-2) 70%, transparent);
+  font-size: .92rem; letter-spacing: .01em;
+}
+.c3d-mod .c3d-find:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--c3d-gold) 62%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c3d-gold) 13%, transparent);
+}
+.c3d-mod .c3d-find:hover { border-color: color-mix(in srgb, var(--c3d-gold) 44%, transparent); }
+
+/* ── le résultat : deux colonnes tant qu'il y a la place ───────────────
+   L'ordre est alphabétique de gauche à droite puis ligne à ligne — c'est
+   ainsi qu'on lit, et c'est le seul rangement où l'œil trouve un nom sans
+   avoir à balayer deux fois. */
+.c3d-mod .c3d-list__scroll {
+  flex: 1 1 auto; min-height: 6rem; max-height: none;
+  margin-top: .9rem; padding-right: .55rem;
+}
+.c3d-mod .c3d-grp__ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  column-gap: 1.1rem;
+  align-items: start;
+}
+.c3d-mod .c3d-city { min-height: 34px; }
+.c3d-mod .c3d-city__n { font-size: 1.04rem; }
+.c3d-mod .c3d-list__vide { margin: 1rem 0 0; font-size: .86rem; }
+
+/* ── petit écran : la modale devient une feuille pleine ────────────────
+   On ne rétrécit pas un dialogue de bureau : on lui donne l'écran, une seule
+   colonne, et des lignes qu'un pouce atteint sans viser. */
+@media (max-width: 620px) {
+  .c3d-mod { padding: 0; place-items: end stretch; }
+  .c3d-mod__boite {
+    width: 100%;
+    max-height: 92svh;
+    height: 92svh;
+    padding: 1.15rem 1rem calc(.9rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+    transform: translate3d(0, 3%, 0);
+  }
+  .c3d-mod .c3d-list__head { padding-right: 3.2rem; }
+  .c3d-mod .c3d-find { min-height: 48px; font-size: 1rem; }   /* 16 px : aucun zoom au focus sur iOS */
+  .c3d-mod .c3d-grp__ul { grid-template-columns: 1fr; }
+  .c3d-mod .c3d-city { min-height: 48px; padding-top: .5rem; padding-bottom: .5rem; }
+  .c3d-mod .c3d-city__n { font-size: 1.08rem; }
+  .c3d-mod .c3d-city__d { font-size: .64rem; }
+}
+
+/* ── le bouton VILLES ──────────────────────────────────────────────────
+   Les deux autres outils perdent leur libellé en petit écran ; celui-ci le
+   garde : c'est la seule porte vers les communes, une icône seule ne la
+   nommerait pas. */
+.c3d-btn--villes { color: var(--c3d-bright); border-color: color-mix(in srgb, var(--c3d-gold) 40%, transparent); }
+.c3d-btn--villes svg { opacity: 1; }
+.c3d[data-mobile="1"] .c3d__tools .c3d-btn--villes .c3d-btn__label--fort { display: inline; }
+
+/* ── la barre d'outils suit la carte ───────────────────────────────────
+   Mesure : posée en absolu tout en haut de la scène, elle passait derrière le
+   bandeau collant dès qu'on descendait dans la section. Le bouton « Villes »
+   n'était donc atteignable que sur 4 des 15 positions de défilement à
+   1440×900 — inacceptable pour la SEULE porte vers les communes.
+
+   Elle entre dans le flux et devient collante, calée sous le bandeau dont la
+   hauteur est déjà écrite une fois pour toutes dans --hd-h. La scène étant en
+   absolu derrière elle, rien ne bouge : seuls les boutons suivent le regard.
+   En plein écran ces règles ne s'appliquent pas — la barre y est masquée. */
+.c3d[data-place="page"] .c3d__tools {
+  position: sticky;
+  top: calc(var(--hd-h, 248px) + .7rem);
+  right: auto;
+  width: max-content;
+  margin: clamp(.55rem, 1.6%, 1rem) clamp(.55rem, 1.6%, 1rem) 0 auto;
+}
