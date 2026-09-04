@@ -135,43 +135,34 @@ function demarrerHero() {
 
   /* ── tic-tac ─────────────────────────────────────────────────────── */
   const tictac = creerTicTac();
-  /* TROIS ÉTATS, PARCE QU'IL Y EN A TROIS.
-     Le bouton disait « Actif » dès le chargement alors qu'aucun son ne sortait
-     encore : aucun navigateur n'autorise le son avant un premier geste, et le
-     bouton promettait donc quelque chose qu'il ne tenait pas. Il dit désormais
-     ce qui est :
+  /* DEUX ÉTATS, ET DEUX SEULEMENT : ACTIF ou COUPÉ.
+     Le bouton montre L'INTENTION, pas l'instant précis où le navigateur lève
+     son verrou. Il a porté un temps un troisième état, « en attente », qui
+     disait la vérité technique — le son est voulu mais pas encore autorisé —
+     au prix d'un mot de plus à comprendre pour une situation qui dure le temps
+     d'un premier clic. On l'a retiré : au chargement le bouton dit « Actif »,
+     et le son suit dès le premier geste, où qu'il soit dans la page.
 
-       COUPÉ       l'utilisateur a coupé le son. Trait de coupure, tons éteints.
-       EN ATTENTE  le son est voulu et prêt, mais le navigateur ne l'a pas
-                   encore autorisé. Pas de trait de coupure — rien n'est coupé —
-                   mais aucun or et aucune barre qui bouge : il ne joue pas.
-       ACTIF       le son sort vraiment. L'or et les quatre barres qui respirent
-                   n'appartiennent qu'à cet état.
-
-     « En attente » ne dure que jusqu'au premier geste, quel qu'il soit et où
-     qu'il soit dans la page — c'est brancherReprise qui s'en charge, sans
-     jamais demander un clic sur ce bouton-ci. */
+     Le tic-tac, lui, est réellement tenté dès le chargement (voir
+     brancherReprise) ; s'il est refusé, il repart au premier geste sans que
+     personne ait à toucher ce bouton-ci. */
   function marquerBouton() {
     if (!bouton) return;
-    const veut = tictac.voulu();          /* l'intention        */
-    const sort = tictac.actif;            /* la réalité sonore  */
-    bouton.classList.toggle('is-on', veut);
-    bouton.classList.toggle('est-vivant', sort);
-    bouton.setAttribute('aria-pressed', String(veut));
+    const on = tictac.voulu();
+    bouton.classList.toggle('is-on', on);
+    bouton.setAttribute('aria-pressed', String(on));
     const t = bouton.querySelector('.hm__son-txt');
-    if (t) t.textContent = sort ? 'Actif' : (veut ? 'En attente' : 'Coupé');
-    bouton.setAttribute('aria-label', sort
-      ? 'Couper le son'
-      : (veut ? 'Son prêt : il démarre dès votre première interaction avec la page'
-              : 'Activer le son'));
+    if (t) t.textContent = on ? 'Actif' : 'Coupé';
+    bouton.setAttribute('aria-label', on ? 'Couper le son' : 'Activer le son');
   }
   if (bouton) {
     bouton.addEventListener('click', async () => {
-      /* ON BASCULE DEPUIS CE QUI SORT, pas depuis ce qui est voulu. Quand rien
-         ne sort, appuyer sur ce bouton ne peut vouloir dire qu'une chose :
-         « fais-moi entendre ». C'est vrai même s'il affiche « Actif » — il
-         affiche l'intention, et l'intention seule ne s'entend pas. */
-      if (tictac.actif) tictac.arreter(); else await tictac.demarrer();
+      /* ON BASCULE CE QUE LE BOUTON AFFICHE. Il n'a que deux états : appuyer
+         sur « Actif » coupe, appuyer sur « Coupé » remet. C'est vrai même si
+         le navigateur n'a pas encore laissé sortir le son — sinon un appui sur
+         « Actif » aurait démarré ce que l'utilisateur voulait faire taire.
+         Ce bouton est seul maître de son geste : brancherReprise l'ignore. */
+      if (tictac.voulu()) tictac.arreter(); else await tictac.demarrer();
       marquerBouton();
     });
     /* Le navigateur n'autorise le son qu'après un geste : on le rejoue à la
