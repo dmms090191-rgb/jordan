@@ -23,10 +23,14 @@ locale qui pourrait diverger de la version déployée.
 
 ## Les trois réglages à faire dans Vercel
 
-**1 · Root Directory** — `compagnie-de-lor`
+**1 · Root Directory** — laisser **vide** (la racine du dépôt)
 
-Le dépôt contient le site dans un sous-dossier. Sans ce réglage, Vercel ne
-trouverait ni `api/`, ni `index.html`.
+Vérifié sur `dmms090191-rgb/jordan` : la racine du dépôt EST le site —
+`index.html`, `api/`, `assets/` et `lib/` y sont directement. Il n'y a pas de
+sous-dossier `compagnie-de-lor` côté dépôt, seulement en local.
+
+*(Une version précédente de cette note demandait `compagnie-de-lor` comme Root
+Directory. C'était faux pour ce dépôt : Vercel n'aurait rien trouvé.)*
 
 **2 · Variable d'environnement** — `GOLD_API_KEY`
 
