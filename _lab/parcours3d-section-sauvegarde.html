@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Sauvegarde — l'ancienne section « En quatre étapes simples »</title>
+<!--
+  ======================================================================
+  SAUVEGARDE INTÉGRALE DE L'ANCIENNE SECTION #etapes
+  ======================================================================
+  Déposée le 04/09/2026, au moment où la roue cylindrique de huit plaques
+  de verre l'a remplacée dans index.html.
+
+  RIEN N'A ÉTÉ SUPPRIMÉ DU PROJET :
+    · assets/js/scenes/parcours3d.js   — la scène Three.js, intacte
+    · assets/css/da-parcours.css       — sa feuille de style, intacte et
+      toujours liée par index.html (ses règles visent .parc*, elles ne
+      s'appliquent donc plus à rien)
+    · le balisage exact — ci-dessous
+
+  POUR REVENIR EN ARRIÈRE, il suffit de recoller le balisage ci-dessous à
+  la place de la section actuelle : le montage de la scène 3D est protégé
+  dans accueil-sections.js par
+
+      if (parcSection && $('.parc__toile', parcSection))
+
+  Le canevas de retour suffit donc à la relancer, sans toucher au script.
+  Il faudrait alors retirer d'index.html les deux lignes ajoutées :
+      <link rel="stylesheet" href="assets/css/roue-etapes.css">
+      <script type="module" src="assets/js/roue-etapes.js"></script>
+
+  CE QUI A CHANGÉ DANS LE TEXTE — les quatre étapes ne portent plus les
+  mêmes titres. Correspondance :
+    01 Trouvez une journée près de chez vous  ->  01 La rencontre
+    02 Rencontrez votre expert                ->  02 L'expertise
+    03 Expertise & proposition                ->  03 La proposition
+    04 Vous restez libre de décider           ->  04 Le règlement
+  Le seul détail qui ne se retrouve nulle part dans les nouveaux textes
+  est « rendez-vous dans l'hôtel sélectionné avec les bijoux, pièces,
+  montres, lingots… que vous souhaitez faire examiner ». Il reste dit, mot
+  pour mot ou presque, dans la section suivante (#expertise, étapes 1 et 2).
+  ======================================================================
+-->
+
+<!-- ===== 2 · LE PARCOURS EN QUATRE ÉTAPES · scène 3D continue =====
+     Il n'y a plus quatre cartes : il y a UNE scène. Un seul canevas, collant,
+     occupe toute la hauteur de la section ; les quatre tableaux vivent dans un
+     même espace 3D que la caméra descend au défilement. Les textes défilent
+     par-dessus, dans le flux normal — ils restent donc nets, sélectionnables
+     et responsives, et ce sont eux qui creusent les espaces négatifs où les
+     objets viennent se poser. -->
+<section class="sec parc" id="etapes" aria-labelledby="etapes-title" data-reveal>
+
+  <div class="parc__scene" aria-hidden="true"><canvas class="parc__toile" id="parcoursToile"></canvas></div>
+
+  <div class="parc__flux">
+
+    <nav class="parc__index" aria-label="Les quatre étapes du parcours">
+      <a href="#etape-01" data-vers="1"><i></i><span>01</span></a>
+      <a href="#etape-02" data-vers="2"><i></i><span>02</span></a>
+      <a href="#etape-03" data-vers="3"><i></i><span>03</span></a>
+      <a href="#etape-04" data-vers="4"><i></i><span>04</span></a>
+    </nav>
+
+    <div class="parc__head sec__head">
+      <p class="kicker rv" style="--i:0">Comment se déroule votre rendez-vous&nbsp;?</p>
+      <h2 class="sec__title rv" id="etapes-title" style="--i:1">En quatre étapes simples.</h2>
+      <p class="sec__lede rv" style="--i:2">Du choix de la journée à votre décision finale, tout se passe devant vous, à votre rythme.</p>
+    </div>
+
+    <article class="parc__etape" id="etape-01" data-etape="1">
+      <p class="parc__n"><span>01</span></p>
+      <h3>Trouvez une journée près de chez vous</h3>
+      <p>Consultez les villes où nous nous déplaçons et repérez celle qui est la plus proche de chez vous.</p>
+    </article>
+
+    <article class="parc__etape" id="etape-02" data-etape="2">
+      <p class="parc__n"><span>02</span></p>
+      <h3>Rencontrez votre expert</h3>
+      <p>Rendez-vous dans l'hôtel sélectionné avec les bijoux, pièces, montres, lingots ou autres biens que vous souhaitez faire examiner.</p>
+    </article>
+
+    <article class="parc__etape" id="etape-03" data-etape="3">
+      <p class="parc__n"><span>03</span></p>
+      <h3>Expertise &amp; proposition</h3>
+      <p>Votre expert examine vos biens devant vous, effectue les contrôles nécessaires et vous remet une proposition de rachat claire et écrite.</p>
+    </article>
+
+    <article class="parc__etape" id="etape-04" data-etape="4">
+      <p class="parc__n"><span>04</span></p>
+      <h3>Vous restez libre de décider</h3>
+      <p>Après l'expertise, vous choisissez librement d'accepter ou de refuser la proposition. En cas d'acceptation, le règlement est effectué selon les modalités proposées par La Compagnie de l'Or.</p>
+    </article>
+
+  </div>
+</section>

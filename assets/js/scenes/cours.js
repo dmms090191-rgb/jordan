@@ -252,7 +252,11 @@ export function createCours(host, opts) {
     noeuds.prixRaison = el('span', { class: 'cx-prix__raison' }, bas);
 
     const or = el('aside', { class: 'cx-24k' }, tete);
-    el('p', { class: 'cx-24k__titre', text: 'Or 24 carats · au gramme' }, or);
+    /* data-court : le libelle abrege que le telephone affiche a la place du
+       long, via ::after (voir cours.css, bloc mobile). Le texte complet reste
+       dans le document — un lecteur d ecran continue donc de l entendre en
+       entier, seul l affichage se resserre. */
+    el('p', { class: 'cx-24k__titre', 'data-court': 'Or 24K · au gramme', text: 'Or 24 carats · au gramme' }, or);
     const l24 = el('p', { class: 'cx-24k__ligne' }, or);
     noeuds.or24 = el('span', { class: 'cx-24k__val', text: '—' }, l24);
     el('span', { class: 'cx-24k__unite', text: '/ g' }, l24);

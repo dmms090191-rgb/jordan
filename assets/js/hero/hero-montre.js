@@ -342,6 +342,18 @@ function demarrerHero() {
   });
 
   /* ── mise en route ──────────────────────────────────────────────── */
+
+  /* LES AIGUILLES D'ABORD, AVANT TOUT LE RESTE.
+     poser() ne lit que la boîte de mise en page de la vidéo (offsetLeft,
+     offsetWidth) : elle ne dépend ni de la source, ni du chargement, ni de
+     l'opacité. On peut donc caler le repère et tracer les aiguilles à
+     l'heure de Paris AVANT de révéler le plan — ce qui garantit qu'aucune
+     image affichée ne montre jamais la montre sans ses aiguilles. Ces deux
+     appels étaient plus bas, après la révélation des vidéos ; ils y
+     tombaient dans la même tâche, mais le fondu de 600 ms des aiguilles
+     partait alors derrière celui de 400 ms du plan. */
+  poser(); battre();
+
   const actif = amb === 'jour' ? vJour : vNuit;
   const autre = amb === 'jour' ? vNuit : vJour;
   assurerSource(actif);
@@ -366,7 +378,8 @@ function demarrerHero() {
      seconde source non chargée, et le fondu ne partait qu'après. */
   setTimeout(chargerAutre, 2500);               // filet de sécurité
 
-  poser(); battre();
+  /* poser() et battre() ont déjà eu lieu plus haut : les aiguilles sont
+     tracées avant que le plan ne se révèle. */
   if ('ResizeObserver' in window) new ResizeObserver(poser).observe(hm);
   else addEventListener('resize', poser);
   addEventListener('orientationchange', () => setTimeout(poser, 250));

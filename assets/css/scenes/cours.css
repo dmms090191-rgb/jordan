@@ -251,7 +251,17 @@ html[data-ambiance="jour"] .cx-periode[aria-checked="true"],
    dans la devise du marche. Aucun aplat, aucun encadre : deux pastilles
    fines, l or reserve a la premiere (les prix que le client paie ou recoit). */
 .cx-cle{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:.45rem 1.15rem;margin:.15rem 0 0;padding-top:.85rem;border-top:1px solid var(--cx-hair)}
-.cx-cle__item{display:inline-flex;align-items:center;gap:.5rem;font-size:.63rem;letter-spacing:.17em;text-transform:uppercase;color:var(--text-2);white-space:nowrap}
+/* PAS de white-space:nowrap ici. Il y etait, et il faisait deborder la page
+   sur les tres petits ecrans : « Historique du marche · devise non
+   determinee » mesure 332 px, pour 282 px disponibles a 320 px de large.
+   Comme .cx-cle est en flex-wrap, ses deux reperes passent deja chacun sur
+   sa propre ligne quand la place manque ; c'est ENSUITE, seul sur sa ligne,
+   que le repere trop long devait pouvoir se replier — et nowrap le lui
+   interdisait, d'ou 31 px de debordement horizontal pour toute la page.
+   Sans nowrap, le rendu est rigoureusement identique partout ou la place
+   existe (verifie de 360 a 1920 px : une seule ligne, meme hauteur) : le
+   repli ne se declenche que lorsqu'il n'y a plus le choix. */
+.cx-cle__item{display:inline-flex;align-items:center;gap:.5rem;font-size:.63rem;letter-spacing:.17em;text-transform:uppercase;color:var(--text-2)}
 .cx-cle__item::before{content:"";width:6px;height:6px;border-radius:50%;flex:0 0 auto}
 .cx-cle__item--vif{color:var(--text)}
 .cx-cle__item--vif::before{background:var(--gold);box-shadow:0 0 8px rgba(201,154,63,.45)}
@@ -392,5 +402,153 @@ body.paused .cx-indic i{animation-play-state:paused}
   .cx-periodes:has(.cx-periode:nth-child(7)){
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);
             mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MOBILE — LA SECTION DEVIENT UN GRAPHIQUE, PAS UN ARTICLE
+   ══════════════════════════════════════════════════════════════════════
+   Mesure de depart a 390 x 844 : la section faisait 1 330 px, soit 1,6 ecran,
+   dont 232 px seulement pour le graphique — le reste etant du texte. On
+   inverse le rapport : le graphique devient l element principal, tout ce qui
+   est diagnostic disparait de la vue du visiteur, et les chiffres se
+   resserrent en grille.
+
+   Rien de la logique n est touche : les cellules portent deja data-absent et
+   affichent deja « — » par defaut. On ne fait que decider quoi montrer.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 760px) {
+
+  /* ── 1 · LE GRAPHIQUE PREND LA PLACE ────────────────────────────────
+     Il passait a clamp(232px, 58vw, 300px) : plus bas que le bloc de texte
+     qui le suivait. Il devient le plus grand element de la section, sans
+     jamais devenir gigantesque — plafond a 400 px. Vrai layout, aucune
+     transformation d echelle : le moteur redessine a la bonne taille. */
+  .cx-chart { height: clamp(280px, 42svh, 360px); }
+
+  /* ── 2 · CE QUI EST DU DIAGNOSTIC SORT DE L INTERFACE ────────────────
+     « Historique du marche · devise non determinee », « Bougies de 1 jour ·
+     31 bougies · echantillon source 1 h · amplitude 13,75 % », « Periodes
+     proposees : uniquement celles que le serveur peut construire… » : ce
+     sont des informations d ingenierie. Elles restent dans le document pour
+     qui les cherche, elles ne s affichent plus au visiteur.
+
+     LA PASTILLE DE DEVISE, ELLE, RESTE : « cours mondial en USD » n est pas
+     du diagnostic, c est la seule chose qui empeche de lire un graphique en
+     dollars comme s il etait en euros. */
+  .cx-cle { display: none; }
+  .cx-legende > span:not(.cx-puce) { display: none; }
+  .cx-note { display: none; }
+
+  /* ── 3 · L OR AU GRAMME, EN UNE LIGNE ───────────────────────────────
+     Le libelle long laisse la place a sa version courte. Le texte complet
+     reste dans le document : font-size 0 le retire de la vue, pas de l arbre
+     d accessibilite. La mention legale, elle, ne disparait pas — elle
+     retrecit. */
+  .cx-24k { padding: .55rem .85rem; gap: .05rem .7rem; }
+  .cx-24k__titre { font-size: 0; letter-spacing: 0; }
+  .cx-24k__titre::after {
+    content: attr(data-court);
+    font-size: .58rem; letter-spacing: .22em; text-transform: uppercase;
+  }
+  .cx-24k__val { font-size: 1.32rem; }
+  .cx-24k__mention { font-size: .62rem; opacity: .72; line-height: 1.35; margin-top: .05rem; }
+
+  /* ── 4 · LA TETE SE RESSERRE ────────────────────────────────────────── */
+  .cx-tete { gap: .5rem; }
+  .cx-graph__tete { gap: .45rem; }
+  .cx { gap: .9rem; }
+  .cx-prix { padding-bottom: .2rem; }
+  .cx-prix__bas { font-size: .68rem; }
+
+  /* ── 5 · LES CHIFFRES : GRILLE 2 x 3, COMPACTE ──────────────────────
+     Chaque cellule perdait 66 a 83 px de hauteur pour deux lignes de texte.
+     Un intitule discret, une valeur lisible, un filet d un pixel — et rien
+     autour : pas de carte, pas de fond, pas d ombre. */
+  .cx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cx-stat { padding: .5rem .55rem .54rem; }
+  .cx-stat__l { font-size: .55rem; letter-spacing: .17em; margin-bottom: .1rem; }
+  .cx-stat__v { font-size: 1.04rem; }
+  .cx-stat__p { font-size: .58rem; }
+
+  /* ── 6 · UN SEUL ETAT D ERREUR ──────────────────────────────────────
+     La raison du manque etait ecrite SOUS CHAQUE valeur absente : sept fois
+     « La source de donnees a renvoye une erreur. » l une sous l autre. Le
+     message global existe deja, au centre du graphique, avec son bouton
+     Reessayer — c est le seul endroit ou il a du sens. Dans les cellules,
+     il ne reste que le tiret cadratin, qui dit exactement la meme chose en
+     un caractere. */
+  .cx-stat[data-absent] .cx-stat__p { display: none; }
+
+  /* ── 7 · « MIS A JOUR », UNE LIGNE ET PAS UN BLOC ───────────────────
+     C etait une septieme tuile pleine largeur : intitule, valeur, date, et
+     ses filets. Elle devient une ligne discrete sous la grille. */
+  .cx-stat[data-cle="maj"] {
+    grid-column: 1 / -1;
+    border-right: 0; border-bottom: 0;
+    padding: .5rem .6rem .1rem;
+  }
+  .cx-stat[data-cle="maj"] .cx-stat__l { display: none; }
+  .cx-stat[data-cle="maj"] .cx-stat__d { display: flex; align-items: baseline; gap: .35rem; }
+  .cx-stat[data-cle="maj"] .cx-stat__d::before {
+    content: "Mis à jour ·";
+    font-size: .58rem; letter-spacing: .17em; text-transform: uppercase;
+    color: var(--text-3, rgba(243,236,220,.52));
+  }
+  .cx-stat[data-cle="maj"] .cx-stat__v { font-size: .72rem; letter-spacing: .04em; }
+  .cx-stat[data-cle="maj"] .cx-stat__p { display: none; }   /* la date longue double l information */
+
+  /* ── 8 · LES QUATRE METAUX SUR UNE LIGNE ────────────────────────────
+     Ils tiennent deja de 360 a 430 px ; on gagne le peu qu il faut sur
+     l interlettrage pour qu ils tiennent aussi plus bas. */
+  .cx-metal { padding: .7rem .35rem .8rem; }
+  .cx-metal__nom { font-size: clamp(.82rem, 3.3vw, 1.02rem); letter-spacing: .01em; }
+  .cx-metal__prix { font-size: clamp(.68rem, 2.9vw, .82rem); letter-spacing: 0; }
+}
+
+/* Tres petit ecran : les quatre metaux restent sur une ligne — les separer
+   en deux rangs couterait plus de hauteur que l interlettrage ne peut en
+   rendre — et la grille des chiffres passe a une colonne. */
+@media (max-width: 340px) {
+  .cx-metal { padding: .62rem .22rem .7rem; }
+  .cx-metal__nom { font-size: .78rem; }
+  .cx-metal__sym { display: none; }        /* XAU, XAG… : le nom suffit ici */
+  .cx-metal__prix { font-size: .64rem; }
+  .cx-chart { height: clamp(260px, 46svh, 320px); }
+}
+
+/* ── CORRECTIFS MESURES ────────────────────────────────────────────────
+   Trois defauts releves par la sonde, pas a l oeil. */
+@media (max-width: 760px) {
+  /* Le message d erreur subsistait a DEUX endroits que le premier passage
+     n avait pas vus : sous le prix principal et sous l or au gramme. Le
+     message global du graphique reste le seul. */
+  .cx-prix__raison, .cx-24k__raison { display: none; }
+}
+@media (max-width: 340px) {
+  /* Le bloc 340 px d origine imposait `minmax(6.8rem, 1fr)` aux quatre
+     colonnes : 4 x 108,8 px = 435 px pour un ecran de 320. Les metaux
+     passaient donc sur deux rangs, ce qui coute plus de hauteur que
+     l interlettrage n en rend. On leve le plancher. */
+  .cx-metaux { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* La grille des chiffres reste a DEUX colonnes meme ici : avec des
+     cellules devenues compactes, une seule colonne rallongerait la section
+     de 160 px pour rien. */
+  .cx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cx-stat { border-right: 1px solid var(--cx-hair); }
+  .cx-stat:nth-child(2n) { border-right: 0; }
+  .cx-stat__v { font-size: .94rem; }
+}
+
+/* ── LE DÉGRADÉ DE DÉFILEMENT N'A PLUS D'OBJET SUR TÉLÉPHONE ───────────
+   Il annonce un rail qui défile : son bord gauche s'efface pour dire « il y
+   a une suite ». Mais sur mobile da-marche.css passe les pastilles en
+   flex-wrap:wrap — mesuré, elles ne défilent JAMAIS (scrollWidth ==
+   clientWidth de 320 à 430 px). Le dégradé ne signalait donc rien ; il
+   mangeait seulement le « 5 » de « 5 MIN » et la fin de « MAX ». */
+@media (max-width: 760px) {
+  .cx-periodes:has(.cx-periode:nth-child(7)) {
+    -webkit-mask-image: none;
+            mask-image: none;
   }
 }

@@ -1,0 +1,23 @@
+# =====================================================================
+#  Ce qui ne doit PAS partir en production
+# =====================================================================
+
+# L'ancien backend PHP. Vercel n'execute pas PHP : deploye tel quel, ce
+# fichier serait servi en TEXTE a /api/metaux.php, c'est-a-dire son code
+# source publie. Il reste dans le depot comme reference historique, mais
+# il ne quitte plus la machine. Le backend est desormais
+# api/metaux/[route].mjs.
+api/metaux.php
+api/.htaccess
+
+# Le serveur d'apercu local n'a rien a faire en production.
+serveur-dev.mjs
+
+# Bancs d'essai et captures de controle.
+_lab/
+review/
+
+# Jamais de secret dans un deploiement : la cle passe par la variable
+# d'environnement GOLD_API_KEY de Vercel.
+.env
+.env.*

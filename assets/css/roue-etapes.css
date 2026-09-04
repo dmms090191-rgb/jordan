@@ -1,0 +1,398 @@
+/* ==========================================================================
+   LE PARCOURS EN QUATRE ÉTAPES — ROUE CYLINDRIQUE DE HUIT PLAQUES DE VERRE
+   ==========================================================================
+
+   Remplace la scène 3D au défilement de da-parcours.css. L'ancienne section
+   n'est pas supprimée : son balisage est conservé dans
+   _lab/parcours3d-section-sauvegarde.html, et scenes/parcours3d.js reste sur
+   disque. Le montage de cette scène est protégé dans accueil-sections.js par
+   `if (parcSection && $('.parc__toile', parcSection))` : sans le canevas,
+   elle ne se charge tout simplement pas. Rien à désactiver.
+
+   POURQUOI HUIT PLAQUES POUR QUATRE ÉTAPES
+   ----------------------------------------
+   Avec quatre plaques, un cylindre fermé impose 90 degrés d'écart. Les deux
+   voisines sont alors exactement de profil, et leur largeur projetée plafonne
+   à W/4 — un maximum géométrique qu'aucun rayon ni aucune perspective ne
+   dépasse. La roue ne se verrait pas.
+
+   Doubler les plaques ramène l'écart à 45 degrés, et la voisine remonte à
+   57 % de la largeur de face : assez pour être lue, assez inclinée pour que
+   la courbure se voie. Les quatre copies sont un procédé VISUEL : elles sont
+   fabriquées par le script à partir des quatre étapes réelles, et la roue
+   entière est aria-hidden.
+
+   À 45 degrés de pas, la roue montre TROIS plaques au repos et quatre en
+   cours de cran. Ce n'est pas un réglage manqué : une plaque posée à
+   90 degrés est toujours au-delà de l'angle de basculement — une plaque
+   bascule dès que son plan passe par l'œil, soit cos(angle) < R / (P + R),
+   ici 79,4 degrés et non 90. C'est le prix, assumé, d'une composition
+   compacte : la roue occupe la moitié de la fenêtre, pas 86 %.
+
+   POURQUOI CSS 3D ET PAS THREE.JS
+   -------------------------------
+   En WebGL le texte devient une texture : il perd sa netteté, sort de
+   l'arbre d'accessibilité, ne se sélectionne plus, ne s'indexe plus — et il
+   faudrait charger la bibliothèque pour dessiner huit quadrilatères. La page
+   d'accueil porte déjà deux scènes Three.js (le hero, la carte) ; celle-ci
+   n'ajoute pas un troisième contexte WebGL. Zéro octet de dépendance.
+   ========================================================================== */
+
+#etapes{
+  /* ---- LA GÉOMÉTRIE DE LA ROUE, ENTIÈREMENT EN CSS ----
+     Aucune de ces valeurs n'est calculée par le script : le rayon suit le
+     clamp() de la largeur de plaque, il se règle donc seul au
+     redimensionnement et ne peut pas se désynchroniser du recul de la roue.
+     Le script n'écrit qu'un angle. */
+  --carte-l:clamp(200px,21vw,320px);
+
+  /* RAYON — exprimé en largeurs de plaque, jamais en pixels. Le minimum
+     absolu pour que huit plaques ne se traversent pas est
+     W / (2 sin 22,5°) = 1.307 W. À 1.39 il reste 6 % de jeu entre deux
+     tranches : c'est lui qui rend la composition compacte. Plus grand, la
+     roue s'étale en largeur ; plus petit, les plaques se coupent. */
+  --fr:1.39;
+  --r:calc(var(--carte-l) * var(--fr));
+  --r-neg:calc(var(--carte-l) * var(--fr) * -1);
+
+  /* PERSPECTIVE — elle aussi en largeurs de plaque, et c'est important : si
+     elle restait fixe en pixels pendant que la roue suit un clamp(), la
+     projection changerait de caractère à chaque largeur d'écran. Toutes les
+     longueurs variant du même facteur, la roue est rigoureusement identique
+     de 1024 à 1920 px, simplement plus petite — mesuré : elle occupe 50 %
+     de la fenêtre à 1024, 1280 et 1440. */
+  --fp:6.2;
+  --persp:calc(var(--carte-l) * var(--fp));
+
+  /* MOUVEMENT — 900 ms pour 45 degrés. La courbe part doucement (pente
+     initiale mesurée à 17 % du pic : pas de départ sec) et arrive par une
+     très longue détente : c'est de là que vient l'inertie. Les deux points
+     de contrôle restent dans [0,1] en ordonnée, donc aucun dépassement,
+     aucun rebond. */
+  --duree:.9s;
+  --courbe:cubic-bezier(.22,.08,.12,1);
+  --fondu:.75s;
+
+  /* ---- LE VERRE, EN NUIT ----
+     Valeurs reprises telles quelles du prototype validé, pas dérivées des
+     jetons de la page : le verre fumé a son propre équilibre, et le lier à
+     --surface ou --card le ferait bouger au prochain réglage de ceux-ci. */
+  --v-fond:linear-gradient(150deg,rgba(30,27,23,.5),rgba(12,11,9,.34));
+  --v-filet:rgba(201,154,63,.26);
+  --v-filet-actif:rgba(232,205,147,.5);
+  --v-reflet:rgba(255,255,255,.075);
+  --v-tranche:rgba(232,205,147,.5);
+  --v-titre:var(--gold-bright,#e8cd93);
+  --v-txt:rgba(243,236,220,.42);
+  --v-flou:6px;
+  --v-sat:1;
+
+  /* le fond de la section : un halo très doux au centre. Sans lui le verre
+     n'a rien derrière lui à filtrer et se lit comme un rectangle translucide
+     plutôt que comme une plaque. */
+  background-image:radial-gradient(110% 80% at 50% 34%,var(--bg-2),var(--bg) 66%);
+}
+/* ---- LE VERRE, EN JOUR ----
+   Ce n'est pas la nuit inversée : le verre devient un voile ivoire à peine
+   teinté, le filet s'assombrit pour rester lisible sur du clair, et le
+   reflet devient blanc franc au lieu d'un halo. */
+:root[data-ambiance="jour"] #etapes{
+  --v-fond:linear-gradient(150deg,rgba(255,253,248,.5),rgba(246,238,226,.28));
+  --v-filet:rgba(150,110,45,.3);
+  --v-filet-actif:rgba(150,110,45,.62);
+  --v-reflet:rgba(255,255,255,.75);
+  --v-tranche:rgba(255,255,255,.9);
+  --v-titre:#7a5a24;
+  --v-txt:rgba(38,32,24,.5);
+  --v-flou:5px;
+  --v-sat:1.05;
+}
+
+/* ---------------- L'EN-TÊTE ----------------
+   Il était calé à gauche et bridé à 30 caractères par da-parcours.css : un
+   réglage taillé pour l'ancienne scène, où les textes défilaient en colonne
+   à côté des objets. Au-dessus d'une roue centrée et symétrique, il donnait
+   trois lignes courtes dans le coin supérieur gauche et une roue qui flottait
+   plus bas sans lien avec elles — deux compositions au lieu d'une.
+
+   Le filet qui se dessine devant le kicker (da-rythme.css) est retiré ici,
+   comme il l'est déjà sur la FAQ — et pour la même raison, écrite dans
+   da-faq.css : « ici la tête est centrée, il n'a pas lieu d'être ». Ce filet
+   ancre un texte sur sa marge de gauche ; devant un titre centré il devient
+   une décoration posée à côté. Le projet a déjà tranché pour son autre tête
+   centrée, on ne tranche pas l'inverse pour celle-ci. */
+#etapes .sec__head{max-width:min(720px,90vw);margin-inline:auto;text-align:center}
+#etapes .sec__lede{max-width:56ch;margin-inline:auto}
+#etapes .sec__head .kicker{padding-left:0}
+#etapes .sec__head .kicker::before{display:none}
+
+/* ---------------- LA SOURCE DU CONTENU ----------------
+   Les quatre étapes sont écrites UNE FOIS, dans une vraie liste ordonnée.
+   C'est elle le contenu : indexable, sélectionnable, lisible par un lecteur
+   d'écran. Le script s'en sert pour fabriquer les huit plaques, puis la
+   masque visuellement — et seulement s'il a effectivement tourné, d'où le
+   [data-roue] posé sur la section elle-même plutôt qu'un attribut global sur
+   <html>. Sans JavaScript la liste reste affichée telle quelle, et la
+   section garde tout son sens. */
+.roue-src{max-width:62ch;margin:0;padding:0;list-style:none;display:grid;gap:1.7rem}
+.roue-src .roue-num{display:block;font-size:.66rem;letter-spacing:.32em;color:var(--gold,#c99a3f);
+  font-variant-numeric:tabular-nums}
+.roue-src h3{margin:.5rem 0 .4rem;font-family:var(--display);font-weight:400;
+  font-size:1.35rem;letter-spacing:.1em;text-transform:uppercase;color:var(--v-titre)}
+.roue-src p{margin:0;line-height:1.7;color:var(--text-2)}
+#etapes[data-roue] .roue-src{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+/* tant que le script n'a pas tourné, la roue n'a rien à occuper */
+#etapes:not([data-roue]) .roue-zone{display:none}
+#etapes[data-roue] .roue-src + .roue-zone{margin-top:0}
+
+/* ---------------- LA SCÈNE 3D ----------------
+   Quatre niveaux, et chacun n'a qu'un seul rôle. C'est ce qui garantit que
+   rien ne se marche dessus : deux transformations animées sur le même
+   élément se volent leur transition à tour de rôle.
+
+     .roue-scene   la perspective — l'objectif
+     .roue-pivot   la parallaxe au survol, quelques degrés — le script
+     .roue-recul   le recul du rayon — CSS pur, jamais touché
+     .roue-cyl     la rotation des crans — le script
+     .roue-plaque  l'angle fixe de chaque plaque — CSS pur, jamais touché   */
+.roue-scene{
+  position:relative;
+  /* hauteur de repli seulement : roue-etapes.js la remplace par la hauteur
+     de la plus haute plaque plus une marge — voir « LA HAUTEUR DE LA SCÈNE »
+     dans le script, une valeur en vw serait fausse dans le mauvais sens. */
+  height:clamp(340px,30vw,420px);
+  perspective:var(--persp);
+  perspective-origin:50% 46%;
+  touch-action:pan-y;              /* le glissé horizontal nous appartient */
+}
+.roue-pivot,.roue-recul,.roue-cyl{position:absolute;inset:0;transform-style:preserve-3d}
+.roue-pivot{transition:transform .6s cubic-bezier(.2,.7,.3,1)}
+/* LE RECUL — la roue entière part en arrière de son rayon, pour que la
+   plaque de face revienne exactement à z = 0, donc à sa taille naturelle.
+   Écrit en CSS avec la même variable que les plaques : les deux ne peuvent
+   pas diverger. */
+.roue-recul{transform:translateZ(var(--r-neg))}
+.roue-cyl{transition:transform var(--duree) var(--courbe)}
+/* will-change n'est posé que pendant que la section est à l'écran : une
+   couche promue en permanence coûte de la mémoire sur une page qui porte
+   déjà deux scènes 3D. */
+#etapes.roue-visible .roue-cyl{will-change:transform}
+
+/* ---------------- LES HUIT PLAQUES ----------------
+   Leurs angles sont écrits UNE FOIS, au démarrage, dans une feuille de style
+   fabriquée par roue-etapes.js — de vraies règles CSS, pas des styles en
+   ligne remis à jour. Rien ne les réécrit ensuite : ni au clic, ni au
+   redimensionnement, ni pendant la rotation. Pendant 100 % du mouvement, la
+   distance entre deux plaques ne dépend donc que de l'angle global de la
+   roue. Mesuré : 45,0000 degrés entre voisines à chaque image. */
+.roue-plaque{
+  position:absolute;left:50%;top:50%;
+  width:var(--carte-l);
+  margin-left:calc(var(--carte-l) / -2);
+  transform-style:preserve-3d;
+  backface-visibility:hidden;      /* on ne voit jamais l'envers d'une plaque */
+  transition:none;
+  --op:0;
+}
+/* ---- LA PROFONDEUR OPTIQUE ----
+   L'opacité est portée par une variable posée sur la plaque, jamais par la
+   plaque elle-même : une opacité inférieure à 1 sur un élément en
+   preserve-3d l'aplatit, et la roue s'écroulerait en 2D.
+
+   Les paliers suivent les RANGS de la roue, pas des angles fixes : r1 est la
+   voisine immédiate quel que soit le pas. À huit plaques seuls r0 et r1 se
+   voient jamais — les rangs suivants restent définis pour que la feuille
+   soit juste si l'on change le nombre de plaques. Le fondu ne se voit jamais
+   « sauter » : un palier ne change qu'au moment où la plaque franchit un
+   rang, et à ce moment-là elle est de largeur presque nulle (mesuré : 2 %). */
+.roue-plaque.r0{--op:1}
+.roue-plaque.r1{--op:.62}
+.roue-plaque.r2{--op:.34}
+.roue-plaque.r3{--op:.14}
+.roue-plaque.r4{--op:.05}
+
+/* ---------------- LA PLAQUE DE VERRE ---------------- */
+.roue-verre{
+  /* La face arrière doit être masquée ICI aussi. Le réglage est posé sur la
+     plaque, mais c'est cet enfant qui est peint : avec preserve-3d il est
+     rendu en 3D pour son propre compte, et la plaque de dos réapparaîtrait
+     au centre, par-dessus celle de face — d'où des textes superposés. */
+  backface-visibility:hidden;
+  position:relative;
+  padding:clamp(1.5rem,2.2vw,2.1rem) clamp(1.3rem,2vw,1.8rem) clamp(1.7rem,2.4vw,2.2rem);
+  border-radius:3px;                        /* à peine adouci : une plaque, pas une carte */
+  border:1px solid var(--v-filet);
+  background:var(--v-fond);
+  backdrop-filter:blur(var(--v-flou)) saturate(var(--v-sat));
+  -webkit-backdrop-filter:blur(var(--v-flou)) saturate(var(--v-sat));
+  box-shadow:0 18px 40px rgba(0,0,0,.16);   /* ombre très légère, jamais posée */
+  opacity:var(--op);
+  transition:border-color var(--fondu) ease,opacity var(--fondu) ease;
+}
+.roue-plaque.r0 .roue-verre{border-color:var(--v-filet-actif)}
+/* LE REFLET — une bande oblique fine qui traverse la plaque. C'est ce qui
+   distingue du verre d'un rectangle translucide. */
+.roue-verre::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(112deg,transparent 34%,var(--v-reflet) 47%,transparent 58%);
+  opacity:.85;
+}
+/* LA TRANCHE — un liseré d'un pixel sur le bord gauche, plus clair que le
+   reste : l'épaisseur du verre prise par la lumière. */
+.roue-verre::after{
+  content:'';position:absolute;left:0;top:8%;bottom:8%;width:1px;pointer-events:none;
+  background:linear-gradient(180deg,transparent,var(--v-tranche) 22%,var(--v-tranche) 78%,transparent);
+  opacity:.6;
+}
+.roue-plaque.r0 .roue-verre::after{opacity:1}
+
+.roue-verre h3{
+  margin:0 0 .7rem;font-family:var(--display);font-weight:400;
+  font-size:clamp(1.1rem,.95rem + .5vw,1.42rem);line-height:1.2;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--v-titre);
+}
+.roue-verre p{margin:0;font-size:clamp(.82rem,.78rem + .2vw,.92rem);line-height:1.7;color:var(--v-txt)}
+/* « Étape 01 », pas « ÉTAPE 01 » : le prototype validé n'a pas de
+   text-transform ici, et la capitale accentuée du É est le seul endroit de
+   la plaque où la casse se remarque. */
+.roue-verre .roue-num{
+  display:block;margin:0 0 1rem;font-size:.6rem;letter-spacing:.32em;
+  color:var(--gold,#c99a3f);font-variant-numeric:tabular-nums;
+}
+
+/* ---------------- la légende sous la roue ---------------- */
+.roue-legende{margin:clamp(1.2rem,2.6vw,2rem) auto 0;text-align:center;max-width:90vw}
+.roue-legende__nom{
+  margin:0;font-family:var(--display);font-weight:400;
+  font-size:clamp(1rem,.9rem + .5vw,1.3rem);letter-spacing:.2em;text-transform:uppercase;
+  color:var(--text)}
+.roue-legende__prog{margin:.55rem 0 0;font-size:.6rem;letter-spacing:.24em;color:var(--text-3);
+  font-variant-numeric:tabular-nums}
+.roue-legende__prog b{color:var(--gold-bright,#e8cd93);font-weight:400}
+:root[data-ambiance="jour"] .roue-legende__prog b{color:#8a6820}
+
+/* ---------------- les commandes, très discrètes ---------------- */
+.roue-cmd{display:flex;align-items:center;justify-content:center;gap:1.4rem;margin-top:1.6rem}
+.roue-fl{width:44px;height:44px;border-radius:50%;border:1px solid var(--v-filet);
+  background:none;color:var(--text-3);cursor:pointer;display:inline-flex;
+  align-items:center;justify-content:center;transition:border-color .4s,color .4s}
+.roue-fl:hover{border-color:var(--v-filet-actif);color:var(--text)}
+.roue-fl svg{width:16px;height:16px}
+.roue-points{display:flex;gap:.7rem}
+.roue-pt{width:26px;height:26px;padding:0;border:0;background:none;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center}
+.roue-pt i{display:block;width:5px;height:5px;border-radius:50%;background:var(--text-3);
+  opacity:.45;transition:opacity .4s,background .4s,scale .4s var(--courbe)}
+.roue-pt[aria-current="true"] i{background:var(--gold-bright,#e8cd93);opacity:1;scale:1.5}
+:root[data-ambiance="jour"] .roue-pt[aria-current="true"] i{background:#8a6820}
+
+/* ==========================================================================
+   MOBILE — LA MÊME ROUE, PAS UN SLIDER
+   ==========================================================================
+   Ce bloc remplaçait la roue par une composition à plat. C'était un repli
+   d'attente, et il perdait justement ce qui fait la section : la profondeur.
+   Rien de la géométrie ne change ici — huit plaques, 45 degrés, un seul
+   cylindre qui tourne. On ne touche qu'aux DIMENSIONS.
+
+   CE QU'IL N'EST PAS POSSIBLE D'AVOIR, et il vaut mieux le dire :
+   la roue occupe 2,4 largeurs de plaque. Pour qu'elle tienne ENTIÈRE dans un
+   téléphone de 390 px, la plaque de face ne ferait que 160 px — soit une
+   vingtaine de caractères par ligne, illisible. On choisit donc l'inverse :
+   plaque de face large et pleinement lisible, voisines qui SORTENT du cadre
+   par les bords. C'est la lecture normale d'une roue qu'on regarde de trop
+   près, pas un défaut — et le débordement est rogné, la page ne s'élargit
+   jamais.
+   ========================================================================== */
+@media (max-width:760px){
+  #etapes{
+    /* 60 % de la largeur d'écran. Mesuré à 390 px sur quatre valeurs :
+         56 %  face 218 px, 60 % de la voisine visible — la roue se lit bien,
+               mais 22 caractères par ligne, on se rapproche de la colonne ;
+         60 %  face 234 px, ~50 % de la voisine — l'équilibre retenu ;
+         68 %  face 265 px, 25 % seulement — la voisine devient un liseré ;
+         74 %  face 289 px, 14 % — on ne lit plus qu'une carte isolée.
+       Plancher 168 px pour les très petits écrans, plafond 300 px pour les
+       phablettes. */
+    --carte-l:clamp(168px,60vw,300px);
+    /* rayon resserré (minimum géométrique 1.307, ici 4 % de jeu) : sur un
+       petit écran chaque pixel de largeur compte */
+    --fr:1.36;
+    /* Perspective plus courte qu'en desktop. Elle ne change presque rien à
+       la LARGEUR visible de la voisine (mesuré : 64 px contre 63 entre 3,6
+       et 6,2) — ce qu'elle change, c'est la déformation : de près, une fuite
+       plus marquée creuse la plaque et fait lire la courbure du cylindre.
+       C'est elle qui empêche la roue mobile de ressembler à un slider. */
+    --fp:4.4;
+  }
+  /* LES VOISINES DÉBORDENT VOLONTAIREMENT : c'est ce qui dit « la roue
+     continue ». Mais il faut les ROGNER, sinon elles élargissent la page —
+     mesuré à 390 px : 210 px de débordement, et toute la page devenait
+     glissable latéralement. Le banc d'essai ne le montrait pas, il portait
+     un html{overflow-x:hidden} global que l'accueil n'a pas.
+     Le rognage est posé sur .roue-zone, qui n'a ni transformation ni
+     perspective : jamais sur .roue-scene, car un overflow sur l'élément
+     porteur de la perspective peut aplatir la scène en 2D.
+     clip et non hidden : on rogne, on ne crée pas de conteneur de
+     défilement. */
+  .roue-zone{overflow-x:clip}
+
+  /* ---- LE BORD DE L'ÉCRAN NE DOIT PAS TRANCHER LE TEXTE ----
+     Rogner suffit à protéger la page, pas à protéger l'œil : la voisine se
+     retrouvait coupée net en plein milieu des mots, et cette guillotine
+     verticale se lit comme un bug, pas comme « la roue continue ».
+     Deux dégradés du fond de section, posés sur les bords de la scène, la
+     font se dissoudre au lieu d'être tranchée. C'est de la peinture pure :
+     aucune transformation, aucun masque, donc aucun risque d'aplatir la
+     scène 3D — un overflow ou un mask sur l'élément porteur de la
+     perspective, lui, en aurait fait courir un.
+     8 % de large : mesuré, la plaque de face commence bien au-delà, le
+     dégradé ne mord que sur la tranche de la voisine. */
+  .roue-scene::before,.roue-scene::after{
+    content:'';position:absolute;top:0;bottom:0;width:8%;z-index:2;pointer-events:none;
+  }
+  .roue-scene::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+  .roue-scene::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+
+  /* ---- LE TEXTE NE RÉTRÉCIT PAS AVEC LA PLAQUE ----
+     Les tailles de bureau sont des clamp() qui descendent à 13,1 px sur
+     téléphone. On les remonte : le corps ne passe jamais sous 14 px, et le
+     petit « Étape 0x » sous 11 px. La plaque devient plus haute, la scène
+     suit toute seule (roue-etapes.js mesure la plus haute plaque). */
+  .roue-verre{padding:1.35rem 1.15rem 1.5rem}
+  .roue-verre p{font-size:.875rem;line-height:1.65}
+  .roue-verre h3{font-size:1.12rem;margin-bottom:.6rem}
+  .roue-verre .roue-num{font-size:.7rem;letter-spacing:.28em;margin-bottom:.85rem}
+
+  /* ---- LES COMMANDES AU DOIGT ----
+     Les pastilles faisaient 26 px : sous le seuil tactile. Elles passent à
+     38 x 44 — pas 44 x 44, sinon la rangée complète (deux flèches + quatre
+     pastilles) déborde à 320 px de large. Le point dessiné, lui, ne bouge
+     pas : c'est la zone touchable qui grandit. */
+  .roue-cmd{gap:.6rem;margin-top:1.3rem}
+  .roue-points{gap:.15rem}
+  .roue-pt{width:38px;height:44px}
+  /* pendant un glissé, aucun texte ne doit se sélectionner par accident */
+  .roue-scene{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+}
+
+/* ---- TÉLÉPHONE COUCHÉ ----
+   En paysage la largeur ne manque plus, c'est la hauteur qui manque — et les
+   deux se règlent par le même levier, dans le bon sens : une plaque PLUS
+   LARGE replie son texte sur moins de lignes, donc elle est plus BASSE.
+   À 42 % de la largeur, la roue tient encore entière dans le cadre
+   (voisines comprises, mesuré) et la scène perd une cinquantaine de pixels
+   de hauteur par rapport à un réglage plus étroit. */
+@media (max-width:760px) and (orientation:landscape){
+  /* 40 % et non 42 : à 42 l'extrémité de la roue arrivait à 8 px du bord,
+     elle le touchait pratiquement. À 40 il reste une vingtaine de pixels,
+     la roue est posée dans le cadre au lieu d'y être coincée. */
+  #etapes{--carte-l:clamp(180px,40vw,280px);--fp:5.2}
+  /* couchée, la roue tient entière : les dégradés de bord n'ont plus rien à
+     adoucir, ils ne feraient que manger les voisines */
+  .roue-scene::before,.roue-scene::after{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .roue-cyl,.roue-pivot,.roue-plaque,.roue-verre{transition-duration:.01ms!important}
+}

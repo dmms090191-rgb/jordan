@@ -376,3 +376,65 @@
   .c3d[data-place="page"] .c3d-list__head { padding-top: clamp(.5rem, 1.2vh, .9rem); }
   .c3d[data-place="page"] .c3d-list__scroll { margin-top: .6rem; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   MOBILE — RÉÉQUILIBRER LA CARTE ET LE PANNEAU
+   ══════════════════════════════════════════════════════════════════════
+   UN DÉFAUT DE CASCADE, pas de réglage. Le bloc « formats étroits » plus
+   haut donne bien à la carte `height: min(62svh, 560px)`. Mais la règle
+   `.c3d__map { height: min(92svh, 950px) }` de la section « le prix de la
+   hauteur » est écrite HORS media query et APRÈS lui : même sélecteur, même
+   spécificité, source plus tardive — elle gagne. La règle mobile ne
+   s'appliquait donc jamais, et la carte prenait 92 % de la hauteur d'écran.
+   Mesuré à 390 × 844 : 776 px pour la carte, 164 px pour tout le panneau.
+
+   On rend au panneau la place qui lui manquait. La carte reste large et
+   pleine hauteur utile — ce n'est pas une miniature, elle garde plus de la
+   moitié de l'écran — mais la liste des villes cesse d'être un bandeau.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 820px) {
+  .c3d[data-place="page"] .c3d__map {
+    height: min(58svh, 540px);
+    min-height: 300px;
+  }
+
+  /* ---- LA LISTE DEVIENT LISIBLE ----
+     Le numéro de département s'affichait à 9,28 px : à ce corps, « 72 » n'est
+     plus une information, c'est une décoration. Le nom de ville et lui
+     remontent ensemble, et la ligne s'ouvre pour devenir une vraie cible au
+     doigt. */
+  .c3d[data-place="page"] .c3d-list__scroll { max-height: min(46svh, 420px); }
+
+  /* SPÉCIFICITÉ : carte3d.css tient déjà ces deux valeurs sous
+     `.c3d[data-mobile="1"] .c3d-city…` — un sélecteur à deux classes. Écrites
+     avec une seule, mes règles étaient ignorées : le département grossissait
+     (il n'était visé nulle part ailleurs) mais le nom de ville et la hauteur
+     de ligne ne bougeaient pas d'un pixel. On reprend donc le même niveau, et
+     on l'applique aussi à la liste du plein écran (.c3d-fs). */
+  .c3d[data-mobile="1"] .c3d-city,
+  .c3d-fs[data-mobile="1"] .c3d-city {
+    min-height: 52px;                    /* cible tactile généreuse */
+    padding: .58rem .35rem .58rem .7rem;
+    gap: .7rem;
+    align-items: center;                 /* le département se cale sur le nom */
+  }
+  .c3d[data-mobile="1"] .c3d-city__n,
+  .c3d-fs[data-mobile="1"] .c3d-city__n { font-size: 1.16rem; line-height: 1.3; }
+  .c3d[data-mobile="1"] .c3d-city__d,
+  .c3d-fs[data-mobile="1"] .c3d-city__d {
+    font-size: .86rem;                   /* 9,28 px → 13,8 px */
+    letter-spacing: .1em;
+    opacity: .92;
+    color: var(--c3d-text-2);
+    font-variant-numeric: tabular-nums;  /* les numéros s'alignent en colonne */
+  }
+  .c3d-city::before { height: 20px; margin-top: -10px; }
+
+  /* l'en-tête de région cesse d'être une ligne de fourmis */
+  .c3d-grp__t { font-size: .68rem; letter-spacing: .22em; padding: .8rem 0 .42rem; }
+  .c3d-grp { margin-bottom: .8rem; }
+
+  /* la recherche et le sélecteur : mêmes cibles que le reste */
+  .c3d-find, .c3d-reg { min-height: 46px; }
+  .c3d-find input, .c3d-reg select { font-size: .92rem; }
+}

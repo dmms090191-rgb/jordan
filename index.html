@@ -23,12 +23,20 @@
 <link rel="manifest" href="assets/site.webmanifest">
 <link rel="preload" href="assets/fonts/cormorant-garamond-var-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/jost-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Les aiguilles de la montre doivent être dessinées le plus tôt possible.
+     hero-montre.js est déjà cherché dès l'analyse du document, mais son import
+     ./aiguilles.js n'est découvert qu'une fois ce fichier reçu et analysé :
+     un aller-retour réseau de plus avant le premier tracé. On le déclare ici
+     pour que les deux soient demandés en parallèle. -->
+<link rel="modulepreload" href="assets/js/hero/hero-montre.js">
+<link rel="modulepreload" href="assets/js/hero/aiguilles.js">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="assets/css/poincon.css">
 <link rel="stylesheet" href="assets/css/accueil.css">
 <link rel="stylesheet" href="assets/css/hero-montre.css">
 <link rel="stylesheet" href="assets/css/accueil-sections.css">
-<link rel="stylesheet" href="assets/css/logo-intro.css">
+<!-- assets/css/logo-intro.css n'est plus chargée : elle n'habillait que le voile
+     de l'ancien logo, retiré. Le fichier reste sur disque pour _lab/logo-intro.html. -->
 <link rel="stylesheet" href="assets/css/scenes/cours.css">
 <link rel="stylesheet" href="assets/css/scenes/france.css">
 <link rel="stylesheet" href="assets/css/scenes/hotelcss.css">
@@ -39,6 +47,12 @@
 <link rel="stylesheet" href="assets/css/scenes/carte3d.css">
 <link rel="stylesheet" href="assets/css/da-rythme.css">
 <link rel="stylesheet" href="assets/css/da-parcours.css">
+<!-- La roue cylindrique du parcours. Chargée APRÈS da-parcours.css, qui reste
+     en place : ses règles visent .parc*, elles ne s'appliquent donc plus à
+     rien depuis que la section a changé de balisage. Elle est conservée pour
+     que le retour en arrière décrit dans _lab/parcours3d-section-sauvegarde.html
+     n'ait rien d'autre à réinstaller. -->
+<link rel="stylesheet" href="assets/css/roue-etapes.css">
 <link rel="stylesheet" href="assets/css/da-carte.css">
 <link rel="stylesheet" href="assets/css/da-rendezvous.css">
 <link rel="stylesheet" href="assets/css/da-final.css">
@@ -52,41 +66,22 @@
 </script>
 </head>
 <body>
-<script>(function(){
-  try {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (sessionStorage.getItem('lc-intro-vu')) return;
-  } catch (e) { return; }
-  var amb = document.documentElement.dataset.ambiance === 'jour' ? 'jour' : 'nuit';
-  var ov = document.createElement('div');
-  ov.id = 'lc-splash';
-  ov.setAttribute('aria-hidden', 'true');
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;'
-    + 'padding:6vh 8vw;background:' + (amb === 'jour' ? '#f4efe6' : '#141210') + ';'
-    + 'opacity:1;transition:opacity .55s ease';
-  var host = document.createElement('div');
-  host.style.cssText = 'width:min(640px,82vw)';
-  ov.appendChild(host);
-  document.body.appendChild(ov);   // le script s'execute pendant le parsing, juste apres l'ouverture de <body> : l'element existe deja
-  import('./assets/js/logo-intro.js').then(function (m) {
-    return m.createLogoIntro(host, { ambiance: amb });
-  }).then(function (intro) {
-    // Detection reelle de la fin (intro.etat().fini), plutot qu'un minuteur fixe :
-    // le montage du module (import + fetch du SVG + scene de la plume) peut prendre
-    // un instant variable selon l'appareil ; un minuteur cale sur la duree seule
-    // partirait avant que la lecture ait commence. On sonde l'etat toutes les 80 ms.
-    var v = setInterval(function () {
-      var e = intro.etat();
-      if (!e.fini) return;
-      clearInterval(v);
-      ov.style.opacity = '0';
-      setTimeout(function () { ov.remove(); }, 600);
-    }, 80);
-    // Filet de securite : si etat().fini ne se declenche jamais (cas impreveu),
-    // ne pas laisser le voile bloquer la page indefiniment.
-    setTimeout(function () { if (document.body.contains(ov)) { clearInterval(v); ov.style.opacity = '0'; setTimeout(function () { ov.remove(); }, 600); } }, intro.duree * 1000 + 4000);
-  }).catch(function () { ov.remove(); });
-})();</script>
+<!-- L'INTRODUCTION AU LOGO A ÉTÉ RETIRÉE.
+     Un voile plein écran (#lc-splash) chargeait ./assets/js/logo-intro.js et
+     jouait l'ANCIEN logo — celui écrit à la plume, assets/logo/logo-anime.svg —
+     pendant environ 2,5 s au premier chargement de chaque session. Il n'y a
+     plus ni voile, ni import, ni minuteur, ni feuille de style : la page ouvre
+     directement sur l'identité actuelle, le poinçon du <header>.
+
+     RIEN N'A ÉTÉ SUPPRIMÉ DU PROJET : assets/js/logo-intro.js,
+     assets/css/logo-intro.css, assets/logo/logo-anime.svg et le banc d'essai
+     _lab/logo-intro.html restent sur disque, intacts. Ils ne sont simplement
+     plus chargés par la page d'accueil. Le nouveau logo (data-poincon) n'a pas
+     été touché.
+
+     La clé sessionStorage 'lc-intro-vu' n'est plus lue nulle part, et
+     hero-montre.js, qui attendait le retrait du voile, se garde déjà de son
+     absence (voir quandLeVoileDuLogoEstParti). -->
 
 <header class="hd" id="hd">
   <!-- Etage 1 : le logo, centre, en pleine presence. Les actions restent calees a droite. -->
@@ -135,8 +130,12 @@
 
 <main id="main">
 
-<!-- ===== HERO ===== -->
-<section class="hero" aria-label="La Compagnie de l'Or">
+<!-- ===== HERO =====
+     id="hero" : c'est la cible du logo « Haut de page » du pied de page, qui
+     pointait sur une ancre inexistante et ne faisait donc rien. Aucune règle
+     CSS ni aucun script ne visait #hero — vérifié — ajouter l'identifiant
+     n'active donc rien de dormant. -->
+<section class="hero" id="hero" aria-label="La Compagnie de l'Or">
   <!-- La scene horlogere. Quatre couches solidaires : les deux boucles video,
        la poussiere d'or dessinee en temps reel, les aiguilles a l'heure de
        Paris, et le rai de lumiere de l'introduction. Le script pose la
@@ -183,7 +182,7 @@
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Expertise gratuite</li>
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Sans engagement</li>
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Paiement par chèque ou virement</li>
-    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Journées organisées dans différentes régions de France</li>
+    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Partout en France</li>
   </ul>
 </section>
 
@@ -198,56 +197,75 @@
   </div>
 </section>
 
-<!-- ===== 2 · LE PARCOURS EN QUATRE ÉTAPES · scène 3D continue =====
-     Il n'y a plus quatre cartes : il y a UNE scène. Un seul canevas, collant,
-     occupe toute la hauteur de la section ; les quatre tableaux vivent dans un
-     même espace 3D que la caméra descend au défilement. Les textes défilent
-     par-dessus, dans le flux normal — ils restent donc nets, sélectionnables
-     et responsives, et ce sont eux qui creusent les espaces négatifs où les
-     objets viennent se poser. -->
-<section class="sec parc" id="etapes" aria-labelledby="etapes-title" data-reveal>
+<!-- ===== 2 · LE PARCOURS EN QUATRE ÉTAPES · roue cylindrique de verre =====
+     Huit plaques de verre réparties à 45 degrés exactement autour d'un
+     cylindre invisible. Les quatre étapes réelles y figurent deux fois : les
+     copies sont un procédé purement VISUEL, elles sont fabriquées par le
+     script à partir de la liste ci-dessous et la roue entière est
+     aria-hidden. L'utilisateur ne voit jamais autre chose que 01 à 04.
 
-  <div class="parc__scene" aria-hidden="true"><canvas class="parc__toile" id="parcoursToile"></canvas></div>
+     La liste .roue-src EST le contenu : écrite une seule fois, indexable,
+     sélectionnable, lisible sans JavaScript. Le script la masque
+     visuellement seulement après avoir monté la roue.
 
-  <div class="parc__flux">
+     L'ancienne scène 3D au défilement est conservée intégralement dans
+     _lab/parcours3d-section-sauvegarde.html — scenes/parcours3d.js et
+     da-parcours.css restent sur disque et n'ont pas été modifiés. -->
+<section class="sec roue" id="etapes" aria-labelledby="etapes-title" data-reveal>
 
-    <nav class="parc__index" aria-label="Les quatre étapes du parcours">
-      <a href="#etape-01" data-vers="1"><i></i><span>01</span></a>
-      <a href="#etape-02" data-vers="2"><i></i><span>02</span></a>
-      <a href="#etape-03" data-vers="3"><i></i><span>03</span></a>
-      <a href="#etape-04" data-vers="4"><i></i><span>04</span></a>
-    </nav>
+  <div class="sec__head">
+    <p class="kicker rv" style="--i:0">Comment se déroule votre rendez-vous&nbsp;?</p>
+    <h2 class="sec__title rv" id="etapes-title" style="--i:1">En quatre étapes simples.</h2>
+    <p class="sec__lede rv" style="--i:2">Du choix de la journée à votre décision finale, tout se passe devant vous, à votre rythme.</p>
+  </div>
 
-    <div class="parc__head sec__head">
-      <p class="kicker rv" style="--i:0">Comment se déroule votre rendez-vous&nbsp;?</p>
-      <h2 class="sec__title rv" id="etapes-title" style="--i:1">En quatre étapes simples.</h2>
-      <p class="sec__lede rv" style="--i:2">Du choix de la journée à votre décision finale, tout se passe devant vous, à votre rythme.</p>
+  <ol class="roue-src">
+    <li>
+      <span class="roue-num">Étape 01</span>
+      <h3>La rencontre</h3>
+      <p>Nous choisissons une région, nous annonçons notre venue, et nous vous recevons près de chez vous, le temps d'une journée d'expertise.</p>
+    </li>
+    <li>
+      <span class="roue-num">Étape 02</span>
+      <h3>L'expertise</h3>
+      <p>Vos objets sont examinés et pesés devant vous, sur une balance de précision. Rien ne quitte jamais votre vue.</p>
+    </li>
+    <li>
+      <span class="roue-num">Étape 03</span>
+      <h3>La proposition</h3>
+      <p>Une proposition de rachat claire vous est présentée par écrit. Vous restez libre de l'accepter ou de la refuser.</p>
+    </li>
+    <li>
+      <span class="roue-num">Étape 04</span>
+      <h3>Le règlement</h3>
+      <p>En cas d'accord, votre règlement est effectué par virement bancaire ou par chèque.</p>
+    </li>
+  </ol>
+
+  <div class="roue-zone rv" style="--i:3">
+    <div class="roue-scene" role="group" aria-roledescription="carrousel"
+         aria-label="Les quatre étapes du parcours" tabindex="0">
+      <div class="roue-pivot">
+        <div class="roue-recul">
+          <div class="roue-cyl" aria-hidden="true"></div>
+        </div>
+      </div>
     </div>
 
-    <article class="parc__etape" id="etape-01" data-etape="1">
-      <p class="parc__n"><span>01</span></p>
-      <h3>Trouvez une journée près de chez vous</h3>
-      <p>Consultez les villes où nous nous déplaçons et repérez celle qui est la plus proche de chez vous.</p>
-    </article>
+    <div class="roue-legende" aria-live="polite">
+      <p class="roue-legende__nom">La rencontre</p>
+      <p class="roue-legende__prog"><b>01</b> / 04</p>
+    </div>
 
-    <article class="parc__etape" id="etape-02" data-etape="2">
-      <p class="parc__n"><span>02</span></p>
-      <h3>Rencontrez votre expert</h3>
-      <p>Rendez-vous dans l'hôtel sélectionné avec les bijoux, pièces, montres, lingots ou autres biens que vous souhaitez faire examiner.</p>
-    </article>
-
-    <article class="parc__etape" id="etape-03" data-etape="3">
-      <p class="parc__n"><span>03</span></p>
-      <h3>Expertise &amp; proposition</h3>
-      <p>Votre expert examine vos biens devant vous, effectue les contrôles nécessaires et vous remet une proposition de rachat claire et écrite.</p>
-    </article>
-
-    <article class="parc__etape" id="etape-04" data-etape="4">
-      <p class="parc__n"><span>04</span></p>
-      <h3>Vous restez libre de décider</h3>
-      <p>Après l'expertise, vous choisissez librement d'accepter ou de refuser la proposition. En cas d'acceptation, le règlement est effectué selon les modalités proposées par La Compagnie de l'Or.</p>
-    </article>
-
+    <div class="roue-cmd">
+      <button class="roue-fl roue-fl--prec" type="button" aria-label="Étape précédente">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="roue-points" role="tablist" aria-label="Choisir une étape"></div>
+      <button class="roue-fl roue-fl--suiv" type="button" aria-label="Étape suivante">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
   </div>
 </section>
 
@@ -470,6 +488,10 @@
      prefers-reduced-motion et l introduction jouee une seule fois par session. -->
 <script type="module" src="assets/js/hero/hero-montre.js"></script>
 <script type="module" src="assets/js/accueil-sections.js"></script>
+<!-- La roue du parcours. Module autonome, sans dépendance et sans contexte
+     WebGL : la rotation est une transition CSS. S'il échoue, la liste des
+     quatre étapes reste affichée telle quelle et la section garde son sens. -->
+<script type="module" src="assets/js/roue-etapes.js"></script>
 <script type="module">import { initFormulaire } from "./assets/js/formulaire.js"; initFormulaire();</script>
 
 <!-- Logo du header en rendu PBR temps reel.

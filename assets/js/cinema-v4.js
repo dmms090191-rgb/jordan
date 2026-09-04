@@ -1637,10 +1637,16 @@ class SonV4 {
     this.debloquerAuPremierGeste();
     document.addEventListener('visibilitychange', () => { if (this.ctx) { if (document.hidden) this.ctx.suspend(); else if (this.on) this.ctx.resume(); } });
   }
+  /* L'apparence du bouton et son intitule sont poses ici, au meme endroit et a
+     partir du meme etat : une mention « Actif » qui contredirait aria-pressed
+     serait pire que pas de mention du tout, surtout pour un lecteur d'ecran. */
   refleteBouton() {
     if (!this.btn) return;
     this.btn.setAttribute('aria-pressed', String(this.on));
     this.btn.classList.toggle('is-on', this.on);
+    this.btn.setAttribute('aria-label', this.on ? 'Couper le son' : 'Activer le son');
+    const etat = this.btn.querySelector('.sound__etat');
+    if (etat) etat.textContent = this.on ? 'Actif' : 'Coupé';
   }
   /* Premier geste autorise : on reprend le contexte audio et on repose
      l'ambiance du plan en cours. On se retire des qu'il tourne vraiment ; tant
@@ -1767,6 +1773,66 @@ addEventListener('DOMContentLoaded', () => {
     const trait = document.createElement('i'); trait.className = 'rail__trait'; trait.setAttribute('aria-hidden', 'true');
     a.append(nom, num, trait);
   });
+
+  /* ---- LES COMMANDES DU SMARTPHONE ---------------------------------------
+     Sur petit écran, le texte narratif ne se pose plus sur le film et la liste
+     des chapitres n'est plus affichée en permanence : deux boutons compacts
+     les ouvrent à la demande, et le film reste dégagé tant que le spectateur
+     n'a rien demandé.
+
+     Ces commandes pilotent les MEMES elements que le desktop — #v4-voile et
+     #rail — par deux classes posees sur <html>. Rien n'est duplique : un
+     second panneau de texte finirait par afficher autre chose que le premier.
+
+     Les boutons existent dans toutes les tailles ; c'est le CSS qui les montre
+     ou les cache. Le code n'a donc pas a savoir sur quel appareil il tourne, ce
+     qui evite le piege classique du test de largeur qui se trompe au
+     changement d'orientation. */
+  const mobChap = $('#v4-mob-chap'), mobNav = $('#v4-mob-nav');
+  const de = document.documentElement;
+  const ouvrir = (quoi, oui) => {
+    /* un seul panneau a la fois : ouvrir l'un referme l'autre */
+    de.classList.toggle('v4-mob-texte', quoi === 'texte' ? oui : false);
+    de.classList.toggle('v4-mob-chapitres', quoi === 'chapitres' ? oui : false);
+    if (mobChap) mobChap.setAttribute('aria-expanded', String(de.classList.contains('v4-mob-texte')));
+    if (mobNav) mobNav.setAttribute('aria-expanded', String(de.classList.contains('v4-mob-chapitres')));
+  };
+  if (mobChap) mobChap.addEventListener('click', () => ouvrir('texte', !de.classList.contains('v4-mob-texte')));
+  if (mobNav) mobNav.addEventListener('click', () => ouvrir('chapitres', !de.classList.contains('v4-mob-chapitres')));
+  /* choisir un chapitre dans la liste la referme : sinon elle resterait posee
+     sur le film qu'on vient de demander a voir */
+  const railEl = $('#rail');
+  if (railEl) railEl.addEventListener('click', e => { if (e.target.closest('a')) ouvrir('chapitres', false); });
+
+  /* le libelle de l'onglet et le compteur suivent le chapitre courant, lu de
+     la meme source que la barre de droite : la position globale */
+  const majMob = () => {
+    const i = cin.chActif || 0, ch = FILM[i];
+    const t = $('#v4-mob-chap-t');
+    if (t && ch) t.textContent = 'Chapitre ' + String(ch.id).padStart(2, '0') + ' — ' + ch.nom;
+    const n = $('#v4-mob-nav-n'), tot = $('#v4-mob-nav-t');
+    if (n) n.textContent = String(i + 1).padStart(2, '0');
+    if (tot) tot.textContent = String(FILM.length).padStart(2, '0');
+  };
+  majMob();
+  const majAncien = cin.majChapitreActif.bind(cin);
+  cin.majChapitreActif = T => { const av = cin.chActif; majAncien(T); if (cin.chActif !== av) majMob(); };
+
+  /* ---- LA VITESSE AU DOIGT ----
+     Quatre boutons cote a cote donnent des cibles de 30 px sur telephone. Un
+     seul bouton affiche la vitesse courante et fait defiler x1, x2, x4, x8. */
+  const vitMob = $('#cine-vitmob');
+  if (vitMob) {
+    const PAS = [1, 2, 4, 8];
+    const majVit = () => { vitMob.textContent = '×' + cin.vitesse; };
+    majVit();
+    vitMob.addEventListener('click', () => {
+      cin.setVitesse(PAS[(PAS.indexOf(cin.vitesse) + 1) % PAS.length]);
+      majVit();
+    });
+    const setAncien = cin.setVitesse.bind(cin);
+    cin.setVitesse = x => { setAncien(x); majVit(); };
+  }
 
   /* ---- LE REPLI DE LA BARRE ----------------------------------------------
      Repliee, la barre ne disparait jamais : le nom s'efface, la colonne des

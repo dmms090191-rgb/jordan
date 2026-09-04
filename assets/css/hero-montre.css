@@ -53,10 +53,21 @@
   position: absolute; pointer-events: none;
   /* le script leur donne left / top / width / height : ils épousent le
      rectangle de l'image, pas celui de l'élément */
-  opacity: 0; transition: opacity .6s ease;
 }
-.hm__pous.is-on, .hm__aig.is-on { opacity: 1; }
-.hm__aig { overflow: visible; }
+/* la poussière garde son fondu : elle s'allume et s'éteint au fil de
+   l'ambiance et de la visibilité de l'onglet */
+.hm__pous { opacity: 0; transition: opacity .6s ease; }
+.hm__pous.is-on { opacity: 1; }
+
+/* LES AIGUILLES SONT LÀ DÈS LA PREMIÈRE IMAGE.
+   Elles portaient le même opacity:0 avec un fondu de 600 ms, levé par une
+   classe .is-on. Or la montre, elle, apparaît d'un coup : son poster se
+   révèle avec un fondu de 400 ms posé dans la MÊME image. Le cadran était
+   donc à l'écran 200 ms avant ses aiguilles, et on les voyait « arriver ».
+   Plus d'opacité initiale, plus de fondu, plus de classe à attendre : le
+   SVG est opaque de naissance, et le script le remplit dans sa toute
+   première tâche. Les .is-on posés par le script restent sans effet. */
+.hm__aig { overflow: visible; opacity: 1; }
 
 /* ---------- voile d'introduction ---------- */
 /* Le voile est frère du plateau, pas son fils : il ne subit donc pas la
@@ -84,6 +95,16 @@
 .hero__bg.is-intro .hm__v {
   filter: brightness(var(--hm-expo,1)) saturate(var(--hm-sat,1)) contrast(var(--hm-con,1));
   transition: opacity .5s ease, filter 1.05s cubic-bezier(.33,.7,.3,1);
+}
+/* Les aiguilles suivent la MÊME montée de lumière que le plan. Elles étaient
+   auparavant simplement cachées jusqu'au dernier palier ; maintenant qu'elles
+   sont là dès la première image, il faut les éclairer comme le reste, sinon
+   elles brilleraient en or plein sur une montre encore sous-exposée — des
+   aiguilles flottant sans cadran. Brillance seule : saturer ou contraster de
+   l'or déjà pur ne ferait que le salir. */
+.hero__bg.is-intro .hm__aig {
+  filter: brightness(var(--hm-expo,1));
+  transition: filter 1.05s cubic-bezier(.33,.7,.3,1);
 }
 .hero__bg.is-intro .hm__voile { opacity: var(--hm-voile,0); transition: opacity 1.05s cubic-bezier(.33,.7,.3,1); }
 

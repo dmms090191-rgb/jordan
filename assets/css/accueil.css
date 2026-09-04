@@ -265,10 +265,26 @@ a{color:inherit;text-decoration:none}
   .btn--primary{width:100%;justify-content:center}
   .btn-exp--hero{--exp-pastille:2.8rem;width:100%;justify-content:center;padding:.55rem 1.4rem .55rem .55rem}
   .btn-exp__hint{text-align:center;margin-left:0}
-  .trust{display:grid;grid-template-columns:1fr 1fr;gap:.7rem 1rem;padding-bottom:1.4rem;max-width:none}
+  /* LES QUATRE ENGAGEMENTS EN 2 × 2.
+     Le quatrième prenait toute la largeur (grid-column:1/-1) : c'était le
+     seul moyen de loger « Journées organisées dans différentes régions de
+     France », mais la grille se lisait alors 2 + 1-large, jamais comme un
+     carré. Le libellé raccourci en « Partout en France » lui rend sa cellule.
+
+     Les colonnes ne sont pas égales à dessein : « Paiement par chèque ou
+     virement » est deux fois plus long que son voisin de droite, et une
+     colonne de gauche un peu plus large lui évite une troisième ligne. */
+  .trust{display:grid;grid-template-columns:1.16fr .84fr;gap:.85rem 1rem;padding-bottom:1.4rem;max-width:none;align-items:start}
   .trust li{font-size:.74rem;align-items:flex-start}
-  .trust li:last-child{grid-column:1 / -1}
   .trust svg{margin-top:.15rem}
+}
+/* Très petit écran : la colonne de droite tombait à 112 px et « Sans
+   engagement » se cassait en deux. On ne réduit pas le texte — on récupère la
+   place sur la coche et sur son écart, qui n'en ont pas besoin. */
+@media (max-width:360px){
+  .trust{grid-template-columns:1.1fr .9fr;column-gap:.7rem}
+  .trust li{gap:.38rem}
+  .trust svg{width:12px;height:12px}
   .rdv__open{max-width:360px}
   .rdv__mono{width:24px;height:24px;margin-bottom:1.4rem}
   .rdv__contacts{flex-direction:column;align-items:center;gap:1.9rem}

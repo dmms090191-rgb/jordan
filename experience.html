@@ -93,7 +93,16 @@
      il s'afficherait coupé le temps que le script s'exécute. L'intitulé ne dit
      plus « Activer » — il vaut dans les deux sens, c'est aria-pressed qui porte
      l'état. -->
-<button class="sound is-on" id="sound" type="button" aria-pressed="true" aria-label="Ambiance sonore"><span class="sound__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sound__label">Son</span></button>
+<button class="sound is-on" id="sound" type="button" aria-pressed="true" aria-label="Couper le son">
+  <span class="sound__rond" aria-hidden="true">
+    <span class="sound__anneau"></span>
+    <span class="sound__bars"><i></i><i></i><i></i><i></i></span>
+    <span class="sound__barre"></span>
+  </span>
+  <span class="sound__lab" aria-hidden="true">
+    <span class="sound__label">Son</span><em class="sound__etat" id="sound-etat">Actif</em>
+  </span>
+</button>
 
 <!-- Ambiance Jour / Nuit (choix individuel du visiteur, localStorage) -->
 <div class="ab-toggle" id="ab-toggle" aria-label="Comparaison jour nuit">
@@ -161,6 +170,10 @@
     <button type="button" data-v="4" class="is-active" aria-pressed="true">×4</button>
     <button type="button" data-v="8" aria-pressed="false">×8</button>
   </div>
+  <!-- Sur smartphone, quatre boutons de vitesse côte à côte donnent des cibles
+       de 30 px. Un seul bouton affiche la vitesse courante et fait défiler
+       ×1 → ×2 → ×4 → ×8 → ×1 au toucher. Masqué partout ailleurs. -->
+  <button class="cine-bar__vitmob" id="cine-vitmob" type="button" aria-label="Vitesse de lecture">×4</button>
   <span class="cine-bar__sep" aria-hidden="true"></span>
   <span class="cine-bar__prog"><b id="cine-prog-n">01</b><span>/</span><i id="cine-prog-t">08</i><em>Chapitres</em></span>
   <span class="cine-bar__sep" aria-hidden="true"></span>
@@ -170,6 +183,24 @@
 <div class="cine-timeline" id="cine-timeline" role="slider" aria-label="Position dans le film" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
   <i id="cine-timeline-fill"></i>
 </div>
+
+<!-- ===== Commandes propres au SMARTPHONE =====
+     Elles n'existent qu'en petit écran : le CSS les masque partout ailleurs, et
+     le desktop validé n'est pas touché. Elles remplacent, sur mobile, ce qui y
+     était soit illisible soit absent — le panneau de texte permanent posé sur
+     l'image, et la liste des chapitres purement et simplement masquée. -->
+<div class="v4-mob" id="v4-mob">
+  <button class="v4-mob__chap" id="v4-mob-chap" type="button" aria-expanded="false" aria-controls="v4-voile">
+    <span class="v4-mob__chap-t" id="v4-mob-chap-t">Chapitre 01</span>
+    <span class="v4-mob__chev" aria-hidden="true"></span>
+  </button>
+  <button class="v4-mob__nav" id="v4-mob-nav" type="button" aria-expanded="false" aria-controls="rail">
+    <b id="v4-mob-nav-n">01</b><span>/</span><i id="v4-mob-nav-t">05</i>
+  </button>
+</div>
+
+<!-- Invitation à tourner l'appareil : discrète, jamais bloquante. -->
+<p class="v4-rot" id="v4-rot">Pour une expérience cinéma, tournez votre téléphone.</p>
 
 <!-- LA NAVIGATION DES CHAPITRES, à droite, toujours visible. Les entrées en
      trop sont retirées et les titres repris du montage au chargement : la
@@ -221,7 +252,7 @@
      reutiliser celui garde en memoire. Sans lui, une correction du moteur peut
      rester invisible dans un onglet deja ouvert, et on cherche un defaut qui
      est deja repare. A incrementer a chaque correction du moteur. -->
-<script type="module" src="assets/js/cinema-v4.js?v=20260904a"></script>
+<script type="module" src="assets/js/cinema-v4.js?v=20260904c"></script>
 <!-- A - LE POINCON : meme composant que l accueil. Il gere seul le repli sans
      WebGL, prefers-reduced-motion, la pause hors ecran et la bascule Jour/Nuit. -->
 <script src="assets/js/poincon.js" defer></script>

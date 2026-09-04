@@ -534,3 +534,60 @@
 @media (prefers-reduced-motion: reduce) {
   .dom__speed-b::before { transition: none; }
 }
+
+/* ==========================================================================
+   MOBILE — LES DOUZE INDEX EN GRILLE 4 × 3
+   ==========================================================================
+   Le rail se repliait en flex sur deux rangs de six, sans aucun espace : les
+   pastilles se touchaient bord a bord — mesure : 10 paires sur 11 a moins de
+   2 px l'une de l'autre — et le bloc se lisait comme un clavier numerique.
+
+   On passe a une VRAIE grille de quatre colonnes sur trois rangs, avec du
+   vide entre les cellules. Les filets verticaux qui servaient de separation
+   disparaissent : c'est le noir qui separe maintenant, et chaque pastille
+   porte son propre contour. Le comportement, lui, ne change pas d'une ligne —
+   ce sont les memes boutons, le meme script, le meme etat actif en or.
+   ========================================================================== */
+@media (max-width: 860px) {
+  .dom__list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .6rem;
+    overflow: visible;                 /* plus de defilement lateral : tout tient */
+    border-top: 0;                     /* le filet du rail n'a plus lieu d'etre */
+    margin-top: clamp(1.6rem, 4vw, 2.4rem);
+    padding: 0;
+  }
+  .dom__item {
+    /* la grille place les cellules : plus aucun flex ni largeur a negocier */
+    flex: none; width: auto; min-width: 0;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 46px;                  /* cible tactile confortable */
+    padding: .55rem .3rem;
+    border: 1px solid rgba(201, 154, 63, .16);
+    border-radius: 3px;                /* meme rayon que les plaques de verre */
+    background: rgba(255, 255, 255, .012);
+    transition: border-color .4s ease, background .4s ease, color .4s ease;
+  }
+  /* la premiere pastille n'a plus de traitement particulier : dans une
+     grille, il n'y a plus de « debut de rail » a raboter */
+  .dom__item:first-child { padding-left: .3rem; border-left: 1px solid rgba(201, 154, 63, .16); }
+  .dom__item .n { font-size: .86rem; letter-spacing: .1em; }
+
+  /* ---- L'ETAT ACTIF garde le filet or, il change juste de support ----
+     Il vivait sur un trait sous la pastille ; il devient le contour de la
+     pastille elle-meme, puisqu'elle en a un maintenant. */
+  .dom__item.is-active {
+    flex: none;
+    border-color: var(--gold, #c99a3f);
+    background: rgba(201, 154, 63, .07);
+  }
+  .dom__item.is-active .n { color: var(--gold-ink, #c99a3f); }
+  .dom__item:focus-visible { outline: 1px solid var(--gold-bright, #e8cd93); outline-offset: 2px; }
+
+  /* Le jour DANS le bloc mobile, jamais dehors : posees a la racine, ces deux
+     lignes auraient donne un fond aux douze index du bureau, qui n'en ont pas
+     et n'en veulent pas. */
+  :root[data-ambiance="jour"] .dom__item { background: rgba(36, 28, 16, .02); border-color: rgba(138, 104, 32, .22); }
+  :root[data-ambiance="jour"] .dom__item.is-active { background: rgba(138, 104, 32, .08); border-color: var(--gold-ink, #8a6820); }
+}

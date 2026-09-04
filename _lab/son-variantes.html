@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bouton Son — trois directions</title>
+<link rel="stylesheet" href="../assets/fonts/fonts.css">
+<style>
+  /* Palette reprise du site, sans le charger : ce banc doit pouvoir etre
+     ouvert seul, et surtout ne rien modifier de la production. */
+  :root{
+    --noir:#060504; --graphite:#12100d;
+    --or:#c99a3f; --or-clair:#e8cd93; --ivoire:#f3ecdc;
+    --ligne:rgba(201,154,63,.28); --ligne-forte:rgba(201,154,63,.5);
+    --body:'Jost',system-ui,sans-serif; --display:'Cormorant Garamond',Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--noir);color:var(--ivoire);font-family:var(--body);
+       background-image:radial-gradient(120% 80% at 50% -10%,rgba(201,154,63,.07),transparent 60%)}
+  .page{max-width:1180px;margin:0 auto;padding:clamp(1.5rem,4vw,3rem)}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(1.4rem,1rem+1.6vw,2rem);
+     letter-spacing:.1em;text-transform:uppercase;color:var(--or-clair);margin:0 0 .3rem}
+  .sous{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+        color:rgba(243,236,220,.45);margin:0 0 2.6rem}
+  .grille{display:grid;gap:2.4rem}
+  @media(min-width:760px){.grille{grid-template-columns:repeat(3,1fr)}}
+  .carte{border:1px solid rgba(201,154,63,.16);border-radius:14px;padding:1.4rem 1.2rem 1.6rem;
+         background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+  .titre{font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--or);margin:0 0 .2rem}
+  .desc{font-size:.72rem;line-height:1.55;color:rgba(243,236,220,.5);margin:0 0 1.5rem;min-height:3.4em}
+  .rangee{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.4rem}
+  .etiq{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(243,236,220,.3)}
+  .zone{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;min-height:56px}
+
+  /* ============ la waveform, commune aux trois ============ */
+  .wv{display:flex;align-items:center;gap:2px;height:13px;flex:none}
+  .wv i{display:block;width:1.5px;border-radius:1px;background:currentColor;height:26%;
+        transform-origin:center;transition:height .45s cubic-bezier(.4,0,.2,1),opacity .35s}
+  /* animation TRES sobre : quatre barres, amplitudes et rythmes differents,
+     jamais synchrones — c'est ce qui evite l'effet egaliseur de lecteur mp3 */
+  .on .wv i:nth-child(1){animation:w1 2.1s ease-in-out infinite}
+  .on .wv i:nth-child(2){animation:w2 1.6s ease-in-out infinite .2s}
+  .on .wv i:nth-child(3){animation:w3 2.4s ease-in-out infinite .1s}
+  .on .wv i:nth-child(4){animation:w4 1.9s ease-in-out infinite .3s}
+  @keyframes w1{0%,100%{height:34%}50%{height:66%}}
+  @keyframes w2{0%,100%{height:58%}50%{height:100%}}
+  @keyframes w3{0%,100%{height:44%}50%{height:82%}}
+  @keyframes w4{0%,100%{height:28%}50%{height:54%}}
+  .off .wv i{height:22%;opacity:.5}
+  /* le trait de coupure : dessine, jamais un caractere */
+  .barre{position:absolute;left:50%;top:50%;width:0;height:1px;background:currentColor;
+         rotate:-24deg;opacity:0;translate:-50% -50%;transition:width .3s ease,opacity .25s}
+  .off .barre{width:19px;opacity:.75}
+
+  /* ============ A — capsule ultra-minimale ============ */
+  .sA{position:relative;display:inline-flex;align-items:center;gap:.6rem;
+      height:38px;padding:0 .95rem;border-radius:19px;cursor:pointer;
+      border:1px solid rgba(201,154,63,.22);background:transparent;
+      color:rgba(243,236,220,.62);font-family:var(--body);font-size:.62rem;
+      letter-spacing:.24em;text-transform:uppercase;
+      transition:border-color .4s,color .4s,background .4s}
+  .sA .ic{position:relative;display:flex;align-items:center;height:13px}
+  .sA.on{color:var(--or-clair);border-color:rgba(201,154,63,.4)}
+  .sA:hover{border-color:var(--ligne-forte);background:rgba(201,154,63,.05)}
+  .sA .pt{width:3px;height:3px;border-radius:50%;background:var(--or-clair);
+          opacity:0;transition:opacity .4s}
+  .sA.on .pt{opacity:.9}
+
+  /* ============ B — capsule verre fume ============ */
+  .sB{position:relative;display:inline-flex;align-items:center;gap:.65rem;
+      height:40px;padding:0 1.05rem;border-radius:21px;cursor:pointer;
+      border:1px solid rgba(201,154,63,.26);
+      background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,0) 46%),
+                 rgba(14,12,10,.62);
+      backdrop-filter:blur(14px) saturate(1.1);-webkit-backdrop-filter:blur(14px) saturate(1.1);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 6px 18px rgba(0,0,0,.35);
+      color:rgba(243,236,220,.6);font-family:var(--body);font-size:.62rem;
+      letter-spacing:.22em;text-transform:uppercase;
+      transition:border-color .4s,color .4s,box-shadow .4s}
+  .sB .ic{position:relative;display:flex;align-items:center;height:13px}
+  .sB.on{color:var(--ivoire);border-color:rgba(201,154,63,.44);
+         box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 18px rgba(0,0,0,.35)}
+  .sB.on .ic{color:var(--or-clair)}
+  .sB:hover{border-color:var(--ligne-forte)}
+  .sB .fin{display:flex;align-items:center;gap:.42rem;padding-left:.62rem;
+           margin-left:.1rem;border-left:1px solid rgba(201,154,63,.18);
+           font-size:.52rem;letter-spacing:.2em;color:rgba(243,236,220,.34);
+           transition:color .4s}
+  .sB.on .fin{color:var(--or)}
+  .sB .fin b{width:3px;height:3px;border-radius:50%;background:currentColor;
+             opacity:.35;transition:opacity .4s}
+  .sB.on .fin b{opacity:1;box-shadow:0 0 5px rgba(232,205,147,.55)}
+
+  /* ============ C — rond + libelle ============ */
+  .sC{display:inline-flex;align-items:center;gap:.7rem;cursor:pointer;
+      border:0;background:none;padding:0;font-family:var(--body)}
+  .sC .rond{position:relative;display:flex;align-items:center;justify-content:center;
+      width:44px;height:44px;border-radius:50%;flex:none;
+      border:1px solid rgba(201,154,63,.26);
+      background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0) 50%),
+                 rgba(14,12,10,.6);
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
+      color:rgba(243,236,220,.6);transition:border-color .4s,color .4s}
+  .sC .lab{font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;
+           color:rgba(243,236,220,.45);transition:color .4s;text-align:left;line-height:1.35}
+  .sC .lab em{display:block;font-style:normal;font-size:.5rem;letter-spacing:.18em;
+              color:rgba(243,236,220,.28);transition:color .4s}
+  .sC.on .rond{color:var(--or-clair);border-color:rgba(201,154,63,.46)}
+  .sC.on .lab{color:var(--ivoire)}
+  .sC.on .lab em{color:var(--or)}
+  .sC:hover .rond{border-color:var(--ligne-forte)}
+  .sC .anneau{position:absolute;inset:-1px;border-radius:50%;
+              border:1px solid transparent;transition:border-color .5s}
+  .sC.on .anneau{border-color:rgba(232,205,147,.18)}
+
+  /* ============ le contexte mobile : dans la barre de commandes ============ */
+  .mob{margin-top:2.6rem;border-top:1px solid rgba(201,154,63,.14);padding-top:1.6rem}
+  .barre-mob{display:inline-flex;align-items:center;gap:.3rem;height:56px;padding:0 .55rem;
+    border:1px solid var(--ligne);border-radius:28px;background:rgba(11,10,8,.6);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .bm{width:44px;height:44px;border:0;background:none;border-radius:50%;
+      color:rgba(205,196,178,.85);display:inline-flex;align-items:center;justify-content:center}
+  .bm svg{width:22px;height:22px}
+  .bm--l{width:48px;height:48px;border:1px solid rgba(201,154,63,.4);color:var(--or-clair)}
+  .vit{min-width:46px;height:44px;border:0;background:none;color:var(--or-clair);
+       font-family:var(--body);font-size:.8rem;letter-spacing:.06em}
+  /* les trois variantes reduites, telles qu'elles s'inseraient dans la barre */
+  .sA--mob{height:44px;padding:0 .85rem;gap:.5rem;font-size:.58rem;letter-spacing:.18em}
+  .sB--mob{height:44px;padding:0 .9rem;gap:.55rem;font-size:.58rem;letter-spacing:.16em}
+  .sB--mob .fin{display:none}
+  .sC--mob .lab{display:none}
+  .note{font-size:.62rem;letter-spacing:.1em;color:rgba(243,236,220,.32);margin:.7rem 0 0}
+  @media(prefers-reduced-motion:reduce){.wv i{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Bouton Son — trois directions</h1>
+  <p class="sous">Cliquez chaque bouton pour voir la transition actif / coupé</p>
+
+  <div class="grille">
+
+    <!-- ================= A ================= -->
+    <div class="carte">
+      <p class="titre">A · Capsule ultra-minimale</p>
+      <p class="desc">Un filet, quatre barres, un mot. Aucun fond : le bouton n'existe que par son contour. Le plus discret des trois, le plus dépendant d'un fond sombre.</p>
+
+      <div class="rangee"><span class="etiq">Actif</span><div class="zone">
+        <button class="sA on" type="button" aria-pressed="true" aria-label="Couper le son">
+          <span class="ic"><span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span>
+          <span>Son</span><span class="pt"></span>
+        </button>
+      </div></div>
+
+      <div class="rangee"><span class="etiq">Coupé</span><div class="zone">
+        <button class="sA off" type="button" aria-pressed="false" aria-label="Activer le son">
+          <span class="ic"><span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span>
+          <span>Son</span><span class="pt"></span>
+        </button>
+      </div></div>
+    </div>
+
+    <!-- ================= B ================= -->
+    <div class="carte">
+      <p class="titre">B · Capsule verre fumé</p>
+      <p class="desc">Graphite translucide, filet or, reflet haut d'un pixel. Un séparateur porte la mention d'état et un point doré. Le plus « objet », lisible sur n'importe quelle image.</p>
+
+      <div class="rangee"><span class="etiq">Actif</span><div class="zone">
+        <button class="sB on" type="button" aria-pressed="true" aria-label="Couper le son">
+          <span class="ic"><span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span>
+          <span>Son</span>
+          <span class="fin"><b></b>Actif</span>
+        </button>
+      </div></div>
+
+      <div class="rangee"><span class="etiq">Coupé</span><div class="zone">
+        <button class="sB off" type="button" aria-pressed="false" aria-label="Activer le son">
+          <span class="ic"><span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span>
+          <span>Son</span>
+          <span class="fin"><b></b>Coupé</span>
+        </button>
+      </div></div>
+    </div>
+
+    <!-- ================= C ================= -->
+    <div class="carte">
+      <p class="titre">C · Rond + libellé</p>
+      <p class="desc">Une pastille de 44 px, taille tactile native, et le libellé posé à côté. Sur mobile, le libellé tombe et il ne reste que le rond, sans rien changer d'autre.</p>
+
+      <div class="rangee"><span class="etiq">Actif</span><div class="zone">
+        <button class="sC on" type="button" aria-pressed="true" aria-label="Couper le son">
+          <span class="rond"><span class="anneau"></span>
+            <span class="ic" style="position:relative;display:flex;align-items:center;height:13px">
+              <span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span>
+          </span>
+          <span class="lab">Son<em>Actif</em></span>
+        </button>
+      </div></div>
+
+      <div class="rangee"><span class="etiq">Coupé</span><div class="zone">
+        <button class="sC off" type="button" aria-pressed="false" aria-label="Activer le son">
+          <span class="rond"><span class="anneau"></span>
+            <span class="ic" style="position:relative;display:flex;align-items:center;height:13px">
+              <span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span>
+          </span>
+          <span class="lab">Son<em>Coupé</em></span>
+        </button>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ============ en situation : la barre de commandes mobile ============ -->
+  <div class="mob">
+    <p class="titre">En situation — la barre de commandes du film sur smartphone</p>
+    <p class="note">Chaque variante réduite, intégrée à la barre plutôt que flottante sur l'image.</p>
+
+    <div class="rangee" style="margin-top:1.4rem"><span class="etiq">A · réduite</span><div class="zone">
+      <div class="barre-mob">
+        <button class="bm" aria-label="Précédent"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="bm bm--l" aria-label="Lecture"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button>
+        <button class="bm" aria-label="Suivant"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="vit">×4</button>
+        <button class="sA sA--mob on" type="button" aria-pressed="true" aria-label="Couper le son">
+          <span class="ic"><span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span><span>Son</span>
+        </button>
+      </div>
+    </div></div>
+
+    <div class="rangee"><span class="etiq">B · réduite</span><div class="zone">
+      <div class="barre-mob">
+        <button class="bm" aria-label="Précédent"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="bm bm--l" aria-label="Lecture"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button>
+        <button class="bm" aria-label="Suivant"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="vit">×4</button>
+        <button class="sB sB--mob on" type="button" aria-pressed="true" aria-label="Couper le son">
+          <span class="ic"><span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span><span>Son</span>
+          <span class="fin"><b></b>Actif</span>
+        </button>
+      </div>
+    </div></div>
+
+    <div class="rangee"><span class="etiq">C · réduite — le rond seul</span><div class="zone">
+      <div class="barre-mob">
+        <button class="bm" aria-label="Précédent"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="bm bm--l" aria-label="Lecture"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></button>
+        <button class="bm" aria-label="Suivant"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <button class="vit">×4</button>
+        <button class="sC sC--mob on" type="button" aria-pressed="true" aria-label="Couper le son">
+          <span class="rond"><span class="anneau"></span>
+            <span class="ic" style="position:relative;display:flex;align-items:center;height:13px">
+              <span class="wv"><i></i><i></i><i></i><i></i></span><span class="barre"></span></span>
+          </span><span class="lab">Son<em>Actif</em></span>
+        </button>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<script>
+  /* le banc ne pilote aucun son : il ne fait que montrer la transition
+     visuelle entre les deux etats, et met a jour l'intitule d'accessibilite. */
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.sA, .sB, .sC');
+    if (!b) return;
+    const on = b.classList.toggle('on');
+    b.classList.toggle('off', !on);
+    b.setAttribute('aria-pressed', String(on));
+    b.setAttribute('aria-label', on ? 'Couper le son' : 'Activer le son');
+    const fin = b.querySelector('.fin');
+    if (fin) fin.lastChild.textContent = on ? 'Actif' : 'Coupé';
+    const em = b.querySelector('.lab em');
+    if (em) em.textContent = on ? 'Actif' : 'Coupé';
+  });
+</script>
+</body>
+</html>

@@ -187,3 +187,27 @@ html[data-ambiance="jour"] #cours .cx { --cx-grille: rgba(60, 48, 26, .045); }
 @media (prefers-reduced-motion: reduce) {
   #cours .cx-periode::before { transition: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   MOBILE — LE RAIL DES QUATRE MÉTAUX
+   ══════════════════════════════════════════════════════════════════════
+   Cette correction appartient À CE FICHIER et pas à cours.css : les deux
+   écrivent `#cours .cx-metaux`, même spécificité — c'est donc l'ORDRE DE
+   CHARGEMENT qui tranche, et da-marche.css est chargé après. Écrite dans
+   cours.css, la règle était inerte, et les quatre métaux passaient sur deux
+   rangs à 320 px (238 px de contenu + trois écarts de 19,2 px pour 282 px
+   disponibles).
+
+   On ne rétrécit pas le texte : on rend l'écart proportionnel et la largeur
+   négociable, pour que les quatre partagent la ligne au lieu de la déborder.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 760px) {
+  #cours .cx-metaux { gap: 0 clamp(.55rem, 2.4vw, 1.2rem); flex-wrap: nowrap; }
+  #cours .cx-metal { flex: 1 1 0; min-width: 0; }
+  /* le bloc de l'or au gramme n'a plus besoin d'autant d'air au-dessus */
+  #cours .cx-24k { padding-top: .7rem; margin-top: .7rem; }
+}
+@media (max-width: 340px) {
+  #cours .cx-metaux { gap: 0 .4rem; }
+  #cours .cx-metal { padding: .5rem 0 .7rem; }
+}
