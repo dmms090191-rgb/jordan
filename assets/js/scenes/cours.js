@@ -116,10 +116,44 @@ function nombre(v) {
    refusee (c'est exactement la forme que prendrait un remplissage par 0). */
 function prixValide(v) { const n = nombre(v); return n !== null && n > 0 ? n : null; }
 
+/* ===================================================================== */
+/* L'ONCE TROY DEVIENT LE KILO                                           */
+/* --------------------------------------------------------------------- */
+/* L'API cote les quatre metaux a l'once troy. Le site est francais : on y
+   lit des kilos. 1 kg = 1000 / 31,1034768 = 32,1507466 onces troy — le
+   chiffre est pose ici, en toutes lettres, et nulle part ailleurs.
+
+   LA CONVERSION SE FAIT A L'ENTREE DES DONNEES, jamais a l'affichage. Le
+   prix vif, les quatre onglets, les bougies du graphique, les quatre
+   statistiques de periode et la variation absolue passent tous par le meme
+   facteur au meme endroit : ils ne peuvent donc pas diverger d'une unite a
+   l'autre. Convertir a l'affichage aurait demande de se souvenir de le faire
+   a six endroits, et le premier oubli aurait affiche un prix a l'once sous
+   une etiquette « par kilo ».
+
+   Ce qui n'est PAS touche : le prix de l'or 24 carats au gramme, que le
+   serveur calcule deja depuis la meme once (lib/metaux.mjs), et les
+   pourcentages, qui n'ont pas d'unite. */
+const ONCES_PAR_KG = 32.1507466;
+/* l'unite est ecrite une fois : le bandeau, les onglets et l'annonce vocale
+   la lisent au meme endroit */
+const UNITE_KG = '/ kg';
+const auKg = v => { const n = nombre(v); return n === null ? null : n * ONCES_PAR_KG; };
+/* une bougie entiere : les quatre cours changent d'unite, le temps non */
+function bougieAuKg(b) {
+  return Object.assign({}, b, {
+    open: auKg(b.open), high: auKg(b.high), low: auKg(b.low), close: auKg(b.close)
+  });
+}
+
 function nf(n, d) {
   return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).format(n);
 }
-function decimales(v) { const a = Math.abs(v); return a >= 1000 ? 2 : a >= 10 ? 2 : a >= 1 ? 3 : 4; }
+/* Au kilo, l'or depasse 120 000 € : deux decimales y sont du bruit — on ne
+   negocie pas un lingot au centime. Le palier de 10 000 prolonge l'echelle
+   existante, qui donne deja plus de precision aux petits nombres (le gramme
+   d'or, lui, garde ses centimes). */
+function decimales(v) { const a = Math.abs(v); return a >= 10000 ? 0 : a >= 1000 ? 2 : a >= 10 ? 2 : a >= 1 ? 3 : 4; }
 function fmtPrix(v, devise) {
   const n = prixValide(v); if (n === null) return null;
   const s = SYMBOLE_DEVISE[devise] || devise || '';
@@ -154,7 +188,9 @@ function litVariation(v) {
   if (v === null || v === undefined) return null;
   if (typeof v === 'number') return { pct: nombre(v), abs: null, depuis: null };
   const pct = nombre(v.pct !== undefined ? v.pct : v.pourcent !== undefined ? v.pourcent : v.percent !== undefined ? v.percent : v.changePercent);
-  const abs = nombre(v.abs !== undefined ? v.abs : v.valeur !== undefined ? v.valeur : v.change);
+  /* la variation ABSOLUE est un montant : elle change d'unite avec les prix.
+     Le pourcentage, lui, n'en a pas — il reste tel quel. */
+  const abs = auKg(v.abs !== undefined ? v.abs : v.valeur !== undefined ? v.valeur : v.change);
   const depuis = v.depuis || v.base || v.periode || v.since || null;
   if (pct === null && abs === null) return null;
   return { pct, abs, depuis };
@@ -243,7 +279,7 @@ export function createCours(host, opts) {
     noeuds.prixSym = el('span', { class: 'cx-prix__sym', text: 'XAU' }, ident);
     const ligne = el('p', { class: 'cx-prix__ligne' }, prix);
     noeuds.prixVal = el('span', { class: 'cx-prix__val', text: '—' }, ligne);
-    noeuds.prixUnite = el('span', { class: 'cx-prix__unite', text: "l’once" }, ligne);
+    noeuds.prixUnite = el('span', { class: 'cx-prix__unite', text: UNITE_KG }, ligne);
     noeuds.prixVar = el('span', { class: 'cx-prix__var', hidden: 'hidden' }, ligne);
     const bas = el('p', { class: 'cx-prix__bas' }, prix);
     noeuds.prixPastille = el('i', { class: 'cx-pastille', 'aria-hidden': 'true' }, bas);
@@ -480,7 +516,9 @@ export function createCours(host, opts) {
     noeuds.prixVal.textContent = p || '—';
     noeuds.prixVal.toggleAttribute('data-absent', !p);
     noeuds.prixUnite.hidden = !p;
-    if (d && d.unite) noeuds.prixUnite.textContent = d.unite;
+    /* la source annonce son unite a elle — « l'once ». Elle ne vaut plus rien
+       ici : les nombres ont ete convertis en kilos a l'entree. */
+    noeuds.prixUnite.textContent = UNITE_KG;
 
     /* variation : uniquement si la source en fournit une vraie */
     const v = d ? litVariation(d.variation) : null;
@@ -844,7 +882,9 @@ export function createCours(host, opts) {
     let txt;
     if (vue === 'indisponible') txt = 'Données indisponibles pour ' + (NOM_PAR_SYMBOLE[st.symbole] || st.symbole) + '.';
     else if (vue === 'chargement') txt = 'Lecture du marché en cours.';
-    else txt = (NOM_PAR_SYMBOLE[st.symbole] || st.symbole) + (p ? ' : ' + p : ' : valeur indisponible') + (st.perime ? ', donnée périmée' : '');
+    /* l'annonce vocale dit l'unite : un montant nu ne veut rien dire quand on
+       ne voit pas l'etiquette a cote */
+    else txt = (NOM_PAR_SYMBOLE[st.symbole] || st.symbole) + (p ? ' : ' + p + ' par kilo' : ' : valeur indisponible') + (st.perime ? ', donnée périmée' : '');
     if (txt !== dernierAnnonce) { dernierAnnonce = txt; noeuds.live.textContent = txt; }
   }
 
@@ -939,7 +979,7 @@ export function createCours(host, opts) {
         if (p === null) { st.parMetal.delete(m.symbole); continue; }   /* jamais de 0 de remplissage */
         st.parMetal.set(m.symbole, {
           nom: m.nom || NOM_PAR_SYMBOLE[m.symbole] || m.symbole,
-          prix: p,
+          prix: auKg(p),                       /* l'once devient le kilo */
           devise: m.devise || payload.devise || st.devise,
           majAt: m.majAt || m.updatedAt || payload.majAt || null,
           majReadable: m.majReadable || null,
@@ -971,7 +1011,9 @@ export function createCours(host, opts) {
         rendreLegende(); rendreEtat();
         return api;
       }
-      const bougies = Array.isArray(payload.bougies) ? payload.bougies.filter(estBougie) : [];
+      /* les bougies aussi : sans cela la courbe serait a l'once sous un axe
+         annonce en kilos — un graphique juste sous une legende fausse. */
+      const bougies = Array.isArray(payload.bougies) ? payload.bougies.filter(estBougie).map(bougieAuKg) : [];
       st.serie = {
         symbole: payload.symbole || st.symbole,
         tf: payload.tf || st.tf,
@@ -1003,7 +1045,11 @@ export function createCours(host, opts) {
         ? { indisponible: true, raison: payload.raison || 'api' }
         : {
             devise: payload.devise || null,
-            open: payload.open, high: payload.high, low: payload.low, close: payload.close,
+            /* les quatre cours de la periode suivent la meme unite que le
+               graphique et que le prix vif : sans cela, « plus haut » et
+               « plus bas » auraient contredit la courbe qu'ils resument. */
+            open: auKg(payload.open), high: auKg(payload.high),
+            low: auKg(payload.low), close: auKg(payload.close),
             highLowChangePercent: payload.highLowChangePercent,
             openCloseChangePercent: payload.openCloseChangePercent,
             debut: payload.debut || null, fin: payload.fin || null
