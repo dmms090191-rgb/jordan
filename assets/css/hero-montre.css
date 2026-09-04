@@ -198,10 +198,15 @@
 }
 /* Quatre rythmes volontairement premiers entre eux : les barres ne retombent
    jamais ensemble. C'est ce qui distingue une respiration d'un égaliseur. */
-.hm__son.is-on .hm__onde i:nth-child(1) { animation: hmson1 2.1s ease-in-out infinite; }
-.hm__son.is-on .hm__onde i:nth-child(2) { animation: hmson2 1.6s ease-in-out infinite .2s; }
-.hm__son.is-on .hm__onde i:nth-child(3) { animation: hmson3 2.4s ease-in-out infinite .1s; }
-.hm__son.is-on .hm__onde i:nth-child(4) { animation: hmson4 1.9s ease-in-out infinite .3s; }
+/* `est-vivant` et non `is-on` : la première classe dit que le son SORT, la
+   seconde qu'il est VOULU. Aucun navigateur n'autorise le son avant un premier
+   geste ; entre le chargement et ce geste, le bouton est doré et dit « Actif »
+   — c'est l'intention — mais les barres ne bougent pas, car il ne sort rien.
+   Des barres qui respirent au-dessus du silence, c'était le bouton qui mentait. */
+.hm__son.est-vivant .hm__onde i:nth-child(1) { animation: hmson1 2.1s ease-in-out infinite; }
+.hm__son.est-vivant .hm__onde i:nth-child(2) { animation: hmson2 1.6s ease-in-out infinite .2s; }
+.hm__son.est-vivant .hm__onde i:nth-child(3) { animation: hmson3 2.4s ease-in-out infinite .1s; }
+.hm__son.est-vivant .hm__onde i:nth-child(4) { animation: hmson4 1.9s ease-in-out infinite .3s; }
 @keyframes hmson1 { 0%, 100% { height: 34%; } 50% { height: 66%; } }
 @keyframes hmson2 { 0%, 100% { height: 58%; } 50% { height: 100%; } }
 @keyframes hmson3 { 0%, 100% { height: 44%; } 50% { height: 82%; } }
@@ -364,7 +369,7 @@
 /* ---------- mouvement réduit ---------- */
 @media (prefers-reduced-motion: reduce) {
   .hm__v, .hm__pous, .hm__aig, .hm__voile, .hm__rai { transition-duration: .01ms; }
-  .hm__son.is-on .hm__onde i { animation: none; height: 7px; }
+  .hm__son.est-vivant .hm__onde i { animation: none; height: 7px; }
 }
 
 /* ---------- cadrage figé ----------

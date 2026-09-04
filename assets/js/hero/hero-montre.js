@@ -146,6 +146,15 @@ function demarrerHero() {
     const on = tictac.actif || tictac.voulu();
     bouton.classList.toggle('is-on', on);
     bouton.setAttribute('aria-pressed', String(on));
+    /* DEUX ÉTATS, PAS UN. « is-on » dit que le son est VOULU ; « est-vivant »
+       dit qu'il SORT. Entre les deux il y a le verrou du navigateur, qui
+       n'autorise aucun son avant un premier geste. Les quatre barres de la
+       waveform ne s'animent donc que sous « est-vivant » : tant qu'on n'a rien
+       touché, le bouton est doré et dit « Actif », mais les barres restent
+       immobiles — elles ne peuvent pas prétendre qu'un son sort alors qu'il
+       n'en sort aucun. Elles se mettent à respirer à l'instant précis où le
+       tic-tac commence. */
+    bouton.classList.toggle('est-vivant', tictac.actif);
     /* « Actif » / « Coupé » et non « Son actif » / « Son » : le mot « Son »
        est desormais porte une fois pour toutes par l etiquette au-dessus,
        comme sur le bouton de l experience 3D. Seul le libelle change ; la
@@ -155,18 +164,21 @@ function demarrerHero() {
   }
   if (bouton) {
     bouton.addEventListener('click', async () => {
-      /* On bascule depuis l'état AFFICHÉ, pas depuis l'état qui joue. Au
-         chargement le bouton dit « Actif » alors que le tic-tac attend encore
-         un geste : se fier à tictac.actif ferait DÉMARRER le son sur un clic
-         dont l'intention était de le couper. */
-      if (tictac.actif || tictac.voulu()) tictac.arreter(); else await tictac.demarrer();
+      /* ON BASCULE DEPUIS CE QUI SORT, pas depuis ce qui est voulu. Quand rien
+         ne sort, appuyer sur ce bouton ne peut vouloir dire qu'une chose :
+         « fais-moi entendre ». C'est vrai même s'il affiche « Actif » — il
+         affiche l'intention, et l'intention seule ne s'entend pas. */
+      if (tictac.actif) tictac.arreter(); else await tictac.demarrer();
       marquerBouton();
     });
-    /* le choix est conservé, mais le navigateur n'autorise le son qu'après un
-       geste : on le rejoue à la première interaction, quelle qu'elle soit */
-    tictac.brancherReprise();
+    /* Le navigateur n'autorise le son qu'après un geste : on le rejoue à la
+       première interaction, quelle qu'elle soit — SAUF si elle vient de ce
+       bouton, qui a déjà son propre gestionnaire. Sans cette exception, son
+       pointerdown démarrait le son que son click coupait aussitôt. */
+    tictac.brancherReprise('.hm__son');
+    /* on ne devine plus le moment où le son commence : le tic-tac le dit */
+    tictac.surChangement(marquerBouton);
     marquerBouton();
-    document.addEventListener('pointerdown', () => setTimeout(marquerBouton, 60), { passive: true });
   }
 
   /* ── bascule Jour / Nuit ─────────────────────────────────────────────

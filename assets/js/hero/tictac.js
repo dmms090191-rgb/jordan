@@ -34,6 +34,11 @@ export function creerTicTac(opts = {}) {
   let prochaine = 0;         // prochaine seconde à sonner, en temps audio
   let parite = 0;
   let actif = false;
+  /* prévenus dès que le son commence VRAIMENT à sortir, ou s'arrête. Sans ce
+     signal, l'interface devinait au bout de 60 ms avec un setTimeout — et se
+     trompait quand le navigateur mettait plus longtemps à lever l'autoplay. */
+  const temoins = [];
+  const signaler = () => { for (let i = 0; i < temoins.length; i++) { try { temoins[i](actif); } catch (e) {} } };
 
   /* ── un choc ──────────────────────────────────────────────────────── */
   function choc(t, aigu) {
@@ -118,6 +123,7 @@ export function creerTicTac(opts = {}) {
     caler();
     pomper();
     try { localStorage.setItem(CLE, 'on'); } catch (e) { /* mode privé */ }
+    signaler();
     return true;
   }
 
@@ -126,6 +132,7 @@ export function creerTicTac(opts = {}) {
     clearTimeout(minuteur);
     if (ctx && ctx.state === 'running') ctx.suspend();
     try { localStorage.setItem(CLE, 'off'); } catch (e) { /* mode privé */ }
+    signaler();
   }
 
   /* Le choix est conservé, mais on ne peut pas le REJOUER sans geste : on se
@@ -138,17 +145,39 @@ export function creerTicTac(opts = {}) {
     try { return localStorage.getItem(CLE) !== 'off'; } catch (e) { return true; }
   }
 
-  function brancherReprise() {
+  /* `exclure` : un sélecteur dont les gestes ne doivent PAS déclencher la
+     reprise automatique. C'est le bouton du son lui-même.
+
+     LE DÉFAUT QUE ÇA RÉPARE. Le bouton s'annulait tout seul. Au tout premier
+     clic dessus, son `pointerdown` remontait ici, le tic-tac DÉMARRAIT ; puis
+     le `click` du même geste voyait un son en marche et l'ARRÊTAIT aussitôt.
+     Résultat mesuré : premier clic sur le bouton -> il joue « non » et affiche
+     « Coupé ». Il fallait le désactiver puis le réactiver pour entendre quoi
+     que ce soit. Le bouton est désormais seul maître de son propre geste.
+
+     Les événements sont plus nombreux qu'avant : selon le navigateur et le
+     support, l'autorisation de jouer n'est accordée ni au même moment ni sur
+     le même événement — `touchend` sur certains mobiles, `click` ailleurs. Le
+     premier qui aboutit débranche les autres. */
+  const GESTES = ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'];
+
+  function brancherReprise(exclure) {
     if (!voulu()) return;
-    const reprendre = async () => {
+
+    /* On tente d'abord SANS geste : un navigateur qui connaît déjà le site
+       peut l'autoriser, et le son commence alors avec la page. S'il refuse —
+       le cas ordinaire — rien n'est perdu, on attend le premier geste. */
+    demarrer().catch(() => {});
+
+    const reprendre = async (e) => {
+      if (exclure && e && e.target && e.target.closest && e.target.closest(exclure)) return;
+      /* le son a pu être coupé entre-temps : on ne le rallume jamais dans le
+         dos de quelqu'un qui vient de l'éteindre */
+      if (!voulu()) { retirer(); return; }
       if (await demarrer()) retirer();
     };
-    const retirer = () => {
-      ['pointerdown', 'keydown', 'touchstart'].forEach(e =>
-        document.removeEventListener(e, reprendre));
-    };
-    ['pointerdown', 'keydown', 'touchstart'].forEach(e =>
-      document.addEventListener(e, reprendre, { passive: true }));
+    const retirer = () => { GESTES.forEach(n => document.removeEventListener(n, reprendre)); };
+    GESTES.forEach(n => document.addEventListener(n, reprendre, { passive: true }));
   }
 
   /* onglet caché : on suspend, sinon le navigateur accumule des événements */
@@ -158,5 +187,9 @@ export function creerTicTac(opts = {}) {
     else if (ctx) ctx.resume().then(() => { caler(); pomper(); });
   });
 
-  return { demarrer, arreter, voulu, brancherReprise, get actif() { return actif; } };
+  return {
+    demarrer, arreter, voulu, brancherReprise,
+    surChangement(fn) { if (typeof fn === 'function') temoins.push(fn); },
+    get actif() { return actif; },
+  };
 }
