@@ -1940,3 +1940,209 @@ html.cine-plein-on.film-fini .cine-revoir { display: inline-flex; }
   .v4-chapitre__textes p { font-size: .8rem; line-height: 1.48; }
   .v4-chapitre__textes { gap: .4rem; }
 }
+
+/* ==========================================================================
+   L'EXPÉRIENCE EN AMBIANCE JOUR
+   ==========================================================================
+
+   RELEVÉ. La bascule posait bien `data-ambiance="jour"` sur <html> et les
+   vidéos passaient à leurs jumelles de jour — mais l'interface, elle, ne
+   bougeait pas d'un ton. Luminance du fond, avant et après la bascule :
+
+     fond de page        5 → 5      barre de temps      0 → 0
+     compteur            0 → 0      pastille vitesse   10 → 10
+     son                 0 → 0      ambiance           10 → 10
+     plein écran         7 → 7      panneau de chapitre 0 → 0
+     numéro, titre, texte du chapitre : inchangés
+
+   Cette page n'avait tout simplement aucune variante de jour : main.css n'en
+   déclare aucune pour `:root[data-ambiance="jour"]`, et cinema-v4.css n'en
+   avait que pour deux incrustations du film.
+
+   Ce bloc n'ajoute QUE des règles de jour. Le rendu de nuit, validé, n'est
+   pas réécrit d'une ligne — il reste ce qu'il était, et c'est la garantie
+   qu'aucune bascule ne peut l'abîmer.
+   ========================================================================== */
+
+html[data-ambiance="jour"] {
+  --cx-surf: rgba(252, 249, 243, .72);
+  --cx-surf-2: rgba(253, 251, 246, .97);
+  --cx-filet: rgba(138, 104, 32, .34);
+  --cx-filet-2: rgba(138, 104, 32, .18);
+  --cx-or: #8a6820;
+  --cx-txt: rgba(36, 28, 16, .9);
+  --cx-txt-2: rgba(36, 28, 16, .66);
+  --cx-txt-3: rgba(36, 28, 16, .44);
+}
+
+/* ── le fond de page ─────────────────────────────────────────────────── */
+html[data-ambiance="jour"],
+html[data-ambiance="jour"] body { background: #efe8db; }
+/* la scène garde son noir : c'est le cadre du film, pas de l'interface, et de
+   l'ivoire autour d'une image ferait perdre le peu de contraste des bandes */
+
+/* ── la barre de temps ───────────────────────────────────────────────── */
+html[data-ambiance="jour"] .cine-timeline::before { background: rgba(36, 28, 16, .16); }
+html[data-ambiance="jour"] .cine-timeline i { background: linear-gradient(90deg, #b98a2e, #8a6820); }
+html[data-ambiance="jour"] .cine-timeline i::after {
+  background: #8a6820;
+  box-shadow: 0 0 0 3px rgba(138, 104, 32, .18), 0 2px 8px rgba(58, 44, 20, .28);
+}
+html[data-ambiance="jour"] .cine-bar__temps { color: var(--cx-txt-2); }
+html[data-ambiance="jour"] .cine-bar__temps b { color: var(--cx-or); }
+
+/* ── les pastilles de la console ─────────────────────────────────────── */
+html[data-ambiance="jour"] .cine-bar__btn,
+html[data-ambiance="jour"] .cine-vit__b,
+html[data-ambiance="jour"] .cine-plein {
+  border-color: var(--cx-filet);
+  background: var(--cx-surf);
+  color: var(--cx-or);
+}
+html[data-ambiance="jour"] .cine-bar__btn { color: var(--cx-txt-2); }
+html[data-ambiance="jour"] .cine-bar__btn--lect {
+  border-color: rgba(138, 104, 32, .55);
+  background: rgba(252, 249, 243, .84);
+  color: var(--cx-or);
+}
+html[data-ambiance="jour"] .cine-bar__btn:hover,
+html[data-ambiance="jour"] .cine-vit__b:hover,
+html[data-ambiance="jour"] .cine-plein:hover { border-color: rgba(138, 104, 32, .62); }
+html[data-ambiance="jour"] .cine-vit__b { color: var(--cx-or); }
+
+/* le menu de vitesse */
+html[data-ambiance="jour"] .cine-vit__menu {
+  border-color: var(--cx-filet);
+  background: var(--cx-surf-2);
+  box-shadow: 0 18px 40px rgba(58, 44, 20, .22);
+}
+html[data-ambiance="jour"] .cine-vit__menu button { color: var(--cx-txt-2); }
+html[data-ambiance="jour"] .cine-vit__menu button:hover { background: rgba(138, 104, 32, .1); color: var(--cx-or); }
+html[data-ambiance="jour"] .cine-vit__menu button.is-on { color: var(--cx-or); background: rgba(138, 104, 32, .14); }
+
+/* ── le son et l'ambiance ────────────────────────────────────────────── */
+html[data-ambiance="jour"] .sound__rond {
+  border-color: rgba(138, 104, 32, .3);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, 0) 50%), rgba(251, 248, 241, .7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+  color: rgba(36, 28, 16, .5);
+}
+html[data-ambiance="jour"] .sound.is-on .sound__rond { color: var(--cx-or); border-color: rgba(138, 104, 32, .55); }
+html[data-ambiance="jour"] .sound__anneau { border-color: rgba(138, 104, 32, .2); }
+html[data-ambiance="jour"] .sound__label { color: rgba(36, 28, 16, .5); }
+html[data-ambiance="jour"] .sound__etat { color: rgba(36, 28, 16, .34); }
+html[data-ambiance="jour"] .sound.is-on .sound__etat { color: var(--cx-or); }
+
+html[data-ambiance="jour"] .ab-toggle {
+  border-color: rgba(138, 104, 32, .42);
+  background: rgba(252, 249, 243, .82);
+}
+html[data-ambiance="jour"] .ab-toggle button { color: rgba(36, 28, 16, .5); }
+html[data-ambiance="jour"] .ab-toggle button.is-active { background: #d9b25e; color: #241c10; }
+html[data-ambiance="jour"] .ab-toggle button:not(.is-active):hover { color: var(--cx-or); }
+
+/* ── la zone du chapitre ─────────────────────────────────────────────── */
+html[data-ambiance="jour"] .v4-chapitre { border-top-color: rgba(138, 104, 32, .22); }
+html[data-ambiance="jour"] .v4-chapitre__num { color: var(--cx-or); }
+html[data-ambiance="jour"] .v4-chapitre__titre { color: #6f5217; text-shadow: none; }
+html[data-ambiance="jour"] .v4-chapitre__filet { background: linear-gradient(to right, #8a6820, rgba(138, 104, 32, 0)); }
+html[data-ambiance="jour"] .v4-chapitre__textes p { color: var(--cx-txt); text-shadow: none; }
+html[data-ambiance="jour"] .v4-mob__chap { color: var(--cx-or); }
+
+/* ── le bouton de fin, et les voiles du plein écran ──────────────────── */
+html[data-ambiance="jour"] .cine-revoir {
+  border-color: rgba(138, 104, 32, .5);
+  background: rgba(252, 249, 243, .84);
+  box-shadow: 0 22px 60px rgba(58, 44, 20, .22), inset 0 1px 0 rgba(255, 255, 255, .7);
+  color: #6f5217;
+}
+html[data-ambiance="jour"] .cine-revoir:hover { border-color: #8a6820; }
+html[data-ambiance="jour"].cine-plein-on #cinema::before {
+  background: linear-gradient(to bottom, rgba(250, 246, 238, .76), rgba(250, 246, 238, .32) 45%, transparent);
+}
+html[data-ambiance="jour"].cine-plein-on #cinema::after {
+  background: linear-gradient(to top, rgba(250, 246, 238, .86), rgba(250, 246, 238, .46) 42%, transparent);
+}
+html[data-ambiance="jour"].cine-plein-on .cine-bar__temps {
+  background: rgba(252, 249, 243, .62);
+  border-color: rgba(138, 104, 32, .2);
+}
+html[data-ambiance="jour"].cine-plein-on .cine-bar__temps,
+html[data-ambiance="jour"].cine-plein-on .v4-mob__chap { text-shadow: 0 1px 12px rgba(250, 246, 238, .9); }
+
+/* ── le bandeau de retour, en haut de page ───────────────────────────── */
+html[data-ambiance="jour"] .nav__retour {
+  border-color: rgba(138, 104, 32, .3);
+  background: rgba(252, 249, 243, .66);
+  color: rgba(36, 28, 16, .74);
+}
+
+/* ==========================================================================
+   LE SWITCH DIT LE THÈME, PAS SON CONTRAIRE
+   --------------------------------------------------------------------------
+   Sur téléphone, la pastille ne montrait que l'option À CHOISIR : en nuit,
+   elle affichait « JOUR ». C'était la seule façon de tenir la rangée à
+   320 px — deux moitiés demandent 129 px — mais on lisait l'inverse du thème
+   réel. Les deux moitiés reviennent donc, resserrées : corps réduit et
+   espacement plus court, elles tiennent en 78 px, et la rangée respire.
+   ========================================================================== */
+@media (max-width: 900px) and (orientation: portrait) {
+  #ab-toggle button.is-active { display: inline-flex; }
+  #ab-toggle button { min-height: 40px; padding: 0 clamp(.34rem, 2vw, .62rem); font-size: .53rem; letter-spacing: .1em; }
+}
+html.cine-plein-on #ab-toggle button.is-active { display: inline-flex; }
+html.cine-plein-on #ab-toggle button { min-height: 40px; padding: 0 .6rem; font-size: .55rem; letter-spacing: .1em; }
+
+/* ── la rangée se recale sur le switch redevenu complet ───────────────
+   Les deux moitiés « Jour | Nuit » reprennent 76 à 84 px selon l'écran, contre
+   57 quand une seule était montrée : le bouton du son passait dessous de 6 à
+   14 px. L'écart du son suit donc la largeur de l'écran, comme le switch, et
+   le transport se resserre d'autant. Mesuré ensuite à cinq formats. */
+@media (max-width: 900px) and (orientation: portrait) {
+  #ab-toggle button {
+    padding: 0 clamp(.28rem, 1.7vw, .55rem);
+    font-size: clamp(.48rem, 2.6vw, .56rem);
+  }
+  #sound { right: calc(1rem + 23vw); }   /* 2,6 px de degagement a 320 px, ou le switch est le plus large par rapport a l ecran */
+  .cine-bar { gap: clamp(.05rem, 1.2vw, .5rem); }
+  .cine-bar__btn { width: clamp(36px, 10.5vw, 42px); height: clamp(36px, 10.5vw, 42px); }
+  .cine-bar__btn--lect { width: clamp(40px, 11.5vw, 46px); height: clamp(40px, 11.5vw, 46px); }
+  .cine-vit__b { min-width: clamp(38px, 12vw, 52px); }
+}
+html.cine-plein-on #sound { right: calc(1rem + 23vw + env(safe-area-inset-right, 0px)); }
+
+/* ── DEUX CALQUES OUBLIÉS ─────────────────────────────────────────────
+   La bascule laissait la page noire malgré un `body` déjà ivoire. Deux
+   choses peignaient par-dessus, et `elementFromPoint` ne les voyait pas —
+   elles sont en `pointer-events: none`, il les traverse :
+
+     · `.env`, le calque d'ambiance de tout le site : `position: fixed`,
+       plein écran, fond `var(--canvas)` — et --canvas n'a pas de valeur de
+       jour sur cette page ;
+     · le panneau de chapitre, dont la règle de JOUR d'origine — prévue pour
+       la colonne de gauche du desktop — repeint un dégradé sombre. Sa
+       spécificité (attribut + classe + type) battait la règle mobile.
+
+   Relevé après correction : luminance de la zone du texte 8 → ivoire. */
+html[data-ambiance="jour"] .env { background: #efe8db; }
+html[data-ambiance="jour"] .env__glow {
+  background: radial-gradient(60% 50% at 50% 20%, rgba(201, 154, 63, .16), transparent 70%);
+}
+html[data-ambiance="jour"] .env__grain { opacity: .35; }
+
+@media (max-width: 900px) and (orientation: portrait) {
+  html[data-ambiance="jour"] .v4-chapitre,
+  html[data-ambiance="jour"] .v4-chapitre.is-on,
+  .v4-chapitre, .v4-chapitre.is-on { background: none; background-image: none; }
+}
+
+/* Le rayon 999 px transforme une moitié de 36×40 en ellipse VERTICALE, plus
+   étroite que le mot qu'elle contient : « JOUR » paraissait déborder de sa
+   pastille alors que rien n'était rogné (mesuré : scrollWidth = clientWidth).
+   Un rayon fini épouse la boîte. */
+@media (max-width: 900px) and (orientation: portrait) {
+  #ab-toggle { border-radius: 22px; }
+  #ab-toggle button { border-radius: 18px; }
+}
+html.cine-plein-on #ab-toggle { border-radius: 22px; }
+html.cine-plein-on #ab-toggle button { border-radius: 18px; }
