@@ -173,10 +173,23 @@
   <!-- Le tic-tac ne peut demarrer que sur un geste : les navigateurs
        n'autorisent pas le son autrement. Le choix est ensuite conserve, et
        repris a la premiere interaction lors des visites suivantes. -->
+  <!-- MÊME BOUTON QUE L'EXPÉRIENCE 3D (variante C validée) : rond de 44 px en
+       verre fumé, anneau champagne, quatre barres qui respirent, trait de
+       coupure qui se dessine, libellé sur deux lignes. Le site n'a plus deux
+       façons de dire « son ». La racine reste .hm__son et l'état reste écrit
+       dans .hm__son-txt : hero-montre.js ne change pas de prise, seule
+       l'apparence change. -->
   <button class="hm__son" id="hmSon" type="button" aria-pressed="false"
           aria-label="Activer ou couper le tic-tac de la montre">
-    <span class="hm__onde" aria-hidden="true"><i></i><i></i><i></i></span>
-    <span class="hm__son-txt">Son</span>
+    <span class="hm__son-rond" aria-hidden="true">
+      <span class="hm__son-anneau"></span>
+      <span class="hm__onde"><i></i><i></i><i></i><i></i></span>
+      <span class="hm__son-barre"></span>
+    </span>
+    <span class="hm__son-lab" aria-hidden="true">
+      <span class="hm__son-label">Son</span>
+      <span class="hm__son-txt">Coupé</span>
+    </span>
   </button>
   <ul class="trust" aria-label="Nos engagements">
     <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>Expertise gratuite</li>

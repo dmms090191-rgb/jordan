@@ -80,6 +80,11 @@ function ensureLayers(frame) {
 }
 
 const SPEEDS = [1, 2, 4, 8];   // vitesse REELLE de lecture : debit des videos ET rythme d'avancement, du meme facteur
+/* Vitesse retenue au chargement. Elle sert a TROIS endroits qui doivent
+   s'accorder : l'etat initial des boutons, la variable de lecture, et le
+   debit pose sur chaque video par playV(). Une seule constante evite
+   qu'un bouton annonce x1 pendant que les videos jouent a x4. */
+const SPEED_DEFAUT = 4;
 
 /* Bouton Lecture / Pause + vitesses x1/x2/x4/x8 + filet de progression (12 segments), crees par le module sous le cadre
    (aucun markup a inserer). Lecture/Pause et vitesses partagent une meme rangee discrete a droite (.dom__ctl). */
@@ -89,9 +94,12 @@ function createControls(host, frame, note, total) {
   for (let k = 0; k < total; k++) { const s = document.createElement('span'); s.className = 'dom__seq-s'; const f = document.createElement('i'); f.className = 'dom__seq-f'; s.appendChild(f); seq.appendChild(s); segs.push(s); fills.push(f); }
   const ctlWrap = document.createElement('div'); ctlWrap.className = 'dom__ctl';
   const speedEl = document.createElement('div'); speedEl.className = 'dom__speed'; speedEl.setAttribute('role', 'group'); speedEl.setAttribute('aria-label', 'Vitesse de la séquence');
+  /* VITESSE PAR DEFAUT : x4. Le bouton doit donc paraitre actif des le
+     premier rendu, avant meme que la sequence ne demarre — sinon l interface
+     annoncerait x1 pendant que les videos jouent a x4. */
   const speedBtns = SPEEDS.map(v => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'dom__speed-b' + (v === 1 ? ' is-on' : '');
-    b.dataset.speed = String(v); b.setAttribute('aria-pressed', v === 1 ? 'true' : 'false'); b.textContent = '×' + v;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'dom__speed-b' + (v === SPEED_DEFAUT ? ' is-on' : '');
+    b.dataset.speed = String(v); b.setAttribute('aria-pressed', v === SPEED_DEFAUT ? 'true' : 'false'); b.textContent = '×' + v;
     speedEl.appendChild(b); return b;
   });
   const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dom__play'; btn.setAttribute('aria-pressed', 'false');
@@ -167,7 +175,7 @@ export function initDomaines(section, opts = {}) {
   let running = false, visible = false, hidden = document.hidden;
   let fadeT = 0, capT = 0, capOutAt = 0, hoverT = 0, raf = 0, px = 0, py = 0, ptrOn = false;
   /* lecture (memoire uniquement) */
-  let auto = false, hold = false, frozen = false, finished = false, stepMode = 'timer', stepT = 0, stepAt = 0, stepUsed = 0, seqRaf = 0, lastP = -1, speed = 1;
+  let auto = false, hold = false, frozen = false, finished = false, stepMode = 'timer', stepT = 0, stepAt = 0, stepUsed = 0, seqRaf = 0, lastP = -1, speed = SPEED_DEFAUT;
   const cache = new Map();
   const preload = i => { const it = items[i]; if (!it) return; const u = it.dataset.img; if (!u || cache.has(u)) return; const im = new Image(); im.decoding = 'async'; im.src = u; cache.set(u, im); };
   const preloadAround = i => { preload(i + 1); preload(i - 1); preload(i + 2); };
@@ -238,7 +246,17 @@ export function initDomaines(section, opts = {}) {
     on(v, 'ended', () => { if (auto && !hold && L.idx === active && L === layers[cur]) advance(); });
     on(v, 'error', () => { if (auto && !hold && L.idx === active && stepMode !== 'video') armFallback(); });
   });
+  /* DEMARRAGE AUTOMATIQUE, UNE SEULE FOIS.
+     La sequence attendait un clic sur Lecture. Elle part maintenant d'elle-meme
+     des que la section entre a l'ecran — pas au chargement du document : une
+     galerie qui tourne trois ecrans plus bas ne ferait que consommer du reseau
+     et de la batterie.
+     prefers-reduced-motion est respecte : on ne lance rien de ce que
+     l'utilisateur a demande de ne pas voir bouger. L'utilisateur garde la main
+     apres coup — un seul demarrage, jamais de relance imposee. */
+  let demarreUneFois = false;
   const sync = () => {
+    if (!demarreUneFois && !reduced && live()) { demarreUneFois = true; play(); }
     const p = playing();
     dom.classList.toggle('is-paused', !p && !reduced);
     if (p) { if (layers[cur].idx >= 0) loadVideo(layers[cur], layers[cur].idx); } else layers.forEach(L => L.video && L.video.pause());

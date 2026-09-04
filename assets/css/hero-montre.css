@@ -124,30 +124,131 @@
 .hm__rai.is-on { opacity: 1; }
 
 /* ---------- bouton SON ---------- */
+/* ==========================================================================
+   LE BOUTON SON DU HERO — la MÊME identité que celui de l'expérience 3D
+   ==========================================================================
+   Il était une capsule dorée à trois barres ; l'expérience, elle, portait
+   depuis la variante C un rond de verre fumé à quatre barres. Deux façons de
+   dire « son » sur le même site. Ce bloc reprend la variante C au trait près
+   — dimensions, verre, anneau, rythmes des barres, trait de coupure, états —
+   en ne gardant du hero que son ancrage : il reste posé en bas à droite du
+   plan, alors que celui du film vit dans une barre de commandes.
+
+   La logique audio n'est pas touchée : la racine est toujours .hm__son, elle
+   reçoit toujours .is-on et aria-pressed, et l'état s'écrit toujours dans
+   .hm__son-txt.
+   ========================================================================== */
 .hm__son {
   position: absolute; z-index: 3; right: clamp(1.2rem,5vw,5rem); bottom: 84px;
-  display: inline-flex; align-items: center; gap: .55rem;
-  padding: .5rem .9rem .5rem .7rem;
-  background: rgba(12,10,8,.52); color: var(--or, #c99a3f);
-  border: 1px solid rgba(201,154,63,.34); border-radius: 999px;
-  font: 500 .68rem/1 var(--sans, inherit); letter-spacing: .14em; text-transform: uppercase;
-  cursor: pointer; backdrop-filter: blur(6px);
-  transition: background .25s, border-color .25s, color .25s, opacity .5s;
+  display: inline-flex; align-items: center; gap: .7rem;
+  height: auto; min-height: 44px; padding: 0;
+  border: 0; border-radius: 0; background: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  color: inherit; letter-spacing: normal; text-transform: none;
+  font: inherit; cursor: pointer;
+  transition: opacity .5s;
 }
-.hm__son:hover { background: rgba(20,17,12,.72); border-color: rgba(201,154,63,.6); }
-.hm__son:focus-visible { outline: 2px solid var(--or, #c99a3f); outline-offset: 3px; }
-:root[data-ambiance="jour"] .hm__son {
-  background: rgba(250,246,238,.62); color: #6b4d17; border-color: rgba(107,77,23,.28);
+.hm__son-rond {
+  position: relative; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(201, 154, 63, .26);
+  /* verre fumé : un dégradé d'un pixel en haut donne l'épaisseur, sans ombre
+     portée lourde ni halo */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 50%),
+    rgba(14, 12, 10, .6);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  color: rgba(243, 236, 220, .6);
+  transition: border-color .4s ease, color .4s ease, background .4s ease;
 }
-:root[data-ambiance="jour"] .hm__son:hover { background: rgba(255,252,246,.82); }
+.hm__son-anneau {
+  position: absolute; inset: -1px; border-radius: 50%;
+  border: 1px solid transparent;
+  transition: border-color .5s ease;
+}
+.hm__son-lab {
+  display: flex; flex-direction: column; justify-content: center;
+  text-align: left; line-height: 1.35;
+}
+.hm__son-label {
+  font-family: var(--body); font-size: .6rem; letter-spacing: .24em;
+  text-transform: uppercase; color: rgba(243, 236, 220, .45);
+  transition: color .4s ease;
+}
+/* « Coupé » est plus long que « Actif » : sans largeur plancher, le bouton
+   changerait de largeur en changeant d'état. Comme il est ancré à DROITE,
+   son bord gauche sauterait à chaque clic. */
+.hm__son-txt {
+  min-width: 3.4rem;
+  font-style: normal; font-family: var(--body);
+  font-size: .5rem; letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(243, 236, 220, .28);
+  transition: color .4s ease;
+}
 
-/* l'onde : trois barres qui respirent quand le son est actif, figées sinon */
-.hm__onde { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; }
-.hm__onde i { display: block; width: 2px; height: 4px; background: currentColor; border-radius: 1px; }
-.hm__son.is-on .hm__onde i { animation: hm-onde 1s ease-in-out infinite; }
-.hm__son.is-on .hm__onde i:nth-child(2) { animation-delay: .16s; }
-.hm__son.is-on .hm__onde i:nth-child(3) { animation-delay: .33s; }
-@keyframes hm-onde { 0%,100% { height: 3px } 50% { height: 11px } }
+/* ---- la waveform : quatre barres dessinées, jamais une icône importée ---- */
+.hm__onde { display: flex; align-items: center; gap: 2px; height: 13px; }
+.hm__onde i {
+  display: block; width: 1.5px; border-radius: 1px;
+  background: currentColor; height: 26%;
+  transform-origin: center;
+  transition: height .45s cubic-bezier(.4, 0, .2, 1), opacity .35s ease;
+}
+/* Quatre rythmes volontairement premiers entre eux : les barres ne retombent
+   jamais ensemble. C'est ce qui distingue une respiration d'un égaliseur. */
+.hm__son.is-on .hm__onde i:nth-child(1) { animation: hmson1 2.1s ease-in-out infinite; }
+.hm__son.is-on .hm__onde i:nth-child(2) { animation: hmson2 1.6s ease-in-out infinite .2s; }
+.hm__son.is-on .hm__onde i:nth-child(3) { animation: hmson3 2.4s ease-in-out infinite .1s; }
+.hm__son.is-on .hm__onde i:nth-child(4) { animation: hmson4 1.9s ease-in-out infinite .3s; }
+@keyframes hmson1 { 0%, 100% { height: 34%; } 50% { height: 66%; } }
+@keyframes hmson2 { 0%, 100% { height: 58%; } 50% { height: 100%; } }
+@keyframes hmson3 { 0%, 100% { height: 44%; } 50% { height: 82%; } }
+@keyframes hmson4 { 0%, 100% { height: 28%; } 50% { height: 54%; } }
+
+/* le trait de coupure se DESSINE : il part de zéro, il n'apparaît pas d'un coup */
+.hm__son-barre {
+  position: absolute; left: 50%; top: 50%;
+  width: 0; height: 1px; background: currentColor;
+  rotate: -24deg; translate: -50% -50%; opacity: 0;
+  transition: width .3s ease, opacity .25s ease;
+}
+
+/* ---- ACTIF ---- */
+.hm__son.is-on .hm__son-rond { color: var(--gold-bright, #e8cd93); border-color: rgba(201, 154, 63, .46); }
+.hm__son.is-on .hm__son-anneau { border-color: rgba(232, 205, 147, .18); }
+.hm__son.is-on .hm__son-label { color: var(--cream, #f3ecdc); }
+.hm__son.is-on .hm__son-txt { color: var(--gold, #c99a3f); }
+
+/* ---- COUPÉ : mêmes dimensions, moins de lumière ---- */
+.hm__son:not(.is-on) .hm__onde i { height: 22%; opacity: .5; }
+.hm__son:not(.is-on) .hm__son-barre { width: 19px; opacity: .75; }
+
+/* ---- survol : un éclaircissement du filet, rien de plus ---- */
+.hm__son:hover .hm__son-rond { border-color: rgba(201, 154, 63, .5); }
+.hm__son:focus-visible { outline: 0; }
+.hm__son:focus-visible .hm__son-rond { outline: 1px solid var(--gold-bright, #e8cd93); outline-offset: 3px; }
+
+/* ---- JOUR : le verre s'éclaircit, l'or fonce, la géométrie ne bouge pas ---- */
+:root[data-ambiance="jour"] .hm__son-rond {
+  border-color: rgba(138, 104, 32, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, 0) 50%),
+    rgba(251, 248, 241, .66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+  color: rgba(36, 28, 16, .5);
+}
+:root[data-ambiance="jour"] .hm__son-label { color: rgba(36, 28, 16, .5); }
+:root[data-ambiance="jour"] .hm__son-txt { color: rgba(36, 28, 16, .32); }
+:root[data-ambiance="jour"] .hm__son.is-on .hm__son-rond { color: #8a6820; border-color: rgba(138, 104, 32, .55); }
+:root[data-ambiance="jour"] .hm__son.is-on .hm__son-anneau { border-color: rgba(138, 104, 32, .2); }
+:root[data-ambiance="jour"] .hm__son.is-on .hm__son-label { color: #241c10; }
+:root[data-ambiance="jour"] .hm__son.is-on .hm__son-txt { color: #8a6820; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hm__onde i { animation: none !important; }
+}
 
 /* ---------- format large : le plan est montré ENTIER ----------
    CADRAGE. Le plan a été composé comme une photographie : la montre occupe le

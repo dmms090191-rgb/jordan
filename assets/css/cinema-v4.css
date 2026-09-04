@@ -1211,3 +1211,86 @@ html.noir-bref #cinema { filter: brightness(.03); }
   .sound__lab { display: none; }
   #sound { min-width: 44px; height: 44px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TÉLÉPHONE EN PORTRAIT — UN VRAI PLEIN ÉCRAN, PAS UN BLOC DANS UNE PAGE
+   ══════════════════════════════════════════════════════════════════════
+   Mesure de départ à 390 × 844 : le header prenait 83 px en haut, le film
+   219 px sous lui, les commandes s'empilaient jusqu'à y = 504 — et il restait
+   340 px de noir mort au bas de l'écran. L'expérience occupait donc 60 % de la
+   hauteur, alignée en haut comme un article.
+
+   CE QU'ON NE PEUT PAS FAIRE, et il faut le dire : un film 16:9 posé sur toute
+   la largeur d'un téléphone de 390 px ne fait que 219 px de haut. C'est de
+   l'arithmétique, pas un réglage. L'agrandir demanderait de le recadrer —
+   exactement ce qu'on refuse. Le plein écran, ici, ne veut donc pas dire un
+   film plus grand : il veut dire plus rien d'autre que lui à l'écran, et la
+   composition posée au centre du cadre plutôt qu'accrochée en haut.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) and (orientation: portrait) {
+  /* hauteur de la pile complète : le film, puis la barre de temps, les
+     commandes, la rangée son / jour-nuit, et l'onglet de chapitre. */
+  :root { --v4-pile: calc(var(--v4-film-h) + 14.2rem); }   /* mesuré : 227 px de commandes sous le film, pas 195 */
+
+  /* Haut de la pile. Repli d'abord (navigateurs sans dvh), puis la version
+     centrée : le plus bas des deux entre « sous l'encoche » et « centré ».
+     Une pile plus haute que l'écran reste donc lisible du haut. */
+  :root { --v4-haut: calc(env(safe-area-inset-top, 0px) + 3.4rem); }
+  :root { --v4-haut: max(calc(env(safe-area-inset-top, 0px) + 3.4rem),
+                         calc((100dvh - var(--v4-pile)) / 2)); }
+  :root { --v4-sous: calc(var(--v4-haut) + var(--v4-film-h)); }
+
+  #cinema { top: var(--v4-haut); }
+
+  /* ---- LE HEADER SE RETIRE, LA SORTIE RESTE ----
+     Il portait le retour, le poinçon et le menu sur 83 px de haut : trois
+     éléments de page au-dessus d'un film. Il ne reste que la sortie, en
+     pastille flottante, toujours atteignable au pouce. */
+  .nav {
+    position: fixed; z-index: 60;
+    top: calc(env(safe-area-inset-top, 0px) + .7rem); left: 1rem;
+    inset-inline-end: auto; bottom: auto;
+    display: block; width: auto; height: auto; padding: 0;
+    background: none; border: 0; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  .nav > *:not(.nav__retour) { display: none; }
+  .nav__retour {
+    display: inline-flex; align-items: center; gap: .4rem;
+    min-height: 40px; padding: 0 .95rem 0 .8rem;
+    border: 1px solid var(--line, rgba(201, 154, 63, .28));
+    border-radius: 22px;
+    background: rgba(11, 10, 8, .6);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  /* « Retour à l'accueil » devient « accueil » : à cette taille, le mot suffit */
+  .nav__retour-long { display: none; }
+
+  /* la scène est noire de bord à bord : plus rien de la page autour du film */
+  html, body { background: #050403; }
+}
+
+/* ---- TÉLÉPHONE COUCHÉ ----
+   Là, le film prend déjà tout l'écran et le header est retiré. On ne garde
+   qu'une sortie discrète, en surimpression, pour ne pas avoir à tourner le
+   téléphone rien que pour partir. */
+@media (max-width: 950px) and (orientation: landscape) and (pointer: coarse) {
+  .nav {
+    display: block; position: fixed; z-index: 60;
+    top: calc(env(safe-area-inset-top, 0px) + .55rem);
+    left: calc(env(safe-area-inset-left, 0px) + .8rem);
+    width: auto; height: auto; padding: 0;
+    background: none; border: 0; backdrop-filter: none;
+  }
+  .nav > *:not(.nav__retour) { display: none; }
+  .nav__retour {
+    display: inline-flex; align-items: center; gap: .35rem;
+    min-height: 36px; padding: 0 .8rem 0 .65rem;
+    border: 1px solid rgba(201, 154, 63, .26); border-radius: 20px;
+    background: rgba(11, 10, 8, .5);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    opacity: .72; transition: opacity .35s ease;
+  }
+  .nav__retour:hover, .nav__retour:focus-visible { opacity: 1; }
+  .nav__retour-long { display: none; }
+}

@@ -139,8 +139,12 @@ function demarrerHero() {
     if (!bouton) return;
     bouton.classList.toggle('is-on', tictac.actif);
     bouton.setAttribute('aria-pressed', String(tictac.actif));
+    /* « Actif » / « Coupé » et non « Son actif » / « Son » : le mot « Son »
+       est desormais porte une fois pour toutes par l etiquette au-dessus,
+       comme sur le bouton de l experience 3D. Seul le libelle change ; la
+       logique audio, elle, n est pas touchee. */
     const t = bouton.querySelector('.hm__son-txt');
-    if (t) t.textContent = tictac.actif ? 'Son actif' : 'Son';
+    if (t) t.textContent = tictac.actif ? 'Actif' : 'Coupé';
   }
   if (bouton) {
     bouton.addEventListener('click', async () => {
