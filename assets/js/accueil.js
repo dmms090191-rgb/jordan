@@ -120,7 +120,125 @@
       document.documentElement.classList.toggle('mmenu-ouvert', open);
     });
     menu.addEventListener('click', function (e) {
-      if (e.target.closest('a[href]')) { menu.hidden = true; burger.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; document.documentElement.classList.remove('mmenu-ouvert'); }
+      var a = e.target.closest('a[href]');
+      if (!a) return;
+      menu.hidden = true;
+      burger.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      document.documentElement.classList.remove('mmenu-ouvert');
+      var cible = sectionDe(a);
+      if (!cible) return;                       /* lien externe : on laisse faire */
+      e.preventDefault();
+      if (a.getAttribute('href').charAt(0) === '#') {
+        try { history.replaceState(null, '', a.getAttribute('href')); } catch (err) { /* file:// */ }
+      }
+      allerA(cible);
+      marquer(cible.id);
     });
+  }
+
+  /* ====================================================================
+     LE POINT D'ARRIVEE BOUGE PENDANT LE VOYAGE
+     --------------------------------------------------------------------
+     Les sections se montent quand elles approchent : la page passe de 7 823
+     a 9 533 px pendant le defilement, et tout ce qui grandit AU-DESSUS de la
+     cible la repousse vers le bas. Le navigateur, lui, vise la coordonnee
+     calculee au moment du clic, et n'en demord plus.
+
+     Mesure, a froid, depuis le menu : « Cours de l'or » finissait 850 px trop
+     haut et « FAQ » 1 816 px — presque deux ecrans.
+
+     On vise donc, puis on RECALE tant que la page respire, et on s'arrete des
+     qu'elle est posee. Le moindre geste du visiteur annule la visee : on ne
+     lui reprend jamais le defilement des mains.
+     ==================================================================== */
+  var visee = 0;
+  function margeHaute() {
+    var hd = document.querySelector('.hd');
+    return (hd ? hd.getBoundingClientRect().height : 0) + 18;
+  }
+  function sectionDe(a) {
+    var href = a.getAttribute('href') || '';
+    var i = href.indexOf('#');
+    if (i < 0) {
+      /* « Accueil » pointe sur la page elle-meme : sa section est le hero */
+      return /(^|\/)index\.html$/.test(href) ? document.getElementById('hero') : null;
+    }
+    var id = href.slice(i + 1);
+    return id ? document.getElementById(id) : null;
+  }
+  function allerA(el) {
+    clearInterval(visee);
+    var gardes = ['wheel', 'touchstart', 'keydown'];
+    var ecart = function () { return el.getBoundingClientRect().top - margeHaute(); };
+    var retirer = function () { for (var i = 0; i < gardes.length; i++) window.removeEventListener(gardes[i], stop); };
+    var stop = function () { clearInterval(visee); visee = 0; retirer(); };
+    for (var g = 0; g < gardes.length; g++) window.addEventListener(gardes[g], stop, { passive: true });
+    window.scrollTo({ top: Math.max(0, window.scrollY + ecart()), behavior: 'smooth' });
+    var essais = 0, calme = 0;
+    visee = setInterval(function () {
+      var d = ecart();
+      if (Math.abs(d) <= 4) { if (++calme >= 3) { stop(); return; } }
+      else { calme = 0; window.scrollTo({ top: Math.max(0, window.scrollY + d), behavior: 'smooth' }); }
+      if (++essais > 30) stop();                 /* 3 s au maximum, jamais plus */
+    }, 100);
+  }
+
+  /* ====================================================================
+     L'ONGLET ACTIF SUIT LE DEFILEMENT
+     --------------------------------------------------------------------
+     Est active la DERNIERE section dont le haut est deja passe sous le
+     bandeau : c'est celle qu'on est en train de lire. On la relit a l'image
+     suivante, jamais a chaque evenement de defilement — un menu ne vaut pas
+     qu'on recalcule six rectangles soixante fois par seconde.
+     ==================================================================== */
+  var liens = menu ? [].slice.call(menu.querySelectorAll('nav a[href]')) : [];
+  var cibles = [];
+  for (var k = 0; k < liens.length; k++) {
+    var sec = sectionDe(liens[k]);
+    if (sec) cibles.push({ a: liens[k], el: sec });
+  }
+  /* DANS L'ORDRE DE LA PAGE, PAS DANS CELUI DU MENU. Le menu annonce « Cours
+     de l'or » avant « Notre présence en France » ; la page, elle, porte
+     #journees AVANT #cours. Prendre « la derniere section franchie » dans
+     l'ordre du menu donnait donc « Notre presence en France » quand on lisait
+     le cours des metaux. On trie sur la position reelle des sections. */
+  cibles.sort(function (x, y) {
+    return (x.el.compareDocumentPosition(y.el) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+  });
+  function marquer(id) {
+    for (var i = 0; i < cibles.length; i++) {
+      var on = cibles[i].el.id === id;
+      cibles[i].a.classList.toggle('is-actif', on);
+      if (on) cibles[i].a.setAttribute('aria-current', 'true');
+      else if (cibles[i].a.getAttribute('aria-current')) cibles[i].a.removeAttribute('aria-current');
+    }
+  }
+  function relire() {
+    if (!cibles.length) return;
+    /* LA LIGNE DE LECTURE, et non le ras du bandeau. Collee sous le bandeau,
+       elle exigeait qu'une section ait DEPASSE le haut de l'ecran pour compter :
+       on lisait « Comment ca marche » plein cadre et le menu disait encore
+       « Accueil ». On la descend au quart de la hauteur utile — la section qui
+       occupe le haut de ce qu'on lit est celle ou l'on est. */
+    var m = margeHaute() + Math.round(window.innerHeight * 0.22), choisi = cibles[0].el.id;
+    for (var i = 0; i < cibles.length; i++) {
+      if (cibles[i].el.getBoundingClientRect().top <= m) choisi = cibles[i].el.id;
+    }
+    /* arrive en bas de page, la derniere section est la bonne meme si son
+       haut n'a pas franchi le bandeau */
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) choisi = cibles[cibles.length - 1].el.id;
+    marquer(choisi);
+  }
+  if (cibles.length) {
+    var enAttente = false;
+    var surDefilement = function () {
+      if (enAttente) return;
+      enAttente = true;
+      requestAnimationFrame(function () { enAttente = false; relire(); });
+    };
+    window.addEventListener('scroll', surDefilement, { passive: true });
+    window.addEventListener('resize', surDefilement, { passive: true });
+    relire();
   }
 })();

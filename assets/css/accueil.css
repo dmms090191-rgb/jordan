@@ -438,3 +438,39 @@ html.mmenu-ouvert #ab-toggle button {
   min-height: 34px; padding: 0 .95rem;
   font-size: .56rem; letter-spacing: .2em;
 }
+
+/* ── l'onglet actif porte une barre d'or ──────────────────────────────
+   Le losange disait « vous êtes ici » pour la page ; il faut maintenant le
+   dire pour la SECTION qu'on est en train de lire, et le dire pendant qu'on
+   défile. Un seul signe, deux intensités : un trait vertical d'un cheveu
+   d'or, court et sourd au survol, plus haut et vif sur l'onglet actif. Pas
+   de fond, pas de surlignage — c'est un repère, pas un bloc. */
+.mmenu nav a::before {
+  content: "";
+  position: absolute; left: .12rem; top: 50%;
+  width: 2px; height: 10px; margin-top: -5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--gold-bright, #e8cd93), var(--gold, #c99a3f));
+  rotate: none;
+  opacity: 0; scale: 1 .3;
+  transform-origin: 50% 50%;
+  transition: opacity .34s ease, scale .42s cubic-bezier(.22, 1, .36, 1), box-shadow .34s ease;
+}
+.mmenu nav a.is-actif,
+.mmenu nav a[aria-current] { color: var(--gold-bright, #e8cd93); }
+.mmenu nav a.is-actif::before,
+.mmenu nav a[aria-current]::before {
+  opacity: 1; scale: 1 1.9;
+  box-shadow: 0 0 7px color-mix(in srgb, var(--gold) 55%, transparent);
+}
+/* le filet de la ligne active s'allume juste assez pour la tenir */
+.mmenu nav a.is-actif::after,
+.mmenu nav a[aria-current]::after {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--gold) 52%, transparent),
+    color-mix(in srgb, var(--gold) 14%, transparent) 42%,
+    transparent 88%);
+}
+.mmenu nav a:hover::before,
+.mmenu nav a:focus-visible::before { opacity: .55; scale: 1 1; box-shadow: none; }
+.mmenu nav a.is-actif:hover::before { opacity: 1; scale: 1 1.9; }
