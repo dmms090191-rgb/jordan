@@ -135,32 +135,35 @@ function demarrerHero() {
 
   /* ── tic-tac ─────────────────────────────────────────────────────── */
   const tictac = creerTicTac();
+  /* TROIS ÉTATS, PARCE QU'IL Y EN A TROIS.
+     Le bouton disait « Actif » dès le chargement alors qu'aucun son ne sortait
+     encore : aucun navigateur n'autorise le son avant un premier geste, et le
+     bouton promettait donc quelque chose qu'il ne tenait pas. Il dit désormais
+     ce qui est :
+
+       COUPÉ       l'utilisateur a coupé le son. Trait de coupure, tons éteints.
+       EN ATTENTE  le son est voulu et prêt, mais le navigateur ne l'a pas
+                   encore autorisé. Pas de trait de coupure — rien n'est coupé —
+                   mais aucun or et aucune barre qui bouge : il ne joue pas.
+       ACTIF       le son sort vraiment. L'or et les quatre barres qui respirent
+                   n'appartiennent qu'à cet état.
+
+     « En attente » ne dure que jusqu'au premier geste, quel qu'il soit et où
+     qu'il soit dans la page — c'est brancherReprise qui s'en charge, sans
+     jamais demander un clic sur ce bouton-ci. */
   function marquerBouton() {
     if (!bouton) return;
-    /* CE QUE MONTRE LE BOUTON, C'EST L'ÉTAT VOULU — pas seulement l'état qui
-       joue. Aucun navigateur n'autorise le son avant un geste : au chargement,
-       le tic-tac est donc configuré mais pas encore démarré. Afficher « Coupé »
-       à ce moment-là serait un mensonge, et l'utilisateur croirait devoir
-       cliquer pour activer ce qui l'est déjà. Il s'allumera de lui-même au
-       premier geste (voir brancherReprise). */
-    const on = tictac.actif || tictac.voulu();
-    bouton.classList.toggle('is-on', on);
-    bouton.setAttribute('aria-pressed', String(on));
-    /* DEUX ÉTATS, PAS UN. « is-on » dit que le son est VOULU ; « est-vivant »
-       dit qu'il SORT. Entre les deux il y a le verrou du navigateur, qui
-       n'autorise aucun son avant un premier geste. Les quatre barres de la
-       waveform ne s'animent donc que sous « est-vivant » : tant qu'on n'a rien
-       touché, le bouton est doré et dit « Actif », mais les barres restent
-       immobiles — elles ne peuvent pas prétendre qu'un son sort alors qu'il
-       n'en sort aucun. Elles se mettent à respirer à l'instant précis où le
-       tic-tac commence. */
-    bouton.classList.toggle('est-vivant', tictac.actif);
-    /* « Actif » / « Coupé » et non « Son actif » / « Son » : le mot « Son »
-       est desormais porte une fois pour toutes par l etiquette au-dessus,
-       comme sur le bouton de l experience 3D. Seul le libelle change ; la
-       logique audio, elle, n est pas touchee. */
+    const veut = tictac.voulu();          /* l'intention        */
+    const sort = tictac.actif;            /* la réalité sonore  */
+    bouton.classList.toggle('is-on', veut);
+    bouton.classList.toggle('est-vivant', sort);
+    bouton.setAttribute('aria-pressed', String(veut));
     const t = bouton.querySelector('.hm__son-txt');
-    if (t) t.textContent = on ? 'Actif' : 'Coupé';
+    if (t) t.textContent = sort ? 'Actif' : (veut ? 'En attente' : 'Coupé');
+    bouton.setAttribute('aria-label', sort
+      ? 'Couper le son'
+      : (veut ? 'Son prêt : il démarre dès votre première interaction avec la page'
+              : 'Activer le son'));
   }
   if (bouton) {
     bouton.addEventListener('click', async () => {

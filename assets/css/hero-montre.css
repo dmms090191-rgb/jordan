@@ -138,8 +138,21 @@
    reçoit toujours .is-on et aria-pressed, et l'état s'écrit toujours dans
    .hm__son-txt.
    ========================================================================== */
+/* LA PASTILLE JOUR / NUIT LE RECOUVRAIT. Mesuré : 82 × 34 px de recouvrement à
+   1440 px — et comme elle est en `fixed` avec un z-index de 60 contre 3 ici,
+   c'est ELLE qui passait devant : le libellé du bouton était purement et
+   simplement invisible sur desktop, quel que soit son texte. Un état qu'on ne
+   voit pas ne peut pas dire la vérité.
+
+   Le remonter ne suffisait pas : la pastille est posée sur la FENÊTRE et ce
+   bouton dans le HERO, dont la hauteur varie — dégagé à 1440, il se
+   recouvrait de nouveau à 1280. On le décale donc horizontalement, de la
+   largeur que la pastille occupe toujours à droite (24 px de marge + 130 de
+   pastille) : là, aucune hauteur de hero ne peut les faire se croiser. */
 .hm__son {
-  position: absolute; z-index: 3; right: clamp(1.2rem,5vw,5rem); bottom: 84px;
+  position: absolute; z-index: 3;
+  right: max(clamp(1.2rem, 5vw, 5rem), 174px);
+  bottom: 84px;
   display: inline-flex; align-items: center; gap: .7rem;
   height: auto; min-height: 44px; padding: 0;
   border: 0; border-radius: 0; background: none;
@@ -220,15 +233,30 @@
   transition: width .3s ease, opacity .25s ease;
 }
 
-/* ---- ACTIF ---- */
-.hm__son.is-on .hm__son-rond { color: var(--gold-bright, #e8cd93); border-color: rgba(201, 154, 63, .46); }
-.hm__son.is-on .hm__son-anneau { border-color: rgba(232, 205, 147, .18); }
-.hm__son.is-on .hm__son-label { color: var(--cream, #f3ecdc); }
-.hm__son.is-on .hm__son-txt { color: var(--gold, #c99a3f); }
+/* ---- ACTIF : l'or n'appartient QU'AU SON QUI SORT ----
+   Ces quatre règles étaient portées par `is-on`, c'est-à-dire par l'intention.
+   Le bouton s'allumait donc en or dès le chargement, alors qu'aucun navigateur
+   n'autorise le son avant un premier geste : il promettait un son qu'on
+   n'entendait pas. L'or, comme les barres qui respirent, ne se donne plus qu'à
+   `est-vivant` — l'état où le tic-tac sonne pour de bon. */
+.hm__son.est-vivant .hm__son-rond { color: var(--gold-bright, #e8cd93); border-color: rgba(201, 154, 63, .46); }
+.hm__son.est-vivant .hm__son-anneau { border-color: rgba(232, 205, 147, .18); }
+.hm__son.est-vivant .hm__son-label { color: var(--cream, #f3ecdc); }
+.hm__son.est-vivant .hm__son-txt { color: var(--gold, #c99a3f); }
 
-/* ---- COUPÉ : mêmes dimensions, moins de lumière ---- */
+/* ---- COUPÉ : mêmes dimensions, moins de lumière ----
+   Le trait de coupure reste attaché à `is-on` : il dit « l'utilisateur a
+   coupé », et il ne doit surtout pas apparaître pendant l'attente — rien n'y
+   est coupé, le son est seulement retenu par le navigateur. */
 .hm__son:not(.is-on) .hm__onde i { height: 22%; opacity: .5; }
 .hm__son:not(.is-on) .hm__son-barre { width: 19px; opacity: .75; }
+
+/* ---- EN ATTENTE : voulu, prêt, pas encore autorisé ----
+   Ni le trait de coupure ni l'or. Les barres se tiennent droites et un peu
+   plus claires que dans l'état coupé : le bouton est armé, il n'est pas éteint
+   — et il ne prétend pas jouer. */
+.hm__son.is-on:not(.est-vivant) .hm__onde i { opacity: .8; }
+.hm__son.is-on:not(.est-vivant) .hm__son-txt { color: rgba(243, 236, 220, .42); }
 
 /* ---- survol : un éclaircissement du filet, rien de plus ---- */
 .hm__son:hover .hm__son-rond { border-color: rgba(201, 154, 63, .5); }
@@ -246,10 +274,11 @@
 }
 :root[data-ambiance="jour"] .hm__son-label { color: rgba(36, 28, 16, .5); }
 :root[data-ambiance="jour"] .hm__son-txt { color: rgba(36, 28, 16, .32); }
-:root[data-ambiance="jour"] .hm__son.is-on .hm__son-rond { color: #8a6820; border-color: rgba(138, 104, 32, .55); }
-:root[data-ambiance="jour"] .hm__son.is-on .hm__son-anneau { border-color: rgba(138, 104, 32, .2); }
-:root[data-ambiance="jour"] .hm__son.is-on .hm__son-label { color: #241c10; }
-:root[data-ambiance="jour"] .hm__son.is-on .hm__son-txt { color: #8a6820; }
+:root[data-ambiance="jour"] .hm__son.est-vivant .hm__son-rond { color: #8a6820; border-color: rgba(138, 104, 32, .55); }
+:root[data-ambiance="jour"] .hm__son.est-vivant .hm__son-anneau { border-color: rgba(138, 104, 32, .2); }
+:root[data-ambiance="jour"] .hm__son.est-vivant .hm__son-label { color: #241c10; }
+:root[data-ambiance="jour"] .hm__son.est-vivant .hm__son-txt { color: #8a6820; }
+:root[data-ambiance="jour"] .hm__son.is-on:not(.est-vivant) .hm__son-txt { color: rgba(36, 28, 16, .38); }
 
 @media (prefers-reduced-motion: reduce) {
   .hm__onde i { animation: none !important; }

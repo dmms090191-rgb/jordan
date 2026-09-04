@@ -1676,18 +1676,49 @@ float c3dBack(float t){ float u = t - 1.0; return 1.0 + 1.62 * u * u * u + 0.62 
        · l ancien pin redescend PENDANT que le nouveau monte (uPrevAmt / uSelAmt) ;
        · les autres pins s estompent legerement (uFocus).
      Duree : ~1,40 s, courbe cubic-bezier(.22,.61,.36,1) de la charte, deceleration longue.        */
+  /* LA VUE D ENSEMBLE — la France entiere, le cadrage du depart. Un seul
+     endroit la decrit : doReset s en sert pour revenir, et doFocus pour passer
+     par elle avant de descendre sur une autre commune. Deux copies auraient
+     fini par diverger, et le retour n aurait plus rendu exactement l image
+     d origine.                                                              */
+  function versFranceEntiere(dur) {
+    tw('polar', IDLE.polar, dur, 0, CINE);
+    tw('azim', 0, dur, 0, CINE);
+    tw('dist', fitIdle(), dur, 0, CINE);
+    tw('k', 1, dur, 0, CINE);
+    tw('wx', idleWx(), dur * 0.95, 0, CINE);
+    tw('wy', idleWy(), dur * 0.95, 0, CINE);
+    tw('tx', CX, dur, 0, CINE);
+    tw('tz', CZ, dur, 0, CINE);
+  }
+
+  /* CHANGER DE VILLE PASSE PAR LA FRANCE ENTIERE.
+     Aller directement d une commune a l autre partait d un cadrage deja serre :
+     le trajet se lisait comme un glissement lateral entre deux gros plans, sans
+     jamais dire ou l on va — et si la main avait entre-temps tourne ou pince la
+     carte, on repartait d un etat quelconque. On remonte donc d abord a la vue
+     d ensemble, celle du depart, puis on redescend sur la nouvelle commune :
+     deux gestes lisibles au lieu d un glissement. Le second temps est arme par
+     un minuteur, que toute reprise en main annule (voir annulerRetour).       */
+  const RETOUR = 0.7;      // secondes : la remontee vers la France entiere
+  const REPOS = 130;       // millisecondes tenues sur la vue d ensemble
+  let retourT = 0;         // minuteur du second temps
+  let volGen = 0;          // generation du mouvement : invalide un second temps perime
+  function annulerRetour() {
+    if (retourT) { clearTimeout(retourT); retourT = 0; }
+    volGen++;
+  }
+
   function doFocus(id, fromUI) {
     const i = itemsRaw.findIndex(o => o.id === id);
     if (i < 0) return;
     const it = itemsRaw[i];
+    annulerRetour();
+    const gen = volGen;
     const wasIdx = selIdx, wasAmt = cur.selAmt;
+    const changeDeVille = state === 'focus' && wasIdx >= 0 && wasIdx !== i && !reduced;
     selId = id; selIdx = i;
     state = 'focus';
-
-    focusRing.position.set(it.wx, it.h + 0.0018, -it.wy);
-    focusRing.visible = true;
-    U.hiIdx.value = regionIndexAt(it.wx, it.wy);
-    hiTarget = 0.15;
 
     /* passage de relais : l ancien pin redescend depuis SA hauteur courante */
     PU.uSel.value = i;
@@ -1695,9 +1726,41 @@ float c3dBack(float t){ float u = t - 1.0; return 1.0 + 1.62 * u * u * u + 0.62 
     else if (wasIdx !== i) { PU.uPrev.value = -1; cur.prevAmt = 0; }
     cur.selAmt = wasIdx === i ? cur.selAmt : 0;
 
-    twClear();
-    aimCity(it, fromUI ? 0.94 : 1, 0);
+    /* la liste repond tout de suite, meme si la camera prend le temps du
+       detour : le clic ne doit jamais paraitre perdu */
     if (ui) ui.setActive(id);
+    twClear();
+
+    /* l anneau au sol et la region allumee appartiennent a la DESCENTE : les
+       poser pendant la remontee ferait briller la nouvelle ville alors qu on
+       s en eloigne. */
+    const poserCible = () => {
+      focusRing.position.set(it.wx, it.h + 0.0018, -it.wy);
+      focusRing.visible = true;
+      U.hiIdx.value = regionIndexAt(it.wx, it.wy);
+      hiTarget = 0.15;
+    };
+
+    if (!changeDeVille) { poserCible(); aimCity(it, fromUI ? 0.94 : 1, 0); return; }
+
+    /* 1er temps — on remonte a la vue d ensemble. L ancien pin redescend,
+       aucun ne se leve, la region s eteint. */
+    focusRing.visible = false;
+    hiTarget = 0;
+    versFranceEntiere(RETOUR);
+    tw('prevAmt', 0, RETOUR * 0.8, 0, easeIO);
+    tw('focusAmt', 0, RETOUR * 0.7, 0, smooth);
+    invalidate(RETOUR * 1000 + REPOS + 600);
+
+    /* 2e temps — la descente, une fois la France entiere atteinte et tenue un
+       instant : sans ce repos les deux mouvements n en feraient qu un. */
+    retourT = setTimeout(() => {
+      retourT = 0;
+      if (gen !== volGen || destroyed || selIdx !== i) return;
+      twClear();
+      poserCible();
+      aimCity(it, fromUI ? 0.94 : 1, 0);
+    }, RETOUR * 1000 + REPOS);
   }
   /* LE MOUVEMENT DE FOCUS — identique dans la page et en plein ecran.
      `pose` = 0 : on arrive sur la ville (le pin monte) ; `pose` = 1 : on la garde et on ne fait que
@@ -1732,6 +1795,7 @@ float c3dBack(float t){ float u = t - 1.0; return 1.0 + 1.62 * u * u * u + 0.62 
     invalidate(2600);
   }
   function doReset() {
+    annulerRetour();
     if (state !== 'focus') return;
     state = 'idle';
     twClear();
@@ -1750,14 +1814,7 @@ float c3dBack(float t){ float u = t - 1.0; return 1.0 + 1.62 * u * u * u + 0.62 
       renderOnce();
       return;
     }
-    tw('polar', IDLE.polar, 1.05, 0, CINE);
-    tw('azim', 0, 1.05, 0, CINE);
-    tw('dist', target, 1.05, 0, CINE);
-    tw('k', 1, 1.05, 0, CINE);
-    tw('wx', idleWx(), 1.00, 0, CINE);
-    tw('wy', idleWy(), 1.00, 0, CINE);
-    tw('tx', CX, 1.05, 0, CINE);
-    tw('tz', CZ, 1.05, 0, CINE);
+    versFranceEntiere(1.05);
     tw('prevAmt', 0, 0.80, 0, easeIO);
     tw('focusAmt', 0, 0.50, 0, smooth);
     invalidate(2400);
@@ -1894,6 +1951,7 @@ float c3dBack(float t){ float u = t - 1.0; return 1.0 + 1.62 * u * u * u + 0.62 
   function onDown(ev) {
     if (destroyed) return;
     arreterElan();                                       /* la main reprend la carte en vol */
+    annulerRetour();                                     /* et annule une descente encore a venir */
     ptrs.set(ev.pointerId, localPt(ev));
     if (ptrs.size === 2) {
       const v = Array.from(ptrs.values());
@@ -1962,6 +2020,7 @@ float c3dBack(float t){ float u = t - 1.0; return 1.0 + 1.62 * u * u * u + 0.62 
   function onWheel(ev) {
     if (place !== 'full' || destroyed) return;
     ev.preventDefault();
+    annulerRetour();
     dropTween('k');
     dst.k = clamp(dst.k * (ev.deltaY > 0 ? 1.09 : 0.92), LIM.k[0], LIM.k[1]);
     invalidate();
@@ -2277,6 +2336,7 @@ float c3dBack(float t){ float u = t - 1.0; return 1.0 + 1.62 * u * u * u + 0.62 
     destroy() {
       if (destroyed) return;
       arreterElan();
+      annulerRetour();
       api.stop(true);
       destroyed = true;
       clearTimeout(promote);
