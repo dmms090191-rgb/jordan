@@ -730,6 +730,9 @@ class Cinema {
   /* ---- commandes ---- */
   setLecture(on) {
     this.lecture = on;
+    /* toute mise en lecture degele le son, quel que soit le chemin — reprise,
+       relance d'un chapitre, ou « Revoir l'experience » */
+    if (on && this.son) this.son.degeler();
     $('#cine-lect').setAttribute('aria-pressed', on ? 'true' : 'false');
     const v = this.vids[this.actifV];
     if (on) {
@@ -752,12 +755,16 @@ class Cinema {
       this.codeScenes.geler();
       this.etat = 'pause';
     }
+    /* PAUSE COMPLETE : la video, les scenes de code, le voile — et le son */
+    if (this.son) this.son.figer();
     $('#cine-lect').setAttribute('aria-pressed', 'false');
   }
   /* REPRISE exacte : on repart de l'instant fige, jamais du debut */
   reprendreExact() {
     $('#cine-lect').setAttribute('aria-pressed', 'true');
     this.lecture = true;   /* reprendre, c'est demander que le film continue */
+    /* le son repart d'ou il s'est arrete — et seulement s'il etait voulu */
+    if (this.son) this.son.degeler();
     if (this.etat === 'voile-pause') { this.etat = 'voile'; this.armerVoile(this.voileRestant || 1400); return; }
     this.etat = 'course';
     const seg = (FILM[this.chIdx].segs || [])[this.segIdx];
@@ -1652,7 +1659,7 @@ class SonV4 {
     this.ensure();
     if (this.ctx) { try { this.ctx.resume(); } catch (e) {} }
     this.debloquerAuPremierGeste();
-    document.addEventListener('visibilitychange', () => { if (this.ctx) { if (document.hidden) this.ctx.suspend(); else if (this.on) this.ctx.resume(); } });
+    document.addEventListener('visibilitychange', () => { if (this.ctx) { if (document.hidden) this.ctx.suspend(); else if (this.on && !this.gele) this.ctx.resume(); } });
   }
   /* L'apparence du bouton et son intitule sont poses ici, au meme endroit et a
      partir du meme etat : une mention « Actif » qui contredirait aria-pressed
@@ -1671,7 +1678,7 @@ class SonV4 {
   debloquerAuPremierGeste() {
     const GESTES = ['pointerdown', 'keydown', 'touchstart', 'wheel'];
     const reprendre = () => {
-      if (!this.on) return;
+      if (!this.on || this.gele) return;   /* jamais pendant une pause du film */
       this.ensure();
       if (!this.ctx) return;
       this.ctx.resume().then(() => {
@@ -1685,8 +1692,29 @@ class SonV4 {
   toggle() {
     this.on = !this.on;
     this.refleteBouton();
-    if (this.on) { this.ensure(); this.ctx && this.ctx.resume(); if (this.cur) this.pose(this.cur); }
+    /* on ne reveille pas le contexte pendant une pause du film : le bouton Son
+       dit ce que l'utilisateur veut, la pause dit ce que le film fait. */
+    if (this.on) { this.ensure(); if (!this.gele) this.ctx && this.ctx.resume(); if (this.cur) this.pose(this.cur); }
     else if (this.ctx) { const now = this.ctx.currentTime; for (const L of Object.values(this.layers)) L.g.gain.setTargetAtTime(0, now, 0.4); }
+  }
+
+  /* ---- PAUSE DU FILM : LE SON S'ARRETE AVEC L'IMAGE ---------------------
+     L'image se figeait, l'ambiance continuait : on mettait le film en pause et
+     le feu crepitait toujours. On SUSPEND le contexte audio — il ne s'eteint
+     pas, il s'arrete a l'instant t et repart au meme endroit, donc l'ambiance
+     reste calee sur le plan.
+
+     `this.on` n'est jamais touche : c'est le choix de l'utilisateur, pas
+     l'etat du film. Un son coupe avant la pause reste coupe apres la reprise,
+     et un son actif redevient actif — jamais l'inverse. */
+  figer() {
+    this.gele = true;
+    if (this.ctx && this.ctx.state === 'running') { try { this.ctx.suspend(); } catch (e) {} }
+  }
+  degeler() {
+    this.gele = false;
+    if (!this.on || !this.ctx) return;
+    try { this.ctx.resume(); } catch (e) {}
   }
   ensure() {
     if (this.ctx) return;
@@ -1835,6 +1863,25 @@ addEventListener('DOMContentLoaded', () => {
     const i = cin.chActif || 0, ch = FILM[i];
     const t = $('#v4-mob-chap-t');
     if (t && ch) t.textContent = 'Chapitre ' + String(ch.id).padStart(2, '0') + ' — ' + ch.nom;
+    /* LE PANNEAU DE TEXTE SUIT LE CHAPITRE EN COURS. Il n'etait rempli que par
+       montrerVoile(), c'est-a-dire a la FIN de chaque chapitre : sur telephone,
+       ou il est desormais affiche en permanence sous les commandes, il serait
+       reste vide pendant tout le chapitre puis se serait rempli d'un coup au
+       moment de la coupure. On le remplit donc a chaque changement de
+       chapitre, avec le meme contenu et depuis la meme source. */
+    const bo = cin.voile;
+    if (bo && ch) {
+      const num = bo.querySelector('.v4-chapitre__num');
+      const tit = bo.querySelector('.v4-chapitre__titre');
+      const txt = bo.querySelector('.v4-voile__textes');
+      const nn = 'Chapitre ' + String(ch.id).padStart(2, '0');
+      if (num && num.textContent !== nn) num.textContent = nn;
+      if (tit && tit.textContent !== ch.nom) tit.textContent = ch.nom;
+      if (txt) {
+        const html = (ch.textes || []).map(x => '<p>' + x + '</p>').join('');
+        if (txt.innerHTML !== html) { txt.innerHTML = html; majDeborde(); }
+      }
+    }
     const n = $('#v4-mob-nav-n'), tot = $('#v4-mob-nav-t');
     if (n) n.textContent = String(i + 1).padStart(2, '0');
     if (tot) tot.textContent = String(FILM.length).padStart(2, '0');
