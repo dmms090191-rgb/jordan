@@ -552,3 +552,131 @@ body.paused .cx-indic i{animation-play-state:paused}
             mask-image: none;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   TÉLÉPHONE — LE GRAPHIQUE EN PLEIN ÉCRAN, EN TRAVERS
+   ══════════════════════════════════════════════════════════════════════
+   Sur un téléphone tenu droit, la courbe dispose de 390 px : trente bougies
+   y sont serrées au point de ne plus se lire. Le bouton bascule le
+   graphique dans un cadre qui prend tout l'écran, et — quand l'appareil est
+   en PORTRAIT — le fait pivoter d'un quart de tour : on profite alors de la
+   longueur du téléphone.
+
+   Ni Fullscreen API ni verrouillage d'orientation : la première demande un
+   geste et échoue en silence dans une iframe, le second n'existe pas sur
+   iOS. Une transformation CSS marche partout, et le navigateur transforme
+   aussi les coordonnées du pointeur — la courbe reste donc entièrement
+   interactive, périodes et axes compris.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* le bouton n'existe que sur téléphone : au-dessus, la courbe a déjà la place */
+.cx-plein { display: none; }
+
+/* UN TELEPHONE COUCHE FAIT 844 px DE LARGE.
+   La condition « max-width: 760px » excluait donc tout le plein ecran des que
+   l appareil etait tourne — bouton compris, alors que c est justement la que
+   la courbe a le plus a gagner. On vise l appareil, pas la largeur : petit
+   ecran OU ecran bas ET tactile. */
+@media (max-width: 760px), (max-height: 560px) and (orientation: landscape) and (pointer: coarse) {
+  .cx-plein {
+    display: inline-flex; align-items: center; gap: .4rem;
+    position: absolute; z-index: 6; top: .5rem; right: .5rem;
+    min-height: 36px; padding: 0 .7rem 0 .55rem;
+    border: 1px solid var(--cx-line); border-radius: 20px;
+    background: color-mix(in srgb, var(--cx-fond) 88%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    color: var(--text-2); cursor: pointer;
+    font-family: var(--body); font-size: .6rem; letter-spacing: .16em;
+    text-transform: uppercase;
+    transition: color .3s var(--cx-ease), border-color .3s var(--cx-ease);
+  }
+  .cx-plein__ico { display: flex; }
+  .cx-plein__ico svg { width: 14px; height: 14px; }
+  .cx-plein:hover, .cx-plein:focus-visible { color: var(--text); border-color: var(--gold-ink); }
+
+  /* ---- pendant le plein écran, la page dessous ne défile pas ---- */
+  html.cx-plein-ouvert, html.cx-plein-ouvert body { overflow: hidden; }
+
+  /* ---- le cadre ---- */
+  .cx.est-plein .cx-graph {
+    position: fixed; z-index: 300; margin: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column; gap: .5rem;
+    padding: .7rem .8rem .9rem;
+  }
+  /* le reste de la section disparaît : c'est le graphique qu'on est venu voir */
+  .cx.est-plein > *:not(.cx-panneau),
+  .cx.est-plein .cx-panneau > *:not(.cx-graph) { display: none; }
+
+  /* le graphique prend toute la place restante sous les périodes */
+  .cx.est-plein .cx-chart { flex: 1 1 auto; height: auto; min-height: 0; }
+  .cx.est-plein .cx-graph__tete { flex: 0 0 auto; }
+  /* les périodes restent la première chose sous la main */
+  .cx.est-plein .cx-periodes { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .cx.est-plein .cx-periodes::-webkit-scrollbar { display: none; }
+  .cx.est-plein .cx-legende { display: none; }   /* pas de place à perdre en travers */
+
+  /* ---- LE BOUTON DE RETOUR : lisible, et du bon côté ----
+     Il remplace le bouton d'entrée au même endroit, mais devient une
+     pastille pleine, bordée d'or : on doit le trouver sans le chercher. */
+  .cx.est-plein .cx-plein {
+    top: .55rem; right: .7rem;
+    min-height: 40px; padding: 0 .95rem 0 .75rem;
+    border-color: var(--gold-ink);
+    background: color-mix(in srgb, var(--gold, #c99a3f) 14%, var(--cx-fond));
+    color: var(--text);
+  }
+  .cx.est-plein .cx-plein__ico svg { width: 15px; height: 15px; }
+
+  /* ---- APPAREIL EN PORTRAIT : on pivote d'un quart de tour ----
+     Le cadre prend la hauteur de l'écran pour largeur, et sa largeur pour
+     hauteur, puis tourne autour de son centre. Résultat : la courbe s'étale
+     sur la longueur du téléphone, qu'on tourne ensuite dans la main. */
+  @media (orientation: portrait) {
+    .cx.est-plein .cx-graph {
+      top: 50%; left: 50%;
+      width: 100dvh; height: 100dvw;
+      transform: translate(-50%, -50%) rotate(90deg);
+      transform-origin: 50% 50%;
+    }
+  }
+  /* ---- APPAREIL DÉJÀ COUCHÉ : aucune rotation, il suffit de remplir ---- */
+  @media (orientation: landscape) {
+    .cx.est-plein .cx-graph { inset: 0; width: auto; height: auto; transform: none; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-plein { transition: none; }
+}
+
+/* ── LE PLEIN ÉCRAN DOIT VRAIMENT COUVRIR ──────────────────────────────
+   Premier essai : la page traversait le graphique — le formulaire de
+   rendez-vous se lisait au travers de la courbe — et l'en-tête restait au-
+   dessus. La cause n'était pas l'opacité mais la PILE : `.cx` porte
+   `isolation: isolate`, ce qui en fait un contexte d'empilement fermé. Un
+   z-index de 300 posé sur un enfant y reste donc prisonnier, et tout ce qui
+   suit la section dans le document se peint par-dessus.
+
+   On ouvre l'isolation le temps du plein écran et on élève `.cx` lui-même :
+   c'est le groupe entier qui passe devant, pas un de ses enfants. */
+@media (max-width: 760px), (max-height: 560px) and (orientation: landscape) and (pointer: coarse) {
+  .cx.est-plein { isolation: auto; position: relative; z-index: 300; }
+  .cx.est-plein .cx-graph { background: var(--bg); }
+
+  /* l'en-tête et la bascule Jour/Nuit sont fixes, avec leurs propres
+     couches : on les retire pendant le plein écran plutôt que de courir
+     après leur z-index. Ils reviennent en sortant. */
+  html.cx-plein-ouvert .hd,
+  html.cx-plein-ouvert .ab-toggle { display: none; }
+
+  /* ---- LE BOUTON RETOUR, EN BAS DU CADRE ----
+     Placé en haut à droite du cadre, il tombait après rotation dans le coin
+     que le pouce ne rencontre jamais, et il y était rogné. Il passe en bas à
+     gauche du cadre : c'est le coin qui revient sous le pouce une fois le
+     téléphone tourné. */
+  .cx.est-plein .cx-plein {
+    top: auto; right: auto;
+    bottom: .7rem; left: .8rem;
+  }
+}

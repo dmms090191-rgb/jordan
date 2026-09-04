@@ -285,6 +285,28 @@ export function createCours(host, opts) {
     noeuds.voileTxt = el('p', { class: 'cx-voile__txt' }, boite);
     noeuds.retry = el('button', { class: 'cx-btn', type: 'button', text: 'Réessayer', hidden: 'hidden' }, boite);
 
+    /* --- PLEIN ÉCRAN DU GRAPHIQUE (téléphone) --------------------------
+       Sur un téléphone tenu droit, la courbe dispose de 390 px de large :
+       trente bougies y sont serrées au point de ne plus se lire. Ce bouton
+       bascule le graphique dans un cadre qui occupe l'écran en travers, et
+       la feuille de style le fait pivoter quand l'appareil est en portrait —
+       on profite alors de la longueur du téléphone, pas de sa largeur.
+
+       Aucune API de plein écran ni de verrouillage d'orientation : la
+       première demande un geste et échoue en silence dans une iframe, la
+       seconde n'existe pas sur iOS. Une classe et une transformation CSS
+       marchent partout, et laissent le graphique parfaitement interactif —
+       le navigateur transforme aussi les coordonnées du pointeur. */
+    noeuds.plein = el('button', {
+      class: 'cx-plein', type: 'button', 'aria-pressed': 'false',
+      'aria-label': 'Afficher le graphique en plein écran'
+    }, noeuds.chart);
+    noeuds.plein.innerHTML =
+      '<span class="cx-plein__ico" aria-hidden="true">'
+      + '<svg viewBox="0 0 24 24" focusable="false"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"'
+      + ' fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      + '</span><span class="cx-plein__txt">Plein écran</span>';
+
     /* 4 — statistiques -------------------------------------------------- */
     /* Les quatre chiffres de période viennent de l'historique : leur devise
        peut différer de celle des prix vifs. Un intitulé de groupe le dit une
@@ -321,6 +343,28 @@ export function createCours(host, opts) {
     noeuds.periodes.addEventListener('click', surClicPeriode);
     noeuds.periodes.addEventListener('keydown', surClavierPeriode);
     noeuds.retry.addEventListener('click', () => emettre({ type: 'reessayer', symbole: st.symbole, tf: st.tf }));
+
+    /* --- bascule du plein écran ---------------------------------------
+       Une seule source de vérité : la classe est-plein sur la racine. Le
+       bouton en reflète l'état, et l'attribut du document empêche la page
+       de défiler derrière le cadre. Échap ferme, comme partout ailleurs. */
+    const posePlein = on => {
+      racine.classList.toggle('est-plein', on);
+      document.documentElement.classList.toggle('cx-plein-ouvert', on);
+      noeuds.plein.setAttribute('aria-pressed', on ? 'true' : 'false');
+      noeuds.plein.setAttribute('aria-label', on ? 'Quitter le plein écran' : 'Afficher le graphique en plein écran');
+      const t = noeuds.plein.querySelector('.cx-plein__txt');
+      if (t) t.textContent = on ? 'Retour' : 'Plein écran';
+      /* le moteur suit son conteneur (autoSize), mais on le pousse : la
+         rotation change la taille sans changer la mise en page du parent */
+      if (st.adaptateur && typeof st.adaptateur.rafraichir === 'function') {
+        requestAnimationFrame(() => { try { st.adaptateur.rafraichir(); } catch (e) {} });
+      }
+    };
+    noeuds.plein.addEventListener('click', () => posePlein(!racine.classList.contains('est-plein')));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && racine.classList.contains('est-plein')) posePlein(false);
+    });
     document.addEventListener('visibilitychange', surVisibilite);
 
     host.appendChild(racine);
