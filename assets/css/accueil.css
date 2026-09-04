@@ -345,6 +345,24 @@ a{color:inherit;text-decoration:none}
   display: flex;
   flex-direction: column;
 }
+/* ====================================================================
+   ET IL DOIT POUVOIR SE FERMER.
+   --------------------------------------------------------------------
+   Le panneau se ferme par l'attribut hidden, dont le display:none vient de
+   la feuille du NAVIGATEUR. La declaration display:flex ci-dessus est une
+   declaration d'AUTEUR : elle gagne toujours, quelle que soit sa
+   specificite. Le menu restait donc peint par-dessus la page des
+   l arrivee — mesure : boite de 390 x 844, et c est LUI que le navigateur
+   touche au centre de l ecran, a toutes les largeurs, desktop compris.
+
+   Rien ne le trahissait cote script : l attribut etait bien pose et
+   aria-expanded valait bien false. Seul le pixel le disait — mes sondes
+   lisaient le drapeau, pas ce qui etait dessine.
+
+   La regle qui suit rend a hidden son pouvoir, sans !important : un
+   selecteur d attribut passe devant une classe.
+   ==================================================================== */
+.mmenu[hidden] { display: none; }
 .mmenu nav { flex: 0 0 auto; }
 .mmenu__ctas { margin-top: auto; flex: 0 0 auto; }
 .mmenu nav { gap: 0; }
