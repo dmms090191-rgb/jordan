@@ -1294,3 +1294,152 @@ html.noir-bref #cinema { filter: brightness(.03); }
   .nav__retour:hover, .nav__retour:focus-visible { opacity: 1; }
   .nav__retour-long { display: none; }
 }
+
+/* ==========================================================================
+   PETIT ÉCRAN · LE PANNEAU DE CHAPITRE NE DÉBORDE PLUS
+   ==========================================================================
+
+   RELEVÉ — panneau du chapitre 2, trois paragraphes dont un très long : le
+   pire cas du film. Hauteur du bloc de texte / hauteur disponible dans son
+   cadre, et position du film :
+
+     1440×900  desktop    453 px pour 661 disponibles          rien à faire
+      390×844  portrait   le panneau va de 64 à 402 px pour un film qui va de
+                          199 à 418 : il se pose SUR l'image et en couvre 85 %
+      320×568  portrait   82 % du film couvert ; 375 px de texte dans une
+                          fenêtre de 190 px
+      844×390  paysage    le panneau s'affiche alors que le mode cinéma le veut
+                          éteint ; son texte commence à −32 px, AU-DESSUS du
+                          bord de l'écran, et sort de son cadre de 101 px
+      700×520  fenêtre    voile figé à 62 % de la hauteur, texte sorti par le
+                          haut de 66 px — donc posé sur l'image claire
+
+   TROIS CAUSES, distinctes :
+
+   1. `.v4-chapitre` est en `position: absolute` DANS #cinema. Sur téléphone en
+      portrait, #cinema n'est plus que la bande 16:9 du film : `bottom: 1rem`
+      compte alors depuis le bas DU FILM, et le panneau que le commentaire
+      annonce « sous l'onglet, dans l'espace libre » se pose en réalité sur
+      l'image, en plein milieu.
+
+   2. En mode cinéma, `.v4-chapitre { opacity: 0 }` perd contre
+      `.v4-chapitre.is-on { opacity: 1 }` : une classe de plus, la règle gagne
+      quelle que soit la media query et quel que soit l'ordre. Le panneau censé
+      disparaître restait donc affiché, dans sa forme desktop — une colonne
+      pleine hauteur — sur un écran deux fois moins haut que prévu.
+
+   3. Le voile des fenêtres étroites a une hauteur FIXE (62 %) et un contenu
+      qui ne la connaît pas : le texte sort par le haut du dégradé.
+
+   Rien ici ne s'applique au-delà de 900 px de large : le rendu cinéma du
+   grand écran n'est pas touché, et aucune durée du film ne bouge.
+   ========================================================================== */
+
+/* ── 1 · MODE CINÉMA : le panneau s'éteint pour de bon ──────────────────
+   On répète chaque sélecteur susceptible de le rallumer, à sa propre
+   spécificité. Écrire `.v4-chapitre` seul ne suffisait pas.
+
+   Le seuil est EXACTEMENT celui du mode cinéma — 560 px — et pas un pixel de
+   plus : au-delà, la fenêtre n'est pas en cinéma, et y masquer le panneau
+   ferait disparaître le texte des chapitres au lieu de le remettre en place. */
+@media (max-height: 560px) and (orientation: landscape) {
+  .v4-chapitre,
+  .v4-chapitre.is-on,
+  html.v4-mob-texte .v4-chapitre,
+  html.v4-mob-texte .v4-chapitre.is-on {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* ── 2 · TÉLÉPHONE EN PORTRAIT : la feuille quitte le film ──────────────
+   `fixed` et non `absolute` : le repère devient l'écran, et non la bande du
+   film. La feuille occupe alors l'espace libre SOUS l'image — celui qui
+   existait déjà et que personne n'utilisait — entre la barre de commandes et
+   l'onglet, qui descend au ras du bord pour rester la main qui referme. */
+@media (max-width: 900px) and (orientation: portrait) {
+  .v4-chapitre {
+    position: fixed;
+    left: .8rem; right: .8rem;
+    /* sous la barre de lecture : on garde Lecture / Pause accessible pendant
+       qu'on lit — c'est le film qui commande, pas le texte */
+    top: calc(var(--v4-sous) + 6.3rem);
+    bottom: calc(.8rem + env(safe-area-inset-bottom, 0px) + 46px + .5rem);
+    height: auto;
+    max-height: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-items: flex-start;
+    padding: .85rem .95rem .9rem;
+    border-radius: 16px;
+  }
+  /* Quand le texte est plus long que la feuille — le chapitre 2 sur un écran
+     de 568 px — la dernière ligne visible s'éteint au lieu d'être tranchée
+     net. Une ligne coupée se lit comme un défaut ; une ligne qui s'efface dit
+     qu'il y a une suite. Le dégradé est posé sur le CONTENU, pas sur la
+     feuille : le filet et l'arrondi restent nets. */
+  .v4-chapitre__bloc {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.2rem), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2.2rem), transparent 100%);
+  }
+  /* rien à estomper si tout tient : le masque ne s'applique qu'au trop-plein */
+  .v4-chapitre:not(.deborde) .v4-chapitre__bloc {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  /* l'onglet passe au ras du bord bas : la feuille s'arrête juste au-dessus,
+     donc plus rien ne se recouvre */
+  html.v4-mob-texte .v4-mob {
+    top: auto;
+    bottom: calc(.8rem + env(safe-area-inset-bottom, 0px));
+    z-index: 60;
+  }
+  /* deux commandes secondaires passeraient sous la feuille : autant les
+     effacer que laisser des cibles invisibles */
+  html.v4-mob-texte #sound,
+  html.v4-mob-texte #ab-toggle {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ── le texte : plus court à l'œil, plus étroit, plus petit ── */
+  .v4-chapitre__bloc { max-width: 40ch; gap: .2rem; }
+  .v4-chapitre__num { font-size: .52rem; letter-spacing: .3em; text-indent: .3em; }
+  /* le titre tenait sur trois lignes : « DEUX PARCOURS, UNE MÊME EXIGENCE » en
+     16 px espacés de .14em demande 380 px pour 358 disponibles. Moins de corps
+     et moins d'interlettrage, il tient sur deux. */
+  .v4-chapitre__titre { font-size: .92rem; letter-spacing: .07em; line-height: 1.3; }
+  .v4-chapitre__filet { width: 2rem; margin: .35rem 0 .25rem; }
+  .v4-chapitre__textes { gap: .45rem; }
+  .v4-chapitre__textes p { font-size: .83rem; line-height: 1.5; }
+}
+
+/* ── 2 bis · PETIT TÉLÉPHONE : la barre de lecture cède la place ────────
+   Sous 700 px de haut, l'espace libre sous le film ne fait plus que 312 px,
+   dont 100 pour la barre de temps et les commandes : il restait 140 px de
+   lecture. On rend ces 100 px au texte pendant qu'il est ouvert — l'onglet,
+   lui, reste en bas, et tout revient dès qu'on referme. */
+@media (max-width: 900px) and (orientation: portrait) and (max-height: 700px) {
+  .v4-chapitre { top: calc(var(--v4-sous) + .7rem); }
+  html.v4-mob-texte .cine-timeline,
+  html.v4-mob-texte .cine-bar {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* ── 3 · FENÊTRE ÉTROITE EN PAYSAGE, hors mode cinéma ───────────────────
+   Le voile prenait 62 % de la hauteur quoi qu'il contienne. Il suit désormais
+   son texte, borné à la moitié de la fenêtre, et défile au lieu de déborder. */
+@media (max-width: 720px) and (orientation: landscape) and (min-height: 561px) {
+  .v4-chapitre {
+    height: auto;
+    max-height: 46vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: .9rem 1.3rem calc(4.9rem + env(safe-area-inset-bottom, 0px));
+  }
+  .v4-chapitre__bloc { max-width: 44ch; }
+  .v4-chapitre__titre { font-size: 1rem; letter-spacing: .08em; }
+  .v4-chapitre__textes p { font-size: .86rem; line-height: 1.55; }
+}

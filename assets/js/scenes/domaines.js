@@ -38,7 +38,7 @@ const GRACE = 300;         // grace avant le fondu-enchaine si la video de la ca
 const LATE_FADE = 480;     // reseau lent : fondu de l'image a son arrivee, puis extinction de la couche sortante
 const LATE_MAX = 8000;     // garde-fou : on termine le fondu meme si l'image n'arrive jamais
 const DUR_DEFAULT = 4500;  // lecture : duree nominale d'une categorie quand la video n'est pas lisible (erreur, reduced, play() refuse)
-const DUR_BY_N = { '03': 5000 };   // Montres (video 5,04 s) ; la duree reelle video.duration prime des qu'elle est connue ; data-dur="5" accepte aussi
+const DUR_BY_N = { '03': 12000 };  // Montres : l'assemblage en vue eclatee de la television, 12,04 s (video.duration prime des qu'elle est connue ; data-dur accepte aussi)
 const GUARD = 2500;        // lecture : marge apres la fin theorique de la video (reseau) avant de passer quand meme
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const pad2 = n => String(n).padStart(2, '0');

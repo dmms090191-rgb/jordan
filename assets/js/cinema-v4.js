@@ -17,6 +17,21 @@
 const $ = s => document.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Sur un petit telephone, un chapitre de trois paragraphes est plus long que la
+   feuille de texte : elle defile. La derniere ligne visible etait alors
+   tranchee net — ce qui se lit comme un texte coupe, pas comme un texte qui
+   continue. La classe dit a la CSS d'eteindre cette ligne en degrade. Elle
+   n'est posee QUE s'il y a vraiment trop-plein : quand tout tient, rien n'est
+   estompe. Mesure prise a l'image suivante, sinon on lirait la mise en page
+   d'avant le remplissage. */
+function majDeborde() {
+  const v = document.getElementById('v4-voile');
+  if (!v) return;
+  requestAnimationFrame(() => {
+    v.classList.toggle('deborde', v.scrollHeight > v.clientHeight + 2);
+  });
+}
 const fmtFR = (v, d) => v.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const fmtTemps = s => { s = Math.max(0, Math.round(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
 
@@ -186,6 +201,7 @@ class Cinema {
     const nav = document.getElementById('nav');
     const caleNav = () => document.documentElement.style.setProperty('--v4-nav', ((nav && nav.offsetHeight) || 76) + 'px');
     caleNav(); addEventListener('resize', caleNav);
+    addEventListener('resize', majDeborde);
     this.vids = [$('#filmA'), $('#filmB')];
     this.actifV = 0;
     this.voile = $('#v4-voile');
@@ -707,6 +723,7 @@ class Cinema {
     bo.querySelector('.v4-chapitre__titre').textContent = ch.nom;
     bo.querySelector('.v4-voile__textes').innerHTML = ch.textes.map(t => '<p>' + t + '</p>').join('');
     bo.classList.add('is-on');
+    majDeborde();
   }
   cacherVoile() { this.voile.classList.remove('is-on'); }
 
@@ -1796,6 +1813,9 @@ addEventListener('DOMContentLoaded', () => {
     de.classList.toggle('v4-mob-chapitres', quoi === 'chapitres' ? oui : false);
     if (mobChap) mobChap.setAttribute('aria-expanded', String(de.classList.contains('v4-mob-texte')));
     if (mobNav) mobNav.setAttribute('aria-expanded', String(de.classList.contains('v4-mob-chapitres')));
+    /* la feuille vient de s'ouvrir : sa hauteur utile n'est connue que
+       maintenant, donc c'est maintenant qu'on sait si le texte deborde */
+    majDeborde();
   };
   if (mobChap) mobChap.addEventListener('click', () => ouvrir('texte', !de.classList.contains('v4-mob-texte')));
   if (mobNav) mobNav.addEventListener('click', () => ouvrir('chapitres', !de.classList.contains('v4-mob-chapitres')));
