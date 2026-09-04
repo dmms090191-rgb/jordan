@@ -438,3 +438,46 @@
   .c3d-find, .c3d-reg { min-height: 46px; }
   .c3d-find input, .c3d-reg select { font-size: .92rem; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA LISTE DES VILLES — SANS RÉGIONS
+   ══════════════════════════════════════════════════════════════════════
+   Le panneau proposait un sélecteur de région et un rail de treize régions,
+   et la liste ne montrait RIEN tant qu'on n'en avait pas choisi une : il
+   fallait savoir dans quelle région se trouve sa ville avant de pouvoir la
+   chercher. La liste est désormais complète et alphabétique, la recherche
+   suffit — les deux commandes de région n'ont plus rien à piloter.
+
+   Elles sont retirées de la vue, pas des données : chaque commune garde sa
+   région et son département, et villes-france.js n'est pas touché.
+   ══════════════════════════════════════════════════════════════════════ */
+.c3d-reg,
+.c3d-rail { display: none; }
+
+/* la recherche prend toute la place laissée libre */
+.c3d-filtres { flex-direction: row; }
+.c3d-find { flex: 1 1 auto; width: 100%; }
+
+/* plus d'en-tête de région : la liste est une seule suite de communes */
+.c3d-grp__t { display: none; }
+.c3d-grp { margin-bottom: 0; }
+
+/* La liste étant longue et permanente, elle a besoin d'une hauteur franche.
+   Elle était bornée à 216 px — une fenêtre de sept rangées sur cent onze
+   communes : dimensionnée pour un résultat de recherche, pas pour une liste.
+   On l'ouvre à une dizaine de rangées ; la page s'allonge d'une centaine de
+   pixels, la carte ne recule pas. */
+@media (min-width: 821px) {
+  .c3d[data-place="page"] .c3d-list__scroll { max-height: clamp(11rem, 30vh, 19rem); }
+}
+@media (max-width: 820px) {
+  .c3d[data-place="page"] .c3d-list__scroll { max-height: min(52svh, 460px); }
+}
+
+/* Sur un téléphone, deux colonnes ne tiennent pas : « Saint-Germain-en-Laye »
+   s'y casse en trois lignes et creuse un trou dans la colonne voisine, la
+   rangée entière prenant la hauteur du nom le plus long. Une seule colonne :
+   chaque commune tient sur sa ligne, et la ligne entière devient la cible. */
+@media (max-width: 480px) {
+  .c3d[data-place="page"] .c3d__side .c3d-grp__ul { grid-template-columns: 1fr; }
+}

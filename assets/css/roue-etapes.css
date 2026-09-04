@@ -396,3 +396,56 @@
 @media (prefers-reduced-motion:reduce){
   .roue-cyl,.roue-pivot,.roue-plaque,.roue-verre{transition-duration:.01ms!important}
 }
+
+/* ---------------- LECTURE / PAUSE DU DÉFILEMENT ----------------
+   Le même vocabulaire que les flèches : un rond de 44 px, un filet or, rien
+   de plus. Il se distingue par sa forme intérieure, pas par sa taille — on
+   ne met pas un bouton primaire au milieu de commandes discrètes.
+
+   Le triangle et les deux barres vivent dans le même SVG et se croisent :
+   celle qui n'a pas cours se résorbe. Aucun changement de balisage, donc
+   aucun saut de mise en page entre les deux états. */
+.roue-lect {
+  display: inline-flex; align-items: center; gap: .5rem;
+  min-height: 44px; padding: 0 .9rem 0 .55rem;
+  border: 1px solid var(--v-filet); border-radius: 24px;
+  background: none; color: var(--text-3); cursor: pointer;
+  font-family: var(--body); font-size: .6rem; letter-spacing: .18em;
+  text-transform: uppercase;
+  transition: border-color .4s ease, color .4s ease;
+}
+.roue-lect:hover, .roue-lect:focus-visible { border-color: var(--v-filet-actif); color: var(--text); }
+.roue-lect__ico {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--v-filet);
+  transition: border-color .4s ease;
+}
+.roue-lect__ico svg { width: 11px; height: 11px; overflow: visible; }
+.roue-lect__tri, .roue-lect__bar { fill: currentColor; }
+.roue-lect__tri { transform-origin: 50% 50%; transition: opacity .35s ease, transform .45s var(--courbe); }
+.roue-lect__bar {
+  opacity: 0; transform-origin: 50% 50%; transform: scaleX(.4);
+  transition: opacity .35s ease, transform .45s var(--courbe);
+}
+/* en lecture, le triangle pivote et se résorbe, les deux barres se déploient */
+.roue-lect.is-on { color: var(--gold-bright, #e8cd93); }
+.roue-lect.is-on .roue-lect__ico { border-color: var(--v-filet-actif); }
+.roue-lect.is-on .roue-lect__tri { opacity: 0; transform: scale(.45) rotate(90deg); }
+.roue-lect.is-on .roue-lect__bar { opacity: 1; transform: none; }
+.roue-lect.is-on .roue-lect__bar--d { transition-delay: .05s; }
+:root[data-ambiance="jour"] .roue-lect.is-on { color: #8a6820; }
+
+@media (max-width: 760px) {
+  /* la rangée porte une commande de plus : on rend au libellé la place qu'il
+     prend, sans jamais descendre sous les 44 px de cible tactile */
+  .roue-lect { padding: 0 .7rem 0 .45rem; gap: .4rem; font-size: .55rem; letter-spacing: .12em; }
+  .roue-lect__ico { width: 26px; height: 26px; }
+}
+@media (max-width: 400px) {
+  .roue-lect__txt { display: none; }        /* le pictogramme suffit à cette largeur */
+  .roue-lect { padding: 0 .45rem; min-width: 44px; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .roue-lect__tri, .roue-lect__bar { transition: none; }
+}

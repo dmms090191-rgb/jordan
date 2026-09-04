@@ -137,18 +137,29 @@ function demarrerHero() {
   const tictac = creerTicTac();
   function marquerBouton() {
     if (!bouton) return;
-    bouton.classList.toggle('is-on', tictac.actif);
-    bouton.setAttribute('aria-pressed', String(tictac.actif));
+    /* CE QUE MONTRE LE BOUTON, C'EST L'ÉTAT VOULU — pas seulement l'état qui
+       joue. Aucun navigateur n'autorise le son avant un geste : au chargement,
+       le tic-tac est donc configuré mais pas encore démarré. Afficher « Coupé »
+       à ce moment-là serait un mensonge, et l'utilisateur croirait devoir
+       cliquer pour activer ce qui l'est déjà. Il s'allumera de lui-même au
+       premier geste (voir brancherReprise). */
+    const on = tictac.actif || tictac.voulu();
+    bouton.classList.toggle('is-on', on);
+    bouton.setAttribute('aria-pressed', String(on));
     /* « Actif » / « Coupé » et non « Son actif » / « Son » : le mot « Son »
        est desormais porte une fois pour toutes par l etiquette au-dessus,
        comme sur le bouton de l experience 3D. Seul le libelle change ; la
        logique audio, elle, n est pas touchee. */
     const t = bouton.querySelector('.hm__son-txt');
-    if (t) t.textContent = tictac.actif ? 'Actif' : 'Coupé';
+    if (t) t.textContent = on ? 'Actif' : 'Coupé';
   }
   if (bouton) {
     bouton.addEventListener('click', async () => {
-      if (tictac.actif) tictac.arreter(); else await tictac.demarrer();
+      /* On bascule depuis l'état AFFICHÉ, pas depuis l'état qui joue. Au
+         chargement le bouton dit « Actif » alors que le tic-tac attend encore
+         un geste : se fier à tictac.actif ferait DÉMARRER le son sur un clic
+         dont l'intention était de le couper. */
+      if (tictac.actif || tictac.voulu()) tictac.arreter(); else await tictac.demarrer();
       marquerBouton();
     });
     /* le choix est conservé, mais le navigateur n'autorise le son qu'après un

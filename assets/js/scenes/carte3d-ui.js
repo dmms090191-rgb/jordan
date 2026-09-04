@@ -366,15 +366,17 @@ export function createCarteUI(host, options) {
     }
   }
 
-  /* Ce que la liste doit montrer. Sans commande, elle ne montre RIEN : c est tout l objet de la
-     refonte — 111 lignes deroulees en permanence ecrasaient la carte. */
+  /* LA LISTE COMPLETE, TOUJOURS, PAR ORDRE ALPHABETIQUE.
+     Elle ne montrait RIEN tant qu'une region n'etait pas choisie : il fallait
+     donc savoir dans quelle region se trouve sa ville AVANT de pouvoir la
+     chercher — l'inverse de ce qu'on demande a une liste de villes. Les
+     regions ne filtrent plus rien ici ; les donnees, elles, sont intactes,
+     chaque commune garde sa region et son departement. */
   function villesFiltrees() {
     const q = sansAccent(query).trim();
-    if (!q && !regionSel) return [];
     const out = [];
     for (let i = 0; i < cities.length; i++) {
       const it = cities[i];
-      if (regionSel && it.region !== regionSel) continue;
       if (q) {
         const nom = sansAccent(it.nom), dept = sansAccent(it.departement), dep = (it.dep || '') + '';
         if (nom.indexOf(q) < 0 && dept.indexOf(q) < 0 && dep.indexOf(q) !== 0) continue;
@@ -388,19 +390,14 @@ export function createCarteUI(host, options) {
     listUI.scroll.textContent = '';
     listUI.rows.clear();
     listUI.seq.length = 0;
-    let group = null, groupName = null;
     const vues = villesFiltrees();
+    /* UNE SEULE LISTE, SANS EN-TÊTES DE RÉGION. Elle était découpée en
+       sections collantes par région ; avec la liste complète affichée en
+       permanence, ces bandeaux couperaient l'ordre alphabétique en treize
+       morceaux et l'on ne saurait plus où chercher un nom. */
+    const group = el('ul', NS + '-grp__ul', listUI.scroll);
     for (let i = 0; i < vues.length; i++) {
       const it = vues[i];
-      if (it.region !== groupName) {
-        groupName = it.region;
-        const sec = el('section', NS + '-grp', listUI.scroll);
-        const gid = NS + '-g-' + i + '-' + Math.random().toString(36).slice(2, 6);
-        const h = el('h3', NS + '-grp__t', sec, groupName || '');
-        h.id = gid;
-        sec.setAttribute('aria-labelledby', gid);
-        group = el('ul', NS + '-grp__ul', sec);
-      }
       const li = el('li', null, group);
       const b = el('button', NS + '-city', li);
       /* une journee d expertise REELLE est publiee pour cette commune : la ligne se distingue.
@@ -427,16 +424,13 @@ export function createCarteUI(host, options) {
     const q = query.trim();
     const rien = vues.length === 0;
     listUI.vide.hidden = !rien;
+    /* La liste n'est plus jamais vide « par défaut » : elle l'est seulement
+       quand une recherche ne trouve rien. Le message d'invitation à choisir
+       une région n'a donc plus lieu d'être. */
     if (rien) {
-      if (q || regionSel) {
-        listUI.vide.textContent = q
-          ? 'Aucune commune ne correspond à « ' + q + ' ».'
-          : 'Aucune commune dans cette région.';
-      } else {
-        const nbReg = Math.max(0, listUI.reg.options.length - 1);
-        listUI.vide.textContent = cities.length + ' communes dans ' + nbReg
-          + ' régions. Choisissez une région ou cherchez une ville.';
-      }
+      listUI.vide.textContent = q
+        ? 'Aucune commune ne correspond à « ' + q + ' ».'
+        : 'Aucune commune à afficher.';
     }
     listUI.compte.textContent = vues.length ? vues.length + (vues.length > 1 ? ' communes' : ' commune') : '';
     listUI.wrap.dataset.vide = rien ? '1' : '0';
@@ -446,7 +440,10 @@ export function createCarteUI(host, options) {
      pas qu une frappe au clavier deplace la camera. */
   function onFiltre() {
     query = listUI.find.value || '';
-    regionSel = listUI.reg.value || '';
+    /* le selecteur de region ne filtre plus : il est retire de l'interface
+       (voir da-carte.css). On le laisse a vide pour que rien, ailleurs, ne
+       croie qu'une region est active. */
+    regionSel = '';
     fillList();
     majRail();
     markSelected();
@@ -489,6 +486,10 @@ export function createCarteUI(host, options) {
   function setCities(next) {
     if (destroyed) return;
     cities = Array.isArray(next) ? next.slice() : [];
+    /* ordre alphabetique francais : « Élancourt » se range entre « Egletons »
+       et « Epinal », et « Saint-Étienne » ne part pas a la fin. localeCompare
+       s'en charge, un tri brut sur les codes de caracteres non. */
+    cities.sort((a, b) => String(a.nom || '').localeCompare(String(b.nom || ''), 'fr', { sensitivity: 'base' }));
     fillRegions();
     fillList();
     if (selId != null && !cities.some(c => c.id === selId)) selId = null;

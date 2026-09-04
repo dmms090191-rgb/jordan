@@ -130,8 +130,12 @@ export function creerTicTac(opts = {}) {
 
   /* Le choix est conservé, mais on ne peut pas le REJOUER sans geste : on se
      contente de le retenir et d'attendre la première interaction. */
+  /* SON ACTIF PAR DÉFAUT : c'est l'ABSENCE de choix qui vaut « on », et non
+     l'inverse. Auparavant il fallait un `on` enregistré, donc chaque première
+     visite arrivait en silence. Un `off` explicite — l'utilisateur a coupé le
+     son — est évidemment respecté, et le reste à chaque rechargement. */
   function voulu() {
-    try { return localStorage.getItem(CLE) === 'on'; } catch (e) { return false; }
+    try { return localStorage.getItem(CLE) !== 'off'; } catch (e) { return true; }
   }
 
   function brancherReprise() {

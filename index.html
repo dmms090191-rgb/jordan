@@ -107,7 +107,7 @@
       <a href="#etapes">Comment ça marche</a>
       <a href="#domaines">Ce que nous rachetons</a>
       <a href="#cours">Cours de l'or</a>
-      <a href="#journees">Prochaines journées</a>
+      <a href="#journees">Notre présence en France</a>
       <a href="#faq">FAQ</a>
     </nav>
   </div>
@@ -119,7 +119,7 @@
     <a href="#etapes">Comment ça marche</a>
     <a href="#domaines">Ce que nous rachetons</a>
     <a href="#cours">Cours de l'or</a>
-    <a href="#journees">Prochaines journées</a>
+    <a href="#journees">Notre présence en France</a>
     <a href="#faq">FAQ</a>
   </nav>
   <div class="mmenu__ctas">
@@ -271,6 +271,18 @@
     </div>
 
     <div class="roue-cmd">
+      <!-- Lecture / Pause du défilement automatique. Le script pose l'état :
+           la lecture démarre seule, ce bouton sert à l'arrêter. -->
+      <button class="roue-lect" type="button" aria-pressed="true" aria-label="Mettre en pause le défilement">
+        <span class="roue-lect__ico" aria-hidden="true">
+          <svg viewBox="0 0 12 12" focusable="false">
+            <path class="roue-lect__tri" d="M2.6 1.3 11.2 6 2.6 10.7Z"/>
+            <rect class="roue-lect__bar roue-lect__bar--g" x="2" y="1.5" width="3" height="9" rx=".4"/>
+            <rect class="roue-lect__bar roue-lect__bar--d" x="7" y="1.5" width="3" height="9" rx=".4"/>
+          </svg>
+        </span>
+        <span class="roue-lect__txt">Pause</span>
+      </button>
       <button class="roue-fl roue-fl--prec" type="button" aria-label="Étape précédente">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>

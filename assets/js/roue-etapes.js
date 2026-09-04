@@ -214,6 +214,9 @@ export function initRoueEtapes(section) {
     pos = base + Math.max(-2, Math.min(2, d));    /* jamais plus de deux crans */
     dernier = performance.now();
     rendre();
+    /* le glissé n'emprunte pas cran() : il faut réarmer le minuteur ici aussi,
+       sinon une carte amenée au doigt repartirait dans la foulée */
+    armer();
   });
   /* Le navigateur annule le pointeur dès qu'il décide que le geste est un
      défilement de page. On revient alors sagement au cran courant. */
@@ -282,10 +285,56 @@ export function initRoueEtapes(section) {
     addEventListener('resize', caler);
   }
 
-  /* will-change seulement quand la section est à l'écran */
-  new IntersectionObserver(es => es.forEach(e =>
-    section.classList.toggle('roue-visible', e.isIntersecting)
-  ), { rootMargin: '200px 0px' }).observe(section);
+  /* ---- LE DÉFILEMENT AUTOMATIQUE ----
+     Une carte toutes les trois secondes, lecture active au chargement — et
+     donc à chaque actualisation, puisque rien n'est retenu d'une visite à
+     l'autre : l'état vit en mémoire, pas en stockage.
+
+     Il ne tourne QUE lorsque la section est à l'écran. Une roue qui avance
+     trois écrans plus bas ne serait vue de personne et ferait tourner une
+     transition pour rien. Il repart tout seul quand on y revient.
+
+     Toute navigation manuelle — flèche, point, glissé, molette, clavier —
+     réarme le minuteur : on ne veut pas qu'une carte choisie à la main soit
+     emportée un dixième de seconde plus tard. */
+  const PAS_AUTO = 3000;
+  let minuteur = 0, joue = true, aLEcran = false;
+  const btnLect = section.querySelector('.roue-lect');
+
+  const armer = () => {
+    clearInterval(minuteur);
+    if (joue && aLEcran) minuteur = setInterval(() => cran(1), PAS_AUTO);
+  };
+  const marquerLect = () => {
+    if (!btnLect) return;
+    btnLect.classList.toggle('is-on', joue);
+    btnLect.setAttribute('aria-pressed', String(joue));
+    btnLect.setAttribute('aria-label', joue ? 'Mettre en pause le défilement' : 'Reprendre le défilement');
+    const t = btnLect.querySelector('.roue-lect__txt');
+    if (t) t.textContent = joue ? 'Pause' : 'Lecture';
+  };
+  if (btnLect) btnLect.addEventListener('click', () => { joue = !joue; marquerLect(); armer(); });
+  marquerLect();
+
+  /* le minuteur se réarme après CHAQUE geste, d'où qu'il vienne : cran() est
+     le seul chemin par lequel la roue avance. */
+  const cranNu = cran;
+  cran = (sens) => { cranNu(sens); armer(); };
+  const versEtapeNu = versEtape;
+  versEtape = (i) => { versEtapeNu(i); armer(); };
+
+  /* onglet caché : rien ne doit tourner en arrière-plan */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clearInterval(minuteur); else armer();
+  });
+
+  /* will-change seulement quand la section est à l'écran — et c'est le même
+     signal qui autorise le défilement automatique. */
+  new IntersectionObserver(es => es.forEach(e => {
+    section.classList.toggle('roue-visible', e.isIntersecting);
+    aLEcran = e.isIntersecting;
+    armer();
+  }), { rootMargin: '200px 0px' }).observe(section);
 
   section.dataset.roue = 'on';    /* masque la liste source, montre la scène */
   rendre();
